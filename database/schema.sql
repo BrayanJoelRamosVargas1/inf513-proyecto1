@@ -43,4 +43,8 @@ alter table p1_examen drop constraint if exists p1_examen_puntaje_ck;
 alter table p1_examen add constraint p1_examen_puntaje_ck check(puntaje between 0 and 100) not valid;
 alter table p1_postulacion drop constraint if exists p1_postulacion_puntajes_ck;
 alter table p1_postulacion add constraint p1_postulacion_puntajes_ck check(puntaje_meritos between 0 and 100 and puntaje_examen between 0 and 100 and puntaje_final between 0 and 100) not valid;
+alter table p1_convocatoria validate constraint p1_convocatoria_fechas_ck;
+alter table p1_merito validate constraint p1_merito_puntaje_ck;
+alter table p1_examen validate constraint p1_examen_puntaje_ck;
+alter table p1_postulacion validate constraint p1_postulacion_puntajes_ck;
 
