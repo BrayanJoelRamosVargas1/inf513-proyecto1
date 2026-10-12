@@ -38,8 +38,9 @@ public final class Main {
     }
 
     static void ejecutarCiclo(AppConfig cfg,PasarelaCorreo mail,RepositorioPostgres repo,ProcesadorOrden processor,AnalizadorOrden parser)throws Exception{
-        if(!repo.servicioInicializado()){
+        if(!repo.servicioInicializado(cfg.inboundProtocol())){
             var ids=mail.identificadores();for(String id:ids)repo.registrarCorreoProcesado(id,"historico@local","BASELINE",true);repo.marcarServicioInicializado();
+            repo.marcarServicioInicializado(cfg.inboundProtocol());
             System.out.println("Bandeja inicializada: "+ids.size()+" mensajes históricos omitidos.");return;
         }
         var conocidos=repo.correosConocidos();

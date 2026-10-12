@@ -8,6 +8,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Predicate;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.entity.UrlEncodedFormEntity;
@@ -28,6 +33,9 @@ final class ClienteRoundcube implements AutoCloseable {
     private static final Pattern ID_COMPOSICION = Pattern.compile("name=\\\"_id\\\" value=\\\"([^\\\"]+)\\\"");
     private static final Pattern TOKEN_FORM = Pattern.compile("name=\\\"_token\\\" value=\\\"([^\\\"]+)\\\"");
     private static final Pattern IDENTIDAD = Pattern.compile("<option value=\\\"([^\\\"]+)\\\" selected");
+    private static final Pattern FILA = Pattern.compile("add_message_row\\((\\d+),\\{\\\"subject\\\":\\\"((?:\\\\.|[^\\\"])*)\\\",\\\"fromto\\\":\\\"((?:\\\\.|[^\\\"])*)\\\"");
+    private static final Pattern CORREO_FILA = Pattern.compile("title=\\\\\\\"([^\\\\\\\"]+)\\\\\\\"");
+    private static final ObjectMapper JSON=new ObjectMapper();
 
     private final AppConfig cfg;
     private final BasicCookieStore cookies=new BasicCookieStore();
@@ -74,6 +82,32 @@ final class ClienteRoundcube implements AutoCloseable {
             throw new IllegalStateException("Roundcube no confirmó el envío (HTTP " + res.codigo() + ").");
         }
     }
+
+    synchronized List<String> identificadores()throws Exception{
+        List<MensajeEntrada> todos=listarTodos();List<String> ids=new ArrayList<>(todos.size());for(MensajeEntrada m:todos)ids.add(m.id());return ids;
+    }
+
+    synchronized List<MensajeEntrada> nuevos(Predicate<String> procesado)throws Exception{
+        List<MensajeEntrada> out=new ArrayList<>();for(MensajeEntrada m:listarTodos()){if(!procesado.test(m.id())){out.add(m);if(out.size()>=cfg.maxMessagesPerCycle())break;}}return out;
+    }
+
+    private List<MensajeEntrada> listarTodos()throws Exception{
+        asegurarSesion();JsonNode primera=listarPagina(1);int paginas=Math.max(1,primera.path("env").path("pagecount").asInt(1));List<MensajeEntrada> out=new ArrayList<>();extraerFilas(primera,out);
+        for(int pagina=2;pagina<=paginas;pagina++)extraerFilas(listarPagina(pagina),out);return out;
+    }
+
+    private JsonNode listarPagina(int pagina)throws Exception{
+        RespuestaHttp r=request("GET","?_task=mail&_action=list&_refresh=1&_mbox=INBOX&_page="+pagina+"&_remote=1&_token="+enc(tokenSesion),null,Map.of("X-Roundcube-Request",tokenSesion,"X-Requested-With","XMLHttpRequest"));
+        if(r.codigo()!=200||r.cuerpo().contains("session_error")){tokenSesion=null;asegurarSesion();r=request("GET","?_task=mail&_action=list&_refresh=1&_mbox=INBOX&_page="+pagina+"&_remote=1&_token="+enc(tokenSesion),null,Map.of("X-Roundcube-Request",tokenSesion,"X-Requested-With","XMLHttpRequest"));}
+        if(r.codigo()!=200)throw new IllegalStateException("Roundcube no pudo listar la bandeja (HTTP "+r.codigo()+").");return JSON.readTree(r.cuerpo());
+    }
+
+    private static void extraerFilas(JsonNode respuesta,List<MensajeEntrada> out){
+        String exec=respuesta.path("exec").asText("");Matcher filas=FILA.matcher(exec);while(filas.find()){
+            String uid="roundcube:INBOX:"+filas.group(1);String asunto=html(filas.group(2));Matcher correo=CORREO_FILA.matcher(filas.group(3));if(!correo.find())continue;out.add(new MensajeEntrada(uid,correo.group(1),asunto));
+        }
+    }
+    private static String html(String s){return s.replace("&quot;","\"").replace("&#039;","'").replace("&lt;","<").replace("&gt;",">").replace("&amp;","&");}
 
     private void asegurarSesion() throws Exception {
         if (tokenSesion != null) return;

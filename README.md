@@ -13,7 +13,7 @@ Sistema por correo electrónico para gestionar convocatorias de auxiliaturas. El
 - Java 17
 - Maven 3.9 o superior
 - PostgreSQL
-- Cuenta de correo del grupo con POP3 para lectura y acceso al Roundcube institucional para responder
+- Cuenta de correo del grupo con Roundcube HTTPS para lectura y respuesta
 
 ## Construcción
 
@@ -48,7 +48,7 @@ chmod +x scripts/run-service.sh
 
 Para un servidor Fedora se incluye `deploy/inf513-grupo09sa.service`, que reinicia el proceso mediante systemd.
 
-El servidor expone POP3 en el puerto 110. Para las respuestas, la configuración predeterminada utiliza el Roundcube institucional, de modo que la entrega se realiza desde el propio servidor de Tecnoweb y también funciona fuera de la red del laboratorio. Si el docente habilita SMTP autenticado, puede seleccionarse con `MAIL_OUTBOUND_MODE=smtp`.
+La configuración predeterminada utiliza Roundcube HTTPS tanto para leer como para responder, de modo que la contraseña no viaja por POP3 sin cifrar. POP3 continúa disponible únicamente como respaldo configurable. Si el docente habilita SMTP autenticado, puede seleccionarse con `MAIL_OUTBOUND_MODE=smtp`.
 
 La orden completa debe escribirse en el asunto, por ejemplo `LISCON["*"]` o `AYUDA[]`.
 
@@ -70,4 +70,4 @@ El proceso no termina cuando PostgreSQL, POP3, Roundcube o Internet dejan de res
 
 ## Límite impuesto por la infraestructura institucional
 
-El 12 de octubre de 2026 se comprobó que el servidor publica POP3 únicamente en el puerto 110 y no anuncia `STLS`; POP3S 995 e IMAPS 993 no están disponibles. Por ello, la contraseña de lectura no puede protegerse con TLS desde este cliente mientras el servidor mantenga esa configuración. Ejecute el servicio solamente en la red confiable del laboratorio, en el servidor institucional o mediante una VPN administrada. El envío por Roundcube sí usa HTTPS. Esta limitación externa no debe ocultarse ni “solucionarse” desactivando validaciones TLS.
+El 12 de octubre de 2026 se comprobó que POP3 solo está disponible en el puerto 110 sin `STLS`, pero también se comprobó que Roundcube permite listar la bandeja mediante su sesión HTTPS. Por eso el modo predeterminado evita POP3 y cifra tanto la autenticación como la lectura. Si se fuerza `MAIL_INBOUND_PROTOCOL=pop3`, debe hacerse únicamente en una red confiable.

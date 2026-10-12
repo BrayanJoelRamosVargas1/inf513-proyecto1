@@ -20,7 +20,7 @@ public record AppConfig(
         Path file = Path.of("config", "application.properties");
         if (Files.exists(file)) try (InputStream in = Files.newInputStream(file)) { p.load(in); }
         return new AppConfig(
-            value(p,"mail.inbound.protocol","MAIL_INBOUND_PROTOCOL","pop3"),
+            value(p,"mail.inbound.protocol","MAIL_INBOUND_PROTOCOL","roundcube"),
             value(p,"mail.inbound.host","MAIL_INBOUND_HOST","mail.tecnoweb.org.bo"),
             integer(p,"mail.inbound.port","MAIL_INBOUND_PORT",110),
             bool(p,"mail.inbound.ssl","MAIL_INBOUND_SSL",false),

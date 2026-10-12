@@ -10,7 +10,9 @@ Fecha de comprobación: 12 de octubre de 2026.
 - Aplicación del esquema `database/schema.sql` en la base `db_grupo09sa`.
 - Trece pruebas automatizadas sin fallos.
 - Caída simulada de PostgreSQL: el proceso permaneció activo y aplicó reintentos progresivos.
-- Caída simulada de POP3: el proceso permaneció activo y limitó la frecuencia de reconexión.
+- Caída simulada de red y PostgreSQL: el proceso permaneció activo y limitó la frecuencia de reconexión.
+- Lectura real por Roundcube HTTPS: autenticación y listado correcto de 149 mensajes sin imprimir su contenido.
+- Fuzzing determinista: 1.000.000 de asuntos aleatorios o malformados sin derribar el analizador.
 - Reinicio del servicio con recuperación de cola e idempotencia persistente.
 
 ## Integración real por correo
@@ -18,7 +20,7 @@ Fecha de comprobación: 12 de octubre de 2026.
 Se verificó el recorrido completo con mensajes enviados desde Gmail a la cuenta institucional del Grupo 09 SA:
 
 1. Gmail envió la orden en el asunto.
-2. El servicio Java la recuperó por POP3.
+2. El servicio Java la recuperó mediante Roundcube HTTPS.
 3. La orden fue validada y procesada.
 4. PostgreSQL fue consultado cuando correspondía.
 5. El servicio respondió mediante el Roundcube institucional.

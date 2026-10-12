@@ -26,9 +26,9 @@
 
 El sistema se recupera de fallos temporales y evita repetir cambios de negocio. La entrega de correo es de tipo *al menos una vez*: si Roundcube envía una respuesta y la conexión se corta antes de confirmarlo, puede producirse una respuesta duplicada, pero no una operación duplicada en PostgreSQL. Ningún software puede continuar comunicándose mientras todos los servidores o la red estén apagados; la garantía es reanudar el trabajo pendiente cuando vuelvan.
 
-## Restricción de transporte
+## Transporte seguro
 
-El servidor institucional solo expone POP3 110 y no ofrece `STLS`, POP3S 995 ni IMAPS 993. La lectura debe ejecutarse en una red confiable, el laboratorio, el servidor institucional o una VPN administrada. Roundcube utiliza HTTPS. No se guardan contraseñas en GitHub, documentos ni paquetes.
+Aunque el servidor institucional solo expone POP3 110 sin `STLS`, el sistema lee y responde de forma predeterminada mediante la sesión HTTPS de Roundcube. POP3 queda como respaldo manual para una red confiable. No se guardan contraseñas en GitHub, documentos ni paquetes.
 
 ## Pruebas recomendadas para la defensa
 
