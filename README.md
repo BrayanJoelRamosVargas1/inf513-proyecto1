@@ -47,6 +47,7 @@ chmod +x scripts/run-service.sh
 ```
 
 Para un servidor Fedora se incluye `deploy/inf513-grupo09sa.service`, que reinicia el proceso mediante systemd.
+Los scripts usan el JAR recién compilado de `target/` cuando existe y, dentro del paquete de entrega, recurren automáticamente al ejecutable incluido en `dist/`.
 
 La configuración predeterminada utiliza Roundcube HTTPS tanto para leer como para responder, de modo que la contraseña no viaja por POP3 sin cifrar. POP3 continúa disponible únicamente como respaldo configurable. Si el docente habilita SMTP autenticado, puede seleccionarse con `MAIL_OUTBOUND_MODE=smtp`.
 

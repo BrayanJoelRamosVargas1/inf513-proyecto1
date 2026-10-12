@@ -1,5 +1,7 @@
 $ErrorActionPreference = "Stop"
 $jar = Join-Path $PSScriptRoot "..\target\inf513-proyecto1-1.0.0.jar"
+if (-not (Test-Path -LiteralPath $jar -PathType Leaf)) { $jar = Join-Path $PSScriptRoot "..\dist\inf513-proyecto1-1.0.0.jar" }
+if (-not (Test-Path -LiteralPath $jar -PathType Leaf)) { throw "No se encontró el JAR. Ejecute mvn clean package o restaure dist/." }
 if (-not $env:MAIL_PASSWORD -or -not $env:DB_PASSWORD) { throw "Defina MAIL_PASSWORD y DB_PASSWORD antes de iniciar." }
 while ($true) {
     & java -jar $jar
