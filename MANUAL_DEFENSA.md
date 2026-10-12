@@ -1,0 +1,62 @@
+# Manual de ejecución y defensa
+
+## Preparación
+
+1. Instalar Java 17.
+2. Abrir PowerShell en la carpeta del proyecto.
+3. Definir las credenciales como variables de entorno temporales, sin guardarlas en archivos ni subirlas a GitHub:
+
+```powershell
+$env:MAIL_PASSWORD = "ESCRIBIR_LA_CLAVE_SOLO_EN_LA_TERMINAL"
+$env:DB_PASSWORD = "ESCRIBIR_LA_CLAVE_SOLO_EN_LA_TERMINAL"
+java -jar target/inf513-proyecto1-1.0.0.jar
+```
+
+No mostrar la terminal mientras se escriben las claves y cerrar la ventana al terminar.
+
+## Primera inicialización
+
+Si `p1_usuario` está vacía, el primer correo debe crear un usuario con rol `DECANO`. El correo registrado debe coincidir con la dirección desde la que se enviarán los comandos administrativos.
+
+```text
+INSUSU["223043982","Brayan Joel","Ramos Vargas","DECANO","70000000","TU_CORREO@gmail.com","true"]
+```
+
+Después pueden crearse los demás roles mediante `INSUSU`.
+
+## Secuencia de demostración
+
+```text
+AYUDA[]
+INSCON["AUX-2026-2","Convocatoria de auxiliaturas","2026-10-01","2026-10-20","ABIERTA","3"]
+LISCON["*"]
+INSCAR["1","Auxiliar de docencia","3","true"]
+LISCAR["*"]
+INSPOST["1","1","https://ejemplo.com/expediente.pdf"]
+LISPOST["*"]
+EVAREQ["1","Documento de identidad","true","Documento vigente"]
+HABPOS["1","HABILITADA","Cumple requisitos"]
+ASIEVA["1","2","MERITOS_Y_EXAMEN"]
+REGMER["1","Experiencia","80","Documentación revisada"]
+REGEXA["1","85","Examen revisado"]
+GENRAN["1"]
+ASIPLA["1","true"]
+AUDCAL["ASIPLA","1"]
+REPEST["1"]
+```
+
+Los identificadores dependen de los registros existentes en PostgreSQL. Consultar primero los listados y reemplazar los valores de ejemplo.
+
+## Cierre de la demostración
+
+- Mostrar el correo de respuesta.
+- Mostrar el registro correspondiente en PostgreSQL.
+- Consultar `AUDCAL` para evidenciar trazabilidad.
+- Detener el programa con `Ctrl+C`.
+- Eliminar únicamente los datos y mensajes creados para la prueba si el docente lo solicita.
+
+## Comprobación ya realizada
+
+Se probó el flujo real desde una cuenta Gmail hacia `grupo09sa@tecnoweb.org.bo`. El programa Java leyó `AYUDA[]` y `LISCON["*"]`, consultó PostgreSQL y envió las respuestas al remitente mediante el Roundcube institucional. Gmail clasificó esas respuestas como correo no deseado durante la prueba; por eso, en la defensa conviene revisar también la carpeta Spam.
+
+Esta comprobación no sustituye la demostración de todos los casos de uso con los datos que el grupo decida presentar.

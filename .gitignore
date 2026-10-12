@@ -1,0 +1,17 @@
+target/
+build/
+tools/
+config/application.properties
+.qa_doc/
+.slides_build/
+.idea/
+.vscode/
+*.iml
+.env
+application.properties
+logs/
+*.log
+entrega/*.zip
+entrega/*.tar.gz
+entrega/Defensa_INF513_Proyecto1_Grupo09SA*.pptx
+entrega/PUDS_INF513_Proyecto1_Grupo09SA.docx
