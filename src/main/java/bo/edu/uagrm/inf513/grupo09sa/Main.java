@@ -50,11 +50,12 @@ public final class Main {
             System.out.println("Bandeja inicializada: "+ids.size()+" mensajes históricos omitidos.");return;
         }
         for(MensajeEntrada msg:mail.noProcesados(repo::correosConocidos)){
-            if(msg.id()==null||msg.id().isBlank()||msg.id().length()>255){
-                System.err.println("Correo descartado por identificador o remitente fuera de límite.");continue;
+            if(!idSeguro(msg.id())){
+                System.err.println("Correo descartado por identificador inválido.");continue;
             }
-            if(!correoSeguro(msg.remitente())){repo.registrarCorreoProcesado(msg.id(),"invalido@local",limitar(msg.asunto(),998),false);System.err.println("Correo descartado por remitente inválido.");continue;}
-            try{if(!repo.registrarEntrada(msg.id(),msg.remitente(),limitar(msg.asunto(),998))){repo.registrarCorreoProcesado(msg.id(),msg.remitente(),"DESCARTADO_POR_LIMITE",false);System.err.println("Correo descartado por límite de admisión.");}}
+            String asunto=normalizarAsunto(msg.asunto());
+            if(!correoSeguro(msg.remitente())){repo.registrarCorreoProcesado(msg.id(),"invalido@local",asunto,false);System.err.println("Correo descartado por remitente inválido.");continue;}
+            try{if(!repo.registrarEntrada(msg.id(),msg.remitente(),asunto)){repo.registrarCorreoProcesado(msg.id(),msg.remitente(),"DESCARTADO_POR_LIMITE",false);System.err.println("Correo descartado por límite de admisión.");}}
             catch(Exception ex){System.err.println("No se pudo registrar un correo; los demás continuarán: "+seguro(ex));}
         }
         for(var pendiente:repo.correosPendientes(cfg.maxMessagesPerCycle())){
@@ -81,6 +82,8 @@ public final class Main {
         return c;
     }
     private static boolean valida(Connection c){try{return c!=null&&!c.isClosed()&&c.isValid(3);}catch(SQLException ex){return false;}}
+    static boolean idSeguro(String id){return id!=null&&!id.isBlank()&&id.length()<=255&&id.chars().noneMatch(Character::isISOControl);}
+    static String normalizarAsunto(String asunto){if(asunto==null)return "";return asunto.length()>998?"RECHAZADO: ASUNTO DEMASIADO LARGO":asunto;}
     static boolean correoSeguro(String correo){return correo!=null&&correo.length()<=160&&!correo.contains("..")&&CORREO_SEGURO.matcher(correo).matches();}
     private static void dormir(AtomicBoolean activo,long segundos)throws InterruptedException{if(activo.get())Thread.sleep(Math.max(1,segundos)*1000L);}
     private static String seguro(Throwable ex){String m=ex.getMessage();if(m==null)m=ex.getClass().getSimpleName();return limitar(m.replaceAll("(?i)(password|contraseña)\\s*[=:]\\s*\\S+","$1=[OCULTO]"),500);}

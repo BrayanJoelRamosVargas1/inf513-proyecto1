@@ -27,6 +27,8 @@
 - Respuestas HTTP limitadas a 5 MB y navegación de Roundcube acotada para evitar agotamiento de memoria.
 - La cuenta DECANO inicial sólo puede crearse desde `BOOTSTRAP_ADMIN_EMAIL`; un remitente cualquiera no puede apropiarse de la instalación vacía.
 - Se rechazan remitentes con saltos de línea, formato peligroso o tamaño excesivo antes de construir una respuesta.
+- Se rechazan sin truncar los asuntos excesivos y los identificadores con caracteres de control, evitando convertir entrada inválida en órdenes o registros válidos.
+- POP3 e IMAP aíslan mensajes MIME malformados; un correo venenoso no detiene el lote. IMAP usa su UID estable cuando `Message-ID` falta o es inseguro.
 - Los IDs históricos se consultan por lotes y cada transporte respeta el máximo de mensajes por ciclo, evitando crecimiento ilimitado de memoria.
 - Se actualizaron Jackson, el controlador PostgreSQL, Apache HttpClient y Angus Mail a versiones corregidas y mantenidas.
 - Las postulaciones exigen usuario, cargo y convocatoria vigentes; méritos, requisitos y exámenes exigen un evaluador asignado; no se habilita sin requisitos aprobados ni se asignan más plazas que las disponibles.
