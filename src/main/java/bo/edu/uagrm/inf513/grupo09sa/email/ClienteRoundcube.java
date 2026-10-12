@@ -28,6 +28,9 @@ import org.apache.hc.core5.http.message.BasicNameValuePair;
 
 /** Cliente mínimo para la instalación oficial de Roundcube de Tecnoweb. */
 final class ClienteRoundcube implements AutoCloseable {
+    private static final int MAX_PAGINAS=1000;
+    private static final int MAX_MENSAJES_BASELINE=100_000;
+    private static final int MAX_RESPUESTA_HTTP=5_000_000;
     private static final Pattern TOKEN_LOGIN = Pattern.compile("name=\\\"_token\\\" value=\\\"([^\\\"]+)\\\"");
     private static final Pattern TOKEN_SESION = Pattern.compile("\\\"request_token\\\":\\\"([^\\\"]+)\\\"");
     private static final Pattern ID_COMPOSICION = Pattern.compile("name=\\\"_id\\\" value=\\\"([^\\\"]+)\\\"");
@@ -88,13 +91,16 @@ final class ClienteRoundcube implements AutoCloseable {
     }
 
     synchronized List<MensajeEntrada> nuevos(Predicate<String> procesado)throws Exception{
-        List<MensajeEntrada> out=new ArrayList<>();for(MensajeEntrada m:listarTodos()){if(!procesado.test(m.id())){out.add(m);if(out.size()>=cfg.maxMessagesPerCycle())break;}}return out;
+        asegurarSesion();List<MensajeEntrada> out=new ArrayList<>();JsonNode primera=listarPagina(1);int paginas=paginasSeguras(primera);for(int pagina=1;pagina<=paginas&&out.size()<cfg.maxMessagesPerCycle();pagina++){
+            JsonNode datos=pagina==1?primera:listarPagina(pagina);List<MensajeEntrada> temporal=new ArrayList<>();extraerFilas(datos,temporal);for(MensajeEntrada m:temporal)if(!procesado.test(m.id())){out.add(m);if(out.size()>=cfg.maxMessagesPerCycle())break;}
+        }return out;
     }
 
     private List<MensajeEntrada> listarTodos()throws Exception{
-        asegurarSesion();JsonNode primera=listarPagina(1);int paginas=Math.max(1,primera.path("env").path("pagecount").asInt(1));List<MensajeEntrada> out=new ArrayList<>();extraerFilas(primera,out);
-        for(int pagina=2;pagina<=paginas;pagina++)extraerFilas(listarPagina(pagina),out);return out;
+        asegurarSesion();JsonNode primera=listarPagina(1);int paginas=paginasSeguras(primera);List<MensajeEntrada> out=new ArrayList<>();extraerFilas(primera,out);
+        for(int pagina=2;pagina<=paginas;pagina++){extraerFilas(listarPagina(pagina),out);if(out.size()>MAX_MENSAJES_BASELINE)throw new IllegalStateException("La bandeja supera el límite seguro para inicialización.");}return out;
     }
+    private static int paginasSeguras(JsonNode primera){int paginas=Math.max(1,primera.path("env").path("pagecount").asInt(1));if(paginas>MAX_PAGINAS)throw new IllegalStateException("Roundcube informó demasiadas páginas.");return paginas;}
 
     private JsonNode listarPagina(int pagina)throws Exception{
         RespuestaHttp r=request("GET","?_task=mail&_action=list&_refresh=1&_mbox=INBOX&_page="+pagina+"&_remote=1&_token="+enc(tokenSesion),null,Map.of("X-Roundcube-Request",tokenSesion,"X-Requested-With","XMLHttpRequest"));
@@ -134,7 +140,7 @@ final class ClienteRoundcube implements AutoCloseable {
         req.setHeader("Accept","text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8");
         headers.forEach(req::setHeader);
         try(CloseableHttpResponse res=http.execute(req)){
-            return new RespuestaHttp(res.getCode(),res.getEntity()==null?"":EntityUtils.toString(res.getEntity(),StandardCharsets.UTF_8));
+            return new RespuestaHttp(res.getCode(),res.getEntity()==null?"":EntityUtils.toString(res.getEntity(),StandardCharsets.UTF_8,MAX_RESPUESTA_HTTP));
         }
     }
     private static String extraer(Pattern p,String s,String nombre){Matcher m=p.matcher(s);if(!m.find())throw new IllegalStateException("No se encontró "+nombre+" en Roundcube.");return m.group(1);}

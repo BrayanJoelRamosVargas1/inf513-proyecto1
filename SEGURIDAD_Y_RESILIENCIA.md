@@ -23,6 +23,8 @@
 - Restricciones `CHECK` en PostgreSQL como segunda barrera para fechas invertidas y puntajes fuera de 0 a 100.
 - Bloqueo asesor de PostgreSQL: solo una instancia del servicio procesa la bandeja al mismo tiempo.
 - Respuestas SQL sanitizadas y resultados limitados a 200 filas y 50.000 caracteres.
+- Respuestas HTTP limitadas a 5 MB y navegación de Roundcube acotada para evitar agotamiento de memoria.
+- La configuración rechaza puertos, intervalos, cantidades peligrosas, protocolos desconocidos y secretos sin resolver.
 - Apagado seguro y supervisores para Windows, Linux y systemd/Fedora.
 - Unidad systemd con privilegios reducidos, sistema protegido y directorio temporal privado.
 

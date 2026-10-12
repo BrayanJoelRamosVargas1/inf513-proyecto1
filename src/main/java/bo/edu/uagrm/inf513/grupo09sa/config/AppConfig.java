@@ -15,6 +15,17 @@ public record AppConfig(
         int pollSeconds, int connectSeconds, int readSeconds, int maxMessagesPerCycle,
         int retryMaxSeconds, String mailFolder) {
 
+    public AppConfig {
+        if(!java.util.Set.of("roundcube","pop3","imap","imaps").contains(inboundProtocol.toLowerCase()))throw new IllegalArgumentException("MAIL_INBOUND_PROTOCOL no permitido");
+        if(!java.util.Set.of("roundcube","smtp").contains(outboundMode.toLowerCase()))throw new IllegalArgumentException("MAIL_OUTBOUND_MODE no permitido");
+        if(outboundMode.equalsIgnoreCase("roundcube")&&!roundcubeUrl.toLowerCase().startsWith("https://"))throw new IllegalArgumentException("MAIL_ROUNDCUBE_URL debe usar HTTPS");
+        if(imapPort<1||imapPort>65535||smtpPort<1||smtpPort>65535)throw new IllegalArgumentException("Puerto fuera de rango");
+        if(pollSeconds<1||pollSeconds>3600)throw new IllegalArgumentException("POLL_SECONDS debe estar entre 1 y 3600");
+        if(connectSeconds<1||connectSeconds>120||readSeconds<1||readSeconds>300)throw new IllegalArgumentException("Tiempo de red fuera de rango");
+        if(maxMessagesPerCycle<1||maxMessagesPerCycle>500)throw new IllegalArgumentException("MAIL_MAX_MESSAGES_PER_CYCLE debe estar entre 1 y 500");
+        if(retryMaxSeconds<2||retryMaxSeconds>86400)throw new IllegalArgumentException("RETRY_MAX_SECONDS debe estar entre 2 y 86400");
+    }
+
     public static AppConfig load() throws IOException {
         Properties p = new Properties();
         Path file = Path.of("config", "application.properties");
@@ -45,7 +56,7 @@ public record AppConfig(
     }
 
     private static String required(Properties p, String key, String env) {
-        String v=value(p,key,env,null); if(v==null||v.isBlank()) throw new IllegalStateException("Falta configurar " + env); return v;
+        String v=value(p,key,env,null); if(v==null||v.isBlank()||v.matches("\\$\\{[^}]+}")) throw new IllegalStateException("Falta configurar " + env); return v;
     }
     private static String value(Properties p,String key,String env,String def){String e=System.getenv(env); if(e!=null&&!e.isBlank())return e; String v=p.getProperty(key); return v==null||v.isBlank()?def:v.trim();}
     private static int integer(Properties p,String key,String env,int def){return Integer.parseInt(value(p,key,env,String.valueOf(def)));}
