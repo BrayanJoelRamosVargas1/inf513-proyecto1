@@ -31,3 +31,12 @@ jobs:
         run: mvn --batch-mode --no-transfer-progress clean verify
       - name: Comprobar JAR ejecutable
         run: test -s target/inf513-proyecto1-1.0.0.jar
+      - name: Comprobar que dist corresponde al código
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s dist/inf513-proyecto1-1.0.0.jar
+          mkdir -p target/comparacion/compilado target/comparacion/entregado
+          unzip -q target/inf513-proyecto1-1.0.0.jar 'bo/edu/uagrm/*' -d target/comparacion/compilado
+          unzip -q dist/inf513-proyecto1-1.0.0.jar 'bo/edu/uagrm/*' -d target/comparacion/entregado
+          diff -qr target/comparacion/compilado target/comparacion/entregado
