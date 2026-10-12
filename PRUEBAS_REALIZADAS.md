@@ -8,11 +8,14 @@ Fecha de comprobación: 12 de octubre de 2026.
 - Ejecución de las pruebas unitarias del intérprete de órdenes y sus validaciones.
 - Generación correcta del JAR ejecutable.
 - Aplicación del esquema `database/schema.sql` en la base `db_grupo09sa`.
-- Trece pruebas automatizadas sin fallos.
+- Dieciocho pruebas automatizadas sin fallos.
 - Caída simulada de PostgreSQL: el proceso permaneció activo y aplicó reintentos progresivos.
 - Caída simulada de red y PostgreSQL: el proceso permaneció activo y limitó la frecuencia de reconexión.
 - Lectura real por Roundcube HTTPS: autenticación y listado correcto de 149 mensajes sin imprimir su contenido.
 - Fuzzing determinista: 1.000.000 de asuntos aleatorios o malformados sin derribar el analizador.
+- Casos límite comprobados: letras en identificadores numéricos, `NaN`, puntajes fuera de rango, textos mayores que las columnas, caracteres de control y espacios accidentales.
+- Restricciones defensivas aplicadas en PostgreSQL para fechas y puntajes, además de la validación Java.
+- Diagnóstico remoto de integridad aprobado: las cuatro restricciones críticas están presentes en `db_grupo09sa`.
 - Reinicio del servicio con recuperación de cola e idempotencia persistente.
 
 ## Integración real por correo

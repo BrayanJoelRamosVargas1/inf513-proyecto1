@@ -35,4 +35,12 @@ create index if not exists idx_usuario_correo on p1_usuario(lower(correo));
 create index if not exists idx_postulacion_convocatoria on p1_postulacion(convocatoria_id);
 create index if not exists idx_auditoria_entidad on p1_auditoria(entidad,entidad_id,fecha desc);
 create index if not exists idx_correo_control_pendiente on p1_correo_control(estado,siguiente_intento);
+alter table p1_convocatoria drop constraint if exists p1_convocatoria_fechas_ck;
+alter table p1_convocatoria add constraint p1_convocatoria_fechas_ck check(fecha_fin>=fecha_inicio) not valid;
+alter table p1_merito drop constraint if exists p1_merito_puntaje_ck;
+alter table p1_merito add constraint p1_merito_puntaje_ck check(puntaje between 0 and 100) not valid;
+alter table p1_examen drop constraint if exists p1_examen_puntaje_ck;
+alter table p1_examen add constraint p1_examen_puntaje_ck check(puntaje between 0 and 100) not valid;
+alter table p1_postulacion drop constraint if exists p1_postulacion_puntajes_ck;
+alter table p1_postulacion add constraint p1_postulacion_puntajes_ck check(puntaje_meritos between 0 and 100 and puntaje_examen between 0 and 100 and puntaje_final between 0 and 100) not valid;
 

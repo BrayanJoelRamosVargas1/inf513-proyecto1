@@ -19,6 +19,10 @@
 - Aislamiento por mensaje: un correo defectuoso no bloquea los siguientes.
 - Límites de tamaño, número de parámetros, mensajes por ciclo, filas y respuesta POP3.
 - Consultas preparadas, control de roles y secretos exclusivamente por variables de entorno.
+- Validación de tipos, rangos, fechas, estados, longitudes y caracteres de control antes de acceder a PostgreSQL.
+- Restricciones `CHECK` en PostgreSQL como segunda barrera para fechas invertidas y puntajes fuera de 0 a 100.
+- Bloqueo asesor de PostgreSQL: solo una instancia del servicio procesa la bandeja al mismo tiempo.
+- Respuestas SQL sanitizadas y resultados limitados a 200 filas y 50.000 caracteres.
 - Apagado seguro y supervisores para Windows, Linux y systemd/Fedora.
 - Unidad systemd con privilegios reducidos, sistema protegido y directorio temporal privado.
 

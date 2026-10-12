@@ -8,6 +8,8 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 public final class Main {
     private Main(){}
@@ -27,12 +29,14 @@ public final class Main {
         try(HikariDataSource ds=new HikariDataSource(hc);PasarelaCorreo mail=new PasarelaJakartaMail(cfg)){
             AnalizadorOrden parser=new AnalizadorOrden();RepositorioPostgres repo=new RepositorioPostgres(ds);ProcesadorOrden processor=new ProcesadorOrden(new CatalogoComandos(),repo);
             int fallosConsecutivos=0;
+            Connection bloqueoInstancia=null;
             System.out.println("INF513 Grupo 09 SA - servicio resiliente iniciado. Ctrl+C para detener.");
             while(activo.get()){
-                try{ejecutarCiclo(cfg,mail,repo,processor,parser);fallosConsecutivos=0;dormir(activo,cfg.pollSeconds());}
+                try{bloqueoInstancia=asegurarInstanciaUnica(ds,bloqueoInstancia);ejecutarCiclo(cfg,mail,repo,processor,parser);fallosConsecutivos=0;dormir(activo,cfg.pollSeconds());}
                 catch(InterruptedException ex){Thread.currentThread().interrupt();break;}
-                catch(Exception ex){fallosConsecutivos++;long espera=esperaReintento(fallosConsecutivos,cfg.pollSeconds(),cfg.retryMaxSeconds());System.err.println("Servicio temporalmente no disponible. Reintento "+fallosConsecutivos+" en "+espera+" s: "+seguro(ex));dormir(activo,espera);}
+                catch(Exception ex){if(bloqueoInstancia!=null&&!valida(bloqueoInstancia)){try{bloqueoInstancia.close();}catch(Exception ignored){}bloqueoInstancia=null;}fallosConsecutivos++;long espera=esperaReintento(fallosConsecutivos,cfg.pollSeconds(),cfg.retryMaxSeconds());System.err.println("Servicio temporalmente no disponible. Reintento "+fallosConsecutivos+" en "+espera+" s: "+seguro(ex));dormir(activo,espera);}
             }
+            if(bloqueoInstancia!=null)bloqueoInstancia.close();
         }
         System.out.println("Servicio detenido de forma segura.");
     }
@@ -67,6 +71,14 @@ public final class Main {
         }
     }
     static long esperaReintento(int fallos,int base,int max){long exp=Math.min(max,Math.max(base,1L<<Math.min(fallos,8)));long jitter=ThreadLocalRandom.current().nextLong(Math.max(1,exp/4+1));return Math.min(max,exp+jitter);}
+    private static Connection asegurarInstanciaUnica(HikariDataSource ds,Connection actual)throws SQLException{
+        if(valida(actual))return actual;
+        if(actual!=null)try{actual.close();}catch(Exception ignored){}
+        Connection c=ds.getConnection();
+        try(var s=c.prepareStatement("select pg_try_advisory_lock(?)")){s.setLong(1,5130909L);try(var r=s.executeQuery()){if(!r.next()||!r.getBoolean(1)){c.close();throw new SQLException("Ya existe otra instancia activa del servicio");}}}
+        return c;
+    }
+    private static boolean valida(Connection c){try{return c!=null&&!c.isClosed()&&c.isValid(3);}catch(SQLException ex){return false;}}
     private static void dormir(AtomicBoolean activo,long segundos)throws InterruptedException{if(activo.get())Thread.sleep(Math.max(1,segundos)*1000L);}
     private static String seguro(Throwable ex){String m=ex.getMessage();if(m==null)m=ex.getClass().getSimpleName();return limitar(m.replaceAll("(?i)(password|contraseña)\\s*[=:]\\s*\\S+","$1=[OCULTO]"),500);}
     private static String limitar(String s,int n){if(s==null)return "";return s.length()<=n?s:s.substring(0,n);}
