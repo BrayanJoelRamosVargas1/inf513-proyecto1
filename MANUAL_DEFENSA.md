@@ -9,6 +9,7 @@
 ```powershell
 $env:MAIL_PASSWORD = "ESCRIBIR_LA_CLAVE_SOLO_EN_LA_TERMINAL"
 $env:DB_PASSWORD = "ESCRIBIR_LA_CLAVE_SOLO_EN_LA_TERMINAL"
+$env:BOOTSTRAP_ADMIN_EMAIL = "TU_CORREO@gmail.com"
 java -jar target/inf513-proyecto1-1.0.0.jar
 ```
 
@@ -16,7 +17,7 @@ No mostrar la terminal mientras se escriben las claves y cerrar la ventana al te
 
 ## Primera inicialización
 
-Si `p1_usuario` está vacía, el primer correo debe crear un usuario con rol `DECANO`. El correo registrado debe coincidir con la dirección desde la que se enviarán los comandos administrativos.
+Si `p1_usuario` está vacía, el primer correo debe crear un usuario con rol `DECANO`. El remitente y el correo registrado deben coincidir exactamente con `BOOTSTRAP_ADMIN_EMAIL`; así un desconocido no puede apropiarse del primer usuario.
 
 ```text
 INSUSU["223043982","Brayan Joel","Ramos Vargas","DECANO","70000000","TU_CORREO@gmail.com","true"]

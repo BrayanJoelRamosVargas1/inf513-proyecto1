@@ -14,8 +14,9 @@ public final class ProcesadorOrden {
     private static final Pattern CORREO=Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
     private static final Set<String> ROLES=Set.of("DECANO","VICEDECANO","EVALUADOR","POSTULANTE");
     private static final Set<String> ESTADOS_CONVOCATORIA=Set.of("BORRADOR","ABIERTA","CERRADA","CANCELADA","FINALIZADA");
-    private final CatalogoComandos catalogo; private final RepositorioProyecto repo;
-    public ProcesadorOrden(CatalogoComandos catalogo,RepositorioProyecto repo){this.catalogo=catalogo;this.repo=repo;}
+    private final CatalogoComandos catalogo; private final RepositorioProyecto repo; private final String bootstrapAdminEmail;
+    public ProcesadorOrden(CatalogoComandos catalogo,RepositorioProyecto repo){this(catalogo,repo,"");}
+    public ProcesadorOrden(CatalogoComandos catalogo,RepositorioProyecto repo,String bootstrapAdminEmail){this.catalogo=catalogo;this.repo=repo;this.bootstrapAdminEmail=bootstrapAdminEmail==null?"":bootstrapAdminEmail.trim();}
     public Resultado procesar(String remitente, Orden orden){return procesar(null,remitente,orden);}
     public Resultado procesar(String mensajeId,String remitente, Orden orden){
         try{
@@ -23,7 +24,7 @@ public final class ProcesadorOrden {
             if(def==null)return Resultado.error("El comando " + orden.comando() + " no existe. Use AYUDA[].");
             if(orden.parametros().size()!=def.parametros())return Resultado.error("Cantidad incorrecta de parámetros para " + orden.comando()+". Esperados: "+def.parametros()+"; recibidos: "+orden.parametros().size()+".");
             String validacion=validar(orden);if(validacion!=null)return Resultado.error(validacion);
-            boolean bootstrap=orden.comando().equals("INSUSU")&&!repo.hayUsuarios()&&orden.parametros().get(3).equalsIgnoreCase("DECANO");
+            boolean bootstrap=orden.comando().equals("INSUSU")&&!repo.hayUsuarios()&&orden.parametros().get(3).equals("DECANO")&&!bootstrapAdminEmail.isBlank()&&remitente.equalsIgnoreCase(bootstrapAdminEmail)&&orden.parametros().get(5).equalsIgnoreCase(remitente);
             if(!bootstrap&&!def.rol().equals("PUBLICO")&&!repo.autorizado(remitente,def.rol()))return Resultado.error("El remitente no tiene el rol requerido: "+def.rol()+".");
             if(orden.comando().equals("AYUDA"))return Resultado.ok(catalogo.todos().entrySet().stream().map(e->e.getKey()+" - "+e.getValue().descripcion()+" ("+e.getValue().parametros()+" parámetros)").sorted().collect(Collectors.joining("\n")));
             return mensajeId==null?repo.ejecutar(remitente,orden):repo.ejecutarIdempotente(mensajeId,remitente,orden);
@@ -41,17 +42,20 @@ public final class ProcesadorOrden {
                 if(p.chars().anyMatch(c->Character.isISOControl(c)))return "Los parámetros no pueden contener caracteres de control.";
             }
             switch(o.comando()){
-                case "INSUSU"->{max(o,20,100,120,20,30,160,5);soloDigitos(o.parametros().get(0),"registro");if(!ROLES.contains(o.parametros().get(3).toUpperCase(Locale.ROOT)))return "Rol inválido. Use DECANO, VICEDECANO, EVALUADOR o POSTULANTE.";if(!CORREO.matcher(o.parametros().get(5)).matches())return "Correo electrónico inválido.";booleanActivo(o.parametros().get(6));}
-                case "INSCON"->{max(o,30,200,10,10,20,9);LocalDate inicio=LocalDate.parse(o.parametros().get(2));LocalDate fin=LocalDate.parse(o.parametros().get(3));if(fin.isBefore(inicio))return "La fecha final no puede ser anterior a la fecha inicial.";if(!ESTADOS_CONVOCATORIA.contains(o.parametros().get(4).toUpperCase(Locale.ROOT)))return "Estado de convocatoria inválido.";enteroNoNegativo(o.parametros().get(5));}
+                case "INSUSU"->{max(o,20,100,120,20,30,160,5);soloDigitos(o.parametros().get(0),"registro");if(!ROLES.contains(o.parametros().get(3)))return "Rol inválido. Use exactamente DECANO, VICEDECANO, EVALUADOR o POSTULANTE.";if(!CORREO.matcher(o.parametros().get(5)).matches())return "Correo electrónico inválido.";booleanActivo(o.parametros().get(6));}
+                case "INSCON"->{max(o,30,200,10,10,20,9);LocalDate inicio=LocalDate.parse(o.parametros().get(2));LocalDate fin=LocalDate.parse(o.parametros().get(3));if(fin.isBefore(inicio))return "La fecha final no puede ser anterior a la fecha inicial.";if(!ESTADOS_CONVOCATORIA.contains(o.parametros().get(4)))return "Estado de convocatoria inválido. Use mayúsculas.";enteroNoNegativo(o.parametros().get(5));}
                 case "INSCAR"->{max(o,160,160,5);booleanActivo(o.parametros().get(2));}
                 case "INSPOST"->{max(o,19,19,500);enteroPositivo(o.parametros().get(0));enteroPositivo(o.parametros().get(1));}
                 case "ASIEVA"->{max(o,19,19,40);enteroPositivo(o.parametros().get(0));enteroPositivo(o.parametros().get(1));}
                 case "EVAREQ"->{max(o,19,200,5,500);enteroPositivo(o.parametros().get(0));booleanActivo(o.parametros().get(2));}
-                case "HABPOS","ASIPLA"->{max(o,o.comando().equals("ASIPLA")?new int[]{19,5}:new int[]{19,30,500});enteroPositivo(o.parametros().get(0));if(o.comando().equals("ASIPLA"))booleanActivo(o.parametros().get(1));else if(!Set.of("HABILITADO","INHABILITADO").contains(o.parametros().get(1).toUpperCase(Locale.ROOT)))return "Estado inválido. Use HABILITADO o INHABILITADO.";}
+                case "HABPOS","ASIPLA"->{max(o,o.comando().equals("ASIPLA")?new int[]{19,5}:new int[]{19,30,500});enteroPositivo(o.parametros().get(0));if(o.comando().equals("ASIPLA"))booleanActivo(o.parametros().get(1));else if(!Set.of("HABILITADO","INHABILITADO").contains(o.parametros().get(1)))return "Estado inválido. Use exactamente HABILITADO o INHABILITADO.";}
                 case "REGMER"->{max(o,19,200,8,500);enteroPositivo(o.parametros().get(0));puntaje(o.parametros().get(2));}
                 case "REGEXA"->{max(o,19,8,500);enteroPositivo(o.parametros().get(0));puntaje(o.parametros().get(1));}
                 case "GENRAN","REPEST"->enteroPositivo(o.parametros().get(0));
                 case "AUDCAL"->{max(o,80,80);enteroPositivo(o.parametros().get(1));}
+                case "LISUSU","LISCON","LISCAR","LISPOST"->max(o,100);
+                case "AYUDA" -> { }
+                default -> { return "Comando no reconocido por el validador."; }
             }
             return null;
         }catch(Exception e){return "Parámetro inválido: "+e.getMessage();}

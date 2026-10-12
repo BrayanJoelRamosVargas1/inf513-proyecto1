@@ -10,4 +10,5 @@ class AnalizadorOrdenTest {
     @Test void rechazaComaFinal(){assertThrows(OrdenInvalidaException.class,()->parser.analizar("LISPER[\"*\",") );}
     @Test void limitaEntradasHostiles(){String enorme="A".repeat(1200);assertThrows(OrdenInvalidaException.class,()->parser.analizar(enorme));}
     @Test void limitaParametrosHostiles(){String enorme="A".repeat(501);assertThrows(OrdenInvalidaException.class,()->parser.analizar("X[\""+enorme+"\"]"));}
+    @Test void laOrdenNoPuedeMutarDespuesDeValidarse(){var mutable=new java.util.ArrayList<>(java.util.List.of("dato"));Orden o=new Orden("X",mutable);mutable.set(0,"alterado");assertEquals("dato",o.parametros().get(0));assertThrows(UnsupportedOperationException.class,()->o.parametros().add("otro"));}
 }

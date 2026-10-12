@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
+import java.util.Locale;
 
 public record AppConfig(
         String inboundProtocol, String imapHost, int imapPort, boolean imapSsl,
@@ -12,13 +13,14 @@ public record AppConfig(
         String outboundMode, String roundcubeUrl,
         String mailUser, String mailAddress, String mailPassword,
         String dbUrl, String dbUser, String dbPassword,
+        String bootstrapAdminEmail,
         int pollSeconds, int connectSeconds, int readSeconds, int maxMessagesPerCycle,
         int retryMaxSeconds, String mailFolder) {
 
     public AppConfig {
-        if(!java.util.Set.of("roundcube","pop3","imap","imaps").contains(inboundProtocol.toLowerCase()))throw new IllegalArgumentException("MAIL_INBOUND_PROTOCOL no permitido");
-        if(!java.util.Set.of("roundcube","smtp").contains(outboundMode.toLowerCase()))throw new IllegalArgumentException("MAIL_OUTBOUND_MODE no permitido");
-        if(outboundMode.equalsIgnoreCase("roundcube")&&!roundcubeUrl.toLowerCase().startsWith("https://"))throw new IllegalArgumentException("MAIL_ROUNDCUBE_URL debe usar HTTPS");
+        if(!java.util.Set.of("roundcube","pop3","imap","imaps").contains(inboundProtocol.toLowerCase(Locale.ROOT)))throw new IllegalArgumentException("MAIL_INBOUND_PROTOCOL no permitido");
+        if(!java.util.Set.of("roundcube","smtp").contains(outboundMode.toLowerCase(Locale.ROOT)))throw new IllegalArgumentException("MAIL_OUTBOUND_MODE no permitido");
+        if(outboundMode.equalsIgnoreCase("roundcube")&&!roundcubeUrl.toLowerCase(Locale.ROOT).startsWith("https://"))throw new IllegalArgumentException("MAIL_ROUNDCUBE_URL debe usar HTTPS");
         if(imapPort<1||imapPort>65535||smtpPort<1||smtpPort>65535)throw new IllegalArgumentException("Puerto fuera de rango");
         if(pollSeconds<1||pollSeconds>3600)throw new IllegalArgumentException("POLL_SECONDS debe estar entre 1 y 3600");
         if(connectSeconds<1||connectSeconds>120||readSeconds<1||readSeconds>300)throw new IllegalArgumentException("Tiempo de red fuera de rango");
@@ -47,6 +49,7 @@ public record AppConfig(
             value(p,"db.url","DB_URL","jdbc:postgresql://db.tecnoweb.org.bo:5432/db_grupo09sa"),
             value(p,"db.username","DB_USERNAME","grupo09sa"),
             required(p,"db.password","DB_PASSWORD"),
+            optional(p,"security.bootstrap.admin.email","BOOTSTRAP_ADMIN_EMAIL"),
             integer(p,"poll.seconds","POLL_SECONDS",10),
             integer(p,"network.connect.seconds","NETWORK_CONNECT_SECONDS",10),
             integer(p,"network.read.seconds","NETWORK_READ_SECONDS",30),
@@ -58,6 +61,7 @@ public record AppConfig(
     private static String required(Properties p, String key, String env) {
         String v=value(p,key,env,null); if(v==null||v.isBlank()||v.matches("\\$\\{[^}]+}")) throw new IllegalStateException("Falta configurar " + env); return v;
     }
+    private static String optional(Properties p,String key,String env){String v=value(p,key,env,"");return v.matches("\\$\\{[^}]+}")?"":v;}
     private static String value(Properties p,String key,String env,String def){String e=System.getenv(env); if(e!=null&&!e.isBlank())return e; String v=p.getProperty(key); return v==null||v.isBlank()?def:v.trim();}
     private static int integer(Properties p,String key,String env,int def){return Integer.parseInt(value(p,key,env,String.valueOf(def)));}
     private static boolean bool(Properties p,String key,String env,boolean def){return Boolean.parseBoolean(value(p,key,env,String.valueOf(def)));}

@@ -7,8 +7,16 @@ import static org.junit.jupiter.api.Assertions.*;
 class ProcesadorOrdenTest {
     @Test void permiteCrearPrimerDecanoComoArranque() {
         FakeRepo repo=new FakeRepo(false,false);
-        Resultado r=new ProcesadorOrden(new CatalogoComandos(),repo).procesar("admin@gmail.com",new Orden("INSUSU",java.util.List.of("1","Ana","Pérez","DECANO","70000000","admin@gmail.com","true")));
+        Resultado r=new ProcesadorOrden(new CatalogoComandos(),repo,"admin@gmail.com").procesar("admin@gmail.com",new Orden("INSUSU",java.util.List.of("1","Ana","Pérez","DECANO","70000000","admin@gmail.com","true")));
         assertTrue(r.exito());
+    }
+    @Test void impideQueUnDesconocidoReclameElPrimerDecano(){
+        Resultado r=new ProcesadorOrden(new CatalogoComandos(),new FakeRepo(false,false),"admin@gmail.com").procesar("atacante@gmail.com",new Orden("INSUSU",java.util.List.of("1","Atacante","X","DECANO","700","atacante@gmail.com","true")));
+        assertFalse(r.exito());assertTrue(r.cuerpo().contains("rol requerido"));
+    }
+    @Test void rechazaRolMinusculaAntesDeLlegarABase(){
+        Resultado r=new ProcesadorOrden(new CatalogoComandos(),new FakeRepo(false,false),"admin@gmail.com").procesar("admin@gmail.com",new Orden("INSUSU",java.util.List.of("1","Ana","Pérez","decano","700","admin@gmail.com","true")));
+        assertFalse(r.exito());assertTrue(r.cuerpo().contains("Rol inválido"));
     }
     @Test void rechazaRolInvalido() {
         Resultado r=new ProcesadorOrden(new CatalogoComandos(),new FakeRepo(false,false)).procesar("a@b.com",new Orden("INSUSU",java.util.List.of("1","Ana","Pérez","JEFE","700","a@b.com","true")));

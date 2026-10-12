@@ -18,12 +18,19 @@
 - Tiempos máximos para conexión, lectura HTTP, POP3 y consultas SQL.
 - Aislamiento por mensaje: un correo defectuoso no bloquea los siguientes.
 - Límites de tamaño, número de parámetros, mensajes por ciclo, filas y respuesta POP3.
+- Límite de recepción de 60 mensajes por remitente y 1.000 mensajes globales por hora; los excesos quedan auditados y no bloquean la cola.
 - Consultas preparadas, control de roles y secretos exclusivamente por variables de entorno.
 - Validación de tipos, rangos, fechas, estados, longitudes y caracteres de control antes de acceder a PostgreSQL.
-- Restricciones `CHECK` en PostgreSQL como segunda barrera para fechas invertidas y puntajes fuera de 0 a 100.
+- Siete restricciones `CHECK` en PostgreSQL como segunda barrera para fechas invertidas, estados inválidos, plazas negativas y puntajes fuera de 0 a 100; el correo también es único sin distinguir mayúsculas.
 - Bloqueo asesor de PostgreSQL: solo una instancia del servicio procesa la bandeja al mismo tiempo.
 - Respuestas SQL sanitizadas y resultados limitados a 200 filas y 50.000 caracteres.
 - Respuestas HTTP limitadas a 5 MB y navegación de Roundcube acotada para evitar agotamiento de memoria.
+- La cuenta DECANO inicial sólo puede crearse desde `BOOTSTRAP_ADMIN_EMAIL`; un remitente cualquiera no puede apropiarse de la instalación vacía.
+- Se rechazan remitentes con saltos de línea, formato peligroso o tamaño excesivo antes de construir una respuesta.
+- Los IDs históricos se consultan por lotes y cada transporte respeta el máximo de mensajes por ciclo, evitando crecimiento ilimitado de memoria.
+- Se actualizaron Jackson, el controlador PostgreSQL, Apache HttpClient y Angus Mail a versiones corregidas y mantenidas.
+- Las postulaciones exigen usuario, cargo y convocatoria vigentes; méritos, requisitos y exámenes exigen un evaluador asignado; no se habilita sin requisitos aprobados ni se asignan más plazas que las disponibles.
+- La cola prioriza mensajes con menos intentos, evitando que un mensaje defectuoso deje sin servicio a correo nuevo.
 - La configuración rechaza puertos, intervalos, cantidades peligrosas, protocolos desconocidos y secretos sin resolver.
 - Apagado seguro y supervisores para Windows, Linux y systemd/Fedora.
 - Unidad systemd con privilegios reducidos, sistema protegido y directorio temporal privado.

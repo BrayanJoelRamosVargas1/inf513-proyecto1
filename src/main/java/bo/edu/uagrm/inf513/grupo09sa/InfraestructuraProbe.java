@@ -12,7 +12,7 @@ public final class InfraestructuraProbe {
             r.next(); System.out.println("DB_OK database="+r.getString(1)+" user="+r.getString(2));
         }
         try(var mail=new PasarelaJakartaMail(cfg)){
-            System.out.println("MAIL_OK pending="+mail.noProcesados(id->false).size());
+            System.out.println("MAIL_OK pending="+mail.noProcesados(ids->java.util.Set.of()).size());
         }
     }
 }

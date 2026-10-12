@@ -10,7 +10,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
@@ -90,9 +89,9 @@ final class ClienteRoundcube implements AutoCloseable {
         List<MensajeEntrada> todos=listarTodos();List<String> ids=new ArrayList<>(todos.size());for(MensajeEntrada m:todos)ids.add(m.id());return ids;
     }
 
-    synchronized List<MensajeEntrada> nuevos(Predicate<String> procesado)throws Exception{
+    synchronized List<MensajeEntrada> nuevos(PasarelaCorreo.ConsultaProcesados consulta)throws Exception{
         asegurarSesion();List<MensajeEntrada> out=new ArrayList<>();JsonNode primera=listarPagina(1);int paginas=paginasSeguras(primera);for(int pagina=1;pagina<=paginas&&out.size()<cfg.maxMessagesPerCycle();pagina++){
-            JsonNode datos=pagina==1?primera:listarPagina(pagina);List<MensajeEntrada> temporal=new ArrayList<>();extraerFilas(datos,temporal);for(MensajeEntrada m:temporal)if(!procesado.test(m.id())){out.add(m);if(out.size()>=cfg.maxMessagesPerCycle())break;}
+            JsonNode datos=pagina==1?primera:listarPagina(pagina);List<MensajeEntrada> temporal=new ArrayList<>();extraerFilas(datos,temporal);var conocidos=consulta.conocidos(temporal.stream().map(MensajeEntrada::id).toList());for(MensajeEntrada m:temporal)if(!conocidos.contains(m.id())){out.add(m);if(out.size()>=cfg.maxMessagesPerCycle())break;}
         }return out;
     }
 

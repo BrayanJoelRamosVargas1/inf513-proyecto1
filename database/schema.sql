@@ -31,10 +31,13 @@ create table if not exists p1_resultado_orden(
   ejecutado_en timestamptz not null default now()
 );
 create table if not exists p1_servicio_estado(clave varchar(80) primary key,valor text not null,actualizado_en timestamptz not null default now());
-create index if not exists idx_usuario_correo on p1_usuario(lower(correo));
+drop index if exists idx_usuario_correo;
+create unique index if not exists uq_p1_usuario_correo_ci on p1_usuario(lower(correo));
 create index if not exists idx_postulacion_convocatoria on p1_postulacion(convocatoria_id);
 create index if not exists idx_auditoria_entidad on p1_auditoria(entidad,entidad_id,fecha desc);
 create index if not exists idx_correo_control_pendiente on p1_correo_control(estado,siguiente_intento);
+create index if not exists idx_correo_control_remitente_fecha on p1_correo_control(lower(remitente),creado_en desc);
+create index if not exists idx_correo_control_fecha on p1_correo_control(creado_en desc);
 alter table p1_convocatoria drop constraint if exists p1_convocatoria_fechas_ck;
 alter table p1_convocatoria add constraint p1_convocatoria_fechas_ck check(fecha_fin>=fecha_inicio) not valid;
 alter table p1_merito drop constraint if exists p1_merito_puntaje_ck;
@@ -47,4 +50,13 @@ alter table p1_convocatoria validate constraint p1_convocatoria_fechas_ck;
 alter table p1_merito validate constraint p1_merito_puntaje_ck;
 alter table p1_examen validate constraint p1_examen_puntaje_ck;
 alter table p1_postulacion validate constraint p1_postulacion_puntajes_ck;
+alter table p1_convocatoria drop constraint if exists p1_convocatoria_estado_ck;
+alter table p1_convocatoria add constraint p1_convocatoria_estado_ck check(estado in('BORRADOR','ABIERTA','CERRADA','CANCELADA','FINALIZADA')) not valid;
+alter table p1_postulacion drop constraint if exists p1_postulacion_estado_ck;
+alter table p1_postulacion add constraint p1_postulacion_estado_ck check(estado in('REGISTRADA','HABILITADO','INHABILITADO','GANADOR')) not valid;
+alter table p1_postulacion drop constraint if exists p1_postulacion_plaza_ck;
+alter table p1_postulacion add constraint p1_postulacion_plaza_ck check(not plaza_asignada or estado='GANADOR') not valid;
+alter table p1_convocatoria validate constraint p1_convocatoria_estado_ck;
+alter table p1_postulacion validate constraint p1_postulacion_estado_ck;
+alter table p1_postulacion validate constraint p1_postulacion_plaza_ck;
 

@@ -9,7 +9,6 @@ import java.net.Socket;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.function.Predicate;
 
 /** Cliente POP3 de comandos por lote. UIDL evita descargar nuevamente 146 mensajes históricos. */
 final class ClientePop3 {
@@ -20,11 +19,14 @@ final class ClientePop3 {
         try(Conexion c=conectar()){return new ArrayList<>(c.uidl().values());}
     }
 
-    List<MensajeEntrada> nuevos(Predicate<String> procesado) throws Exception {
+    List<MensajeEntrada> nuevos(PasarelaCorreo.ConsultaProcesados consulta) throws Exception {
         try(Conexion c=conectar()){
             Map<Integer,String> ids=c.uidl();List<MensajeEntrada> salida=new ArrayList<>();
+            Set<String> procesados=new HashSet<>();List<String> lote=new ArrayList<>(500);
+            for(String id:ids.values()){lote.add(id);if(lote.size()==500){procesados.addAll(consulta.conocidos(lote));lote.clear();}}
+            if(!lote.isEmpty())procesados.addAll(consulta.conocidos(lote));
             for(var e:ids.entrySet()){
-                if(procesado.test(e.getValue()))continue;
+                if(procesados.contains(e.getValue()))continue;
                 byte[] raw=c.multilinea("TOP "+e.getKey()+" 0");
                 MimeMessage m=new MimeMessage(Session.getInstance(new Properties()),new ByteArrayInputStream(raw));
                 String remitente=((InternetAddress)m.getFrom()[0]).getAddress();
@@ -49,8 +51,8 @@ final class ClientePop3 {
         String linea()throws IOException{String l=in.readLine();if(l==null)throw new EOFException("POP3 cerró la conexión");return l;}
         void ok(String l){if(!l.startsWith("+OK"))throw new IllegalStateException("POP3 rechazó la operación: "+l);}
         void comando(String cmd)throws IOException{out.write(cmd+"\r\n");out.flush();ok(linea());}
-        byte[] multilinea(String cmd)throws IOException{out.write(cmd+"\r\n");out.flush();ok(linea());ByteArrayOutputStream b=new ByteArrayOutputStream();for(String l;(l=linea())!=null;){if(l.equals("."))break;if(l.length()>16_384||b.size()+l.length()>MAX_RESPUESTA)throw new IOException("Respuesta POP3 excede el límite seguro");if(l.startsWith(".."))l=l.substring(1);b.write(l.getBytes(StandardCharsets.ISO_8859_1));b.write('\r');b.write('\n');}return b.toByteArray();}
+        byte[] multilinea(String cmd)throws IOException{out.write(cmd+"\r\n");out.flush();ok(linea());ByteArrayOutputStream b=new ByteArrayOutputStream();for(;;){String l=linea();if(l.equals("."))break;if(l.length()>16_384||b.size()+l.length()>MAX_RESPUESTA)throw new IOException("Respuesta POP3 excede el límite seguro");if(l.startsWith(".."))l=l.substring(1);b.write(l.getBytes(StandardCharsets.ISO_8859_1));b.write('\r');b.write('\n');}return b.toByteArray();}
         Map<Integer,String> uidl()throws IOException{String text=new String(multilinea("UIDL"),StandardCharsets.ISO_8859_1);Map<Integer,String> r=new LinkedHashMap<>();for(String l:text.split("\\r?\\n")){String[] p=l.trim().split("\\s+",2);if(p.length==2)r.put(Integer.parseInt(p[0]),p[1]);}return r;}
-        public void close(){try{out.write("QUIT\r\n");out.flush();}catch(Exception ignored){}try{socket.close();}catch(Exception ignored){}}
+        public void close()throws IOException{IOException fallo=null;try{out.write("QUIT\r\n");out.flush();}catch(IOException ex){fallo=ex;}try{socket.close();}catch(IOException ex){if(fallo==null)fallo=ex;else fallo.addSuppressed(ex);}if(fallo!=null)throw fallo;}
     }
 }

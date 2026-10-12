@@ -10,8 +10,10 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.regex.Pattern;
 
 public final class Main {
+    private static final Pattern CORREO_SEGURO=Pattern.compile("^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]{1,64}@[A-Za-z0-9.-]{1,253}$");
     private Main(){}
     public static void main(String[] args)throws Exception{
         AppConfig cfg=AppConfig.load();
@@ -27,14 +29,14 @@ public final class Main {
         hc.addDataSourceProperty("connectTimeout",cfg.connectSeconds());hc.addDataSourceProperty("socketTimeout",cfg.readSeconds());hc.addDataSourceProperty("tcpKeepAlive",true);
 
         try(HikariDataSource ds=new HikariDataSource(hc);PasarelaCorreo mail=new PasarelaJakartaMail(cfg)){
-            AnalizadorOrden parser=new AnalizadorOrden();RepositorioPostgres repo=new RepositorioPostgres(ds);ProcesadorOrden processor=new ProcesadorOrden(new CatalogoComandos(),repo);
+            AnalizadorOrden parser=new AnalizadorOrden();RepositorioPostgres repo=new RepositorioPostgres(ds);ProcesadorOrden processor=new ProcesadorOrden(new CatalogoComandos(),repo,cfg.bootstrapAdminEmail());
             int fallosConsecutivos=0;
             Connection bloqueoInstancia=null;
             System.out.println("INF513 Grupo 09 SA - servicio resiliente iniciado. Ctrl+C para detener.");
             while(activo.get()){
                 try{bloqueoInstancia=asegurarInstanciaUnica(ds,bloqueoInstancia);ejecutarCiclo(cfg,mail,repo,processor,parser);fallosConsecutivos=0;dormir(activo,cfg.pollSeconds());}
                 catch(InterruptedException ex){Thread.currentThread().interrupt();break;}
-                catch(Exception ex){if(bloqueoInstancia!=null&&!valida(bloqueoInstancia)){try{bloqueoInstancia.close();}catch(Exception ignored){}bloqueoInstancia=null;}fallosConsecutivos++;long espera=esperaReintento(fallosConsecutivos,cfg.pollSeconds(),cfg.retryMaxSeconds());System.err.println("Servicio temporalmente no disponible. Reintento "+fallosConsecutivos+" en "+espera+" s: "+seguro(ex));dormir(activo,espera);}
+                catch(Exception ex){if(bloqueoInstancia!=null&&!valida(bloqueoInstancia)){try{bloqueoInstancia.close();}catch(SQLException cierre){ex.addSuppressed(cierre);}bloqueoInstancia=null;}fallosConsecutivos++;long espera=esperaReintento(fallosConsecutivos,cfg.pollSeconds(),cfg.retryMaxSeconds());System.err.println("Servicio temporalmente no disponible. Reintento "+fallosConsecutivos+" en "+espera+" s: "+seguro(ex));dormir(activo,espera);}
             }
             if(bloqueoInstancia!=null)bloqueoInstancia.close();
         }
@@ -47,12 +49,12 @@ public final class Main {
             repo.marcarServicioInicializado(cfg.inboundProtocol());
             System.out.println("Bandeja inicializada: "+ids.size()+" mensajes históricos omitidos.");return;
         }
-        var conocidos=repo.correosConocidos();
-        for(MensajeEntrada msg:mail.noProcesados(conocidos::contains)){
-            if(msg.id()==null||msg.id().isBlank()||msg.id().length()>255||msg.remitente()==null||msg.remitente().length()>160){
+        for(MensajeEntrada msg:mail.noProcesados(repo::correosConocidos)){
+            if(msg.id()==null||msg.id().isBlank()||msg.id().length()>255){
                 System.err.println("Correo descartado por identificador o remitente fuera de límite.");continue;
             }
-            try{repo.registrarEntrada(msg.id(),msg.remitente(),limitar(msg.asunto(),998));}
+            if(!correoSeguro(msg.remitente())){repo.registrarCorreoProcesado(msg.id(),"invalido@local",limitar(msg.asunto(),998),false);System.err.println("Correo descartado por remitente inválido.");continue;}
+            try{if(!repo.registrarEntrada(msg.id(),msg.remitente(),limitar(msg.asunto(),998))){repo.registrarCorreoProcesado(msg.id(),msg.remitente(),"DESCARTADO_POR_LIMITE",false);System.err.println("Correo descartado por límite de admisión.");}}
             catch(Exception ex){System.err.println("No se pudo registrar un correo; los demás continuarán: "+seguro(ex));}
         }
         for(var pendiente:repo.correosPendientes(cfg.maxMessagesPerCycle())){
@@ -73,12 +75,13 @@ public final class Main {
     static long esperaReintento(int fallos,int base,int max){long exp=Math.min(max,Math.max(base,1L<<Math.min(fallos,8)));long jitter=ThreadLocalRandom.current().nextLong(Math.max(1,exp/4+1));return Math.min(max,exp+jitter);}
     private static Connection asegurarInstanciaUnica(HikariDataSource ds,Connection actual)throws SQLException{
         if(valida(actual))return actual;
-        if(actual!=null)try{actual.close();}catch(Exception ignored){}
+        if(actual!=null)actual.close();
         Connection c=ds.getConnection();
         try(var s=c.prepareStatement("select pg_try_advisory_lock(?)")){s.setLong(1,5130909L);try(var r=s.executeQuery()){if(!r.next()||!r.getBoolean(1)){c.close();throw new SQLException("Ya existe otra instancia activa del servicio");}}}
         return c;
     }
     private static boolean valida(Connection c){try{return c!=null&&!c.isClosed()&&c.isValid(3);}catch(SQLException ex){return false;}}
+    static boolean correoSeguro(String correo){return correo!=null&&correo.length()<=160&&!correo.contains("..")&&CORREO_SEGURO.matcher(correo).matches();}
     private static void dormir(AtomicBoolean activo,long segundos)throws InterruptedException{if(activo.get())Thread.sleep(Math.max(1,segundos)*1000L);}
     private static String seguro(Throwable ex){String m=ex.getMessage();if(m==null)m=ex.getClass().getSimpleName();return limitar(m.replaceAll("(?i)(password|contraseña)\\s*[=:]\\s*\\S+","$1=[OCULTO]"),500);}
     private static String limitar(String s,int n){if(s==null)return "";return s.length()<=n?s:s.substring(0,n);}

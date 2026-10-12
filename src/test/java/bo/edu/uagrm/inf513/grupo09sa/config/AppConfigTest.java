@@ -11,5 +11,5 @@ class AppConfigTest {
     }
     @Test void exigeHttpsParaRoundcube(){assertThrows(IllegalArgumentException.class,()->config(10,25,"http://correo/"));}
     @Test void aceptaConfiguracionAcotada(){assertDoesNotThrow(()->config(10,25,"https://correo/"));}
-    private static AppConfig config(int poll,int max,String url){return new AppConfig("roundcube","correo",110,false,"correo",25,false,false,"roundcube",url,"grupo","grupo@correo","secreto","jdbc:postgresql://db/base","grupo","secreto",poll,10,30,max,300,"INBOX");}
+    private static AppConfig config(int poll,int max,String url){return new AppConfig("roundcube","correo",110,false,"correo",25,false,false,"roundcube",url,"grupo","grupo@correo","secreto","jdbc:postgresql://db/base","grupo","secreto","admin@correo",poll,10,30,max,300,"INBOX");}
 }

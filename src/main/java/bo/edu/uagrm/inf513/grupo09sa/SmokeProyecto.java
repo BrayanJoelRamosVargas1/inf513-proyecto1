@@ -9,7 +9,8 @@ public final class SmokeProyecto {
         AppConfig cfg=AppConfig.load();HikariConfig hc=new HikariConfig();hc.setJdbcUrl(cfg.dbUrl());hc.setUsername(cfg.dbUser());hc.setPassword(cfg.dbPassword());
         try(HikariDataSource ds=new HikariDataSource(hc)){
             var parser=new AnalizadorOrden();var proc=new ProcesadorOrden(new CatalogoComandos(),new RepositorioPostgres(ds));
-            Resultado r=proc.procesar("prueba@example.com",parser.analizar("LISCON[\"*\"]"));
+            String filtro=args.length==0?"*":args[0].replace("\\","\\\\").replace("\"","\\\"");
+            Resultado r=proc.procesar("prueba@example.com",parser.analizar("LISCON[\""+filtro+"\"]"));
             System.out.println("FLOW_OK="+r.exito());System.out.println(r.cuerpo());
         }
     }

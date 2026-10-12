@@ -12,6 +12,8 @@ application.properties
 logs/
 *.log
 entrega/*.zip
+entrega/*.final*.pptx
+dist/inf513-proyecto1.jar
 entrega/*.tar.gz
 entrega/Defensa_INF513_Proyecto1_Grupo09SA*.pptx
 entrega/PUDS_INF513_Proyecto1_Grupo09SA.docx

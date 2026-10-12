@@ -25,7 +25,7 @@ El JAR ejecutable queda en `target/inf513-proyecto1-1.0.0.jar`.
 
 ## Configuración segura
 
-Copie `config/application.example.properties` como `config/application.properties`. Las contraseñas no deben escribirse en el repositorio; configure `MAIL_PASSWORD` y `DB_PASSWORD` como variables de entorno.
+Copie `config/application.example.properties` como `config/application.properties`. Las contraseñas no deben escribirse en el repositorio; configure `MAIL_PASSWORD` y `DB_PASSWORD` como variables de entorno. Si la tabla `p1_usuario` todavía está vacía, defina también `BOOTSTRAP_ADMIN_EMAIL` con el correo exacto que enviará `INSUSU` para crear el primer DECANO. El valor deja de otorgar privilegios después de esa creación.
 
 ## Ejecución
 
