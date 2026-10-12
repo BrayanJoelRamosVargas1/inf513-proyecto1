@@ -6,6 +6,7 @@ import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import java.io.*;
 import java.net.Socket;
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Predicate;
@@ -28,13 +29,16 @@ final class ClientePop3 {
                 MimeMessage m=new MimeMessage(Session.getInstance(new Properties()),new ByteArrayInputStream(raw));
                 String remitente=((InternetAddress)m.getFrom()[0]).getAddress();
                 salida.add(new MensajeEntrada(e.getValue(),remitente,m.getSubject()));
+                if(salida.size()>=cfg.maxMessagesPerCycle())break;
             }
             return salida;
         }
     }
 
     private Conexion conectar() throws Exception {
-        Socket s=new Socket(cfg.imapHost(),cfg.imapPort());s.setSoTimeout(30_000);
+        Socket s=new Socket();
+        s.connect(new InetSocketAddress(cfg.imapHost(),cfg.imapPort()),cfg.connectSeconds()*1000);
+        s.setSoTimeout(cfg.readSeconds()*1000);
         Conexion c=new Conexion(s);c.ok(c.linea());c.comando("USER "+cfg.mailUser());c.comando("PASS "+cfg.mailPassword());return c;
     }
 

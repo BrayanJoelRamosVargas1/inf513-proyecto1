@@ -8,6 +8,10 @@ Fecha de comprobación: 12 de octubre de 2026.
 - Ejecución de las pruebas unitarias del intérprete de órdenes y sus validaciones.
 - Generación correcta del JAR ejecutable.
 - Aplicación del esquema `database/schema.sql` en la base `db_grupo09sa`.
+- Trece pruebas automatizadas sin fallos.
+- Caída simulada de PostgreSQL: el proceso permaneció activo y aplicó reintentos progresivos.
+- Caída simulada de POP3: el proceso permaneció activo y limitó la frecuencia de reconexión.
+- Reinicio del servicio con recuperación de cola e idempotencia persistente.
 
 ## Integración real por correo
 

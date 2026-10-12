@@ -9,8 +9,30 @@ create table if not exists p1_examen(id bigserial primary key,postulacion_id big
 create table if not exists p1_asignacion_evaluador(id bigserial primary key,postulacion_id bigint not null references p1_postulacion,evaluador_id bigint not null references p1_usuario,tipo varchar(40) not null,unique(postulacion_id,evaluador_id,tipo));
 create table if not exists p1_auditoria(id bigserial primary key,fecha timestamptz not null default now(),actor varchar(160) not null,accion varchar(80) not null,entidad varchar(80) not null,entidad_id varchar(80),detalle text);
 create table if not exists p1_correo_procesado(id bigserial primary key,mensaje_id varchar(255) unique not null,remitente varchar(160) not null,asunto text,exito boolean not null,procesado_en timestamptz not null default now());
+create table if not exists p1_correo_control(
+  mensaje_id varchar(255) primary key,
+  remitente varchar(160) not null,
+  asunto text,
+  estado varchar(30) not null check(estado in('RECIBIDO','RESPUESTA_PENDIENTE','RESPONDIDO')),
+  respuesta_asunto text,
+  respuesta_cuerpo text,
+  exito boolean,
+  intentos integer not null default 0,
+  ultimo_error text,
+  siguiente_intento timestamptz not null default now(),
+  creado_en timestamptz not null default now(),
+  actualizado_en timestamptz not null default now()
+);
+create table if not exists p1_resultado_orden(
+  mensaje_id varchar(255) primary key,
+  exito boolean not null,
+  respuesta_asunto text not null,
+  respuesta_cuerpo text not null,
+  ejecutado_en timestamptz not null default now()
+);
 create table if not exists p1_servicio_estado(clave varchar(80) primary key,valor text not null,actualizado_en timestamptz not null default now());
 create index if not exists idx_usuario_correo on p1_usuario(lower(correo));
 create index if not exists idx_postulacion_convocatoria on p1_postulacion(convocatoria_id);
 create index if not exists idx_auditoria_entidad on p1_auditoria(entidad,entidad_id,fecha desc);
+create index if not exists idx_correo_control_pendiente on p1_correo_control(estado,siguiente_intento);
 

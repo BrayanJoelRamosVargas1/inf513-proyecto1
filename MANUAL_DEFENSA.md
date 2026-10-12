@@ -55,6 +55,16 @@ Los identificadores dependen de los registros existentes en PostgreSQL. Consulta
 - Detener el programa con `Ctrl+C`.
 - Eliminar únicamente los datos y mensajes creados para la prueba si el docente lo solicita.
 
+## Prueba de resistencia sugerida
+
+1. Iniciar el servicio y enviar una orden válida.
+2. Desconectar temporalmente la red después de que la operación quede registrada.
+3. Mostrar que Java permanece activo y anuncia el próximo reintento.
+4. Reconectar la red y comprobar que la respuesta se entrega sin repetir la operación.
+5. Ejecutar dos veces el procesamiento del mismo UIDL y comprobar `p1_resultado_orden`.
+
+En Windows use `scripts/run-service.ps1`. En Fedora/Linux use `scripts/run-service.sh`; para ejecución permanente puede instalarse `deploy/inf513-grupo09sa.service` con systemd.
+
 ## Comprobación ya realizada
 
 Se probó el flujo real desde una cuenta Gmail hacia `grupo09sa@tecnoweb.org.bo`. El programa Java leyó `AYUDA[]` y `LISCON["*"]`, consultó PostgreSQL y envió las respuestas al remitente mediante el Roundcube institucional. Gmail clasificó esas respuestas como correo no deseado durante la prueba; por eso, en la defensa conviene revisar también la carpeta Spam.

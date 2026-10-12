@@ -11,4 +11,5 @@ public interface RepositorioProyecto {
     void marcarServicioInicializado() throws Exception;
     void registrarCorreoProcesado(String id,String remitente,String asunto,boolean exito) throws Exception;
     Resultado ejecutar(String remitente, Orden orden) throws Exception;
+    default Resultado ejecutarIdempotente(String mensajeId,String remitente,Orden orden)throws Exception{return ejecutar(remitente,orden);}
 }

@@ -1,0 +1,21 @@
+[Unit]
+Description=INF513 Proyecto 1 Grupo 09 SA
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/inf513-proyecto1
+EnvironmentFile=/etc/inf513-grupo09sa.env
+ExecStart=/usr/bin/java -jar /opt/inf513-proyecto1/target/inf513-proyecto1-1.0.0.jar
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/inf513-proyecto1
+
+[Install]
+WantedBy=multi-user.target

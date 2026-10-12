@@ -1,6 +1,8 @@
 package bo.edu.uagrm.inf513.grupo09sa.comandos;
 
 import bo.edu.uagrm.inf513.grupo09sa.persistencia.RepositorioProyecto;
+import bo.edu.uagrm.inf513.grupo09sa.InfraestructuraException;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.Locale;
 import java.util.Set;
@@ -12,7 +14,8 @@ public final class ProcesadorOrden {
     private static final Set<String> ROLES=Set.of("DECANO","VICEDECANO","EVALUADOR","POSTULANTE");
     private final CatalogoComandos catalogo; private final RepositorioProyecto repo;
     public ProcesadorOrden(CatalogoComandos catalogo,RepositorioProyecto repo){this.catalogo=catalogo;this.repo=repo;}
-    public Resultado procesar(String remitente, Orden orden){
+    public Resultado procesar(String remitente, Orden orden){return procesar(null,remitente,orden);}
+    public Resultado procesar(String mensajeId,String remitente, Orden orden){
         try{
             CatalogoComandos.Definicion def=catalogo.buscar(orden.comando());
             if(def==null)return Resultado.error("El comando " + orden.comando() + " no existe. Use AYUDA[].");
@@ -21,8 +24,11 @@ public final class ProcesadorOrden {
             boolean bootstrap=orden.comando().equals("INSUSU")&&!repo.hayUsuarios()&&orden.parametros().get(3).equalsIgnoreCase("DECANO");
             if(!bootstrap&&!def.rol().equals("PUBLICO")&&!repo.autorizado(remitente,def.rol()))return Resultado.error("El remitente no tiene el rol requerido: "+def.rol()+".");
             if(orden.comando().equals("AYUDA"))return Resultado.ok(catalogo.todos().entrySet().stream().map(e->e.getKey()+" - "+e.getValue().descripcion()+" ("+e.getValue().parametros()+" parámetros)").sorted().collect(Collectors.joining("\n")));
-            return repo.ejecutar(remitente,orden);
-        }catch(Exception ex){return Resultado.error("No se pudo ejecutar la orden: "+ex.getMessage());}
+            return mensajeId==null?repo.ejecutar(remitente,orden):repo.ejecutarIdempotente(mensajeId,remitente,orden);
+        }catch(Exception ex){
+            if(esFalloTemporal(ex))throw new InfraestructuraException("Servicio de datos temporalmente no disponible",ex);
+            return Resultado.error("No se pudo ejecutar la orden: "+mensajeSeguro(ex));
+        }
     }
     private String validar(Orden o){
         try{
@@ -46,4 +52,6 @@ public final class ProcesadorOrden {
     private static void enteroNoNegativo(String v){if(Integer.parseInt(v)<0)throw new IllegalArgumentException("se esperaba un entero no negativo");}
     private static void puntaje(String v){double n=Double.parseDouble(v);if(n<0||n>100)throw new IllegalArgumentException("el puntaje debe estar entre 0 y 100");}
     private static void booleanActivo(String v){if(!v.equalsIgnoreCase("true")&&!v.equalsIgnoreCase("false"))throw new IllegalArgumentException("se esperaba true o false");}
+    private static boolean esFalloTemporal(Throwable e){for(Throwable t=e;t!=null;t=t.getCause())if(t instanceof SQLException s){String estado=s.getSQLState();if(s instanceof java.sql.SQLTransientException||(estado!=null&&estado.startsWith("08")))return true;}return false;}
+    private static String mensajeSeguro(Throwable e){String m=e.getMessage();return m==null?e.getClass().getSimpleName():m.replaceAll("(?i)(password|contraseña)\\s*[=:]\\s*\\S+","$1=[OCULTO]");}
 }

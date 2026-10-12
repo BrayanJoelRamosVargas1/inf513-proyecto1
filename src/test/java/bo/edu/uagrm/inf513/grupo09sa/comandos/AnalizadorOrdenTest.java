@@ -8,4 +8,6 @@ class AnalizadorOrdenTest {
     @Test void rechazaParametrosSinComillas(){assertThrows(OrdenInvalidaException.class,()->parser.analizar("LISPER[*]"));}
     @Test void rechazaAsuntoIncompleto(){assertThrows(OrdenInvalidaException.class,()->parser.analizar("LISPER[\"*\""));}
     @Test void rechazaComaFinal(){assertThrows(OrdenInvalidaException.class,()->parser.analizar("LISPER[\"*\",") );}
+    @Test void limitaEntradasHostiles(){String enorme="A".repeat(1200);assertThrows(OrdenInvalidaException.class,()->parser.analizar(enorme));}
+    @Test void limitaParametrosHostiles(){String enorme="A".repeat(501);assertThrows(OrdenInvalidaException.class,()->parser.analizar("X[\""+enorme+"\"]"));}
 }

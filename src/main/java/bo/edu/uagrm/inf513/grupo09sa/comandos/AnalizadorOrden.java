@@ -10,6 +10,7 @@ public final class AnalizadorOrden {
     private static final Pattern CABECERA=Pattern.compile("^\\s*([A-Za-z][A-Za-z0-9_]*)\\s*\\[(.*)]\\s*$",Pattern.DOTALL);
     public Orden analizar(String asunto) throws OrdenInvalidaException {
         if(asunto==null||asunto.isBlank()) throw new OrdenInvalidaException("El asunto está vacío");
+        if(asunto.length()>998)throw new OrdenInvalidaException("El asunto supera el máximo permitido");
         Matcher m=CABECERA.matcher(asunto); if(!m.matches()) throw new OrdenInvalidaException("Formato esperado: COMANDO[\"parametro\"]");
         return new Orden(m.group(1).toUpperCase(Locale.ROOT), parametros(m.group(2)));
     }
@@ -22,7 +23,8 @@ public final class AnalizadorOrden {
                 char c=texto.charAt(i++); if(c=='\\'&&i<texto.length()){char n=texto.charAt(i++); if(n=='\"'||n=='\\')b.append(n); else{b.append(c).append(n);}}
                 else if(c=='\"'){cerrado=true;break;} else b.append(c);
             }
-            if(!cerrado)throw new OrdenInvalidaException("Parámetro sin comillas de cierre"); out.add(b.toString());
+            if(!cerrado)throw new OrdenInvalidaException("Parámetro sin comillas de cierre");if(b.length()>500)throw new OrdenInvalidaException("Un parámetro supera 500 caracteres");out.add(b.toString());
+            if(out.size()>20)throw new OrdenInvalidaException("Demasiados parámetros");
             while(i<texto.length()&&Character.isWhitespace(texto.charAt(i)))i++;
             if(i<texto.length()){if(texto.charAt(i)!=',')throw new OrdenInvalidaException("Los parámetros deben separarse con comas"); i++;if(i>=texto.length())throw new OrdenInvalidaException("No se permite una coma final sin parámetro");}
         }

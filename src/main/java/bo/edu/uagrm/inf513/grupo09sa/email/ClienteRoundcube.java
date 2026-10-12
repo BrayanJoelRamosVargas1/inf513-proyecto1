@@ -15,6 +15,8 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.cookie.BasicCookieStore;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.core5.util.Timeout;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.message.BasicNameValuePair;
@@ -36,7 +38,12 @@ final class ClienteRoundcube implements AutoCloseable {
     ClienteRoundcube(AppConfig cfg) {
         this.cfg = cfg;
         this.base = URI.create(cfg.roundcubeUrl().endsWith("/") ? cfg.roundcubeUrl() : cfg.roundcubeUrl() + "/");
-        this.http=HttpClients.custom().setDefaultCookieStore(cookies).build();
+        RequestConfig tiempos=RequestConfig.custom()
+                .setConnectTimeout(Timeout.ofSeconds(cfg.connectSeconds()))
+                .setConnectionRequestTimeout(Timeout.ofSeconds(cfg.connectSeconds()))
+                .setResponseTimeout(Timeout.ofSeconds(cfg.readSeconds())).build();
+        this.http=HttpClients.custom().setDefaultCookieStore(cookies).setDefaultRequestConfig(tiempos)
+                .disableAutomaticRetries().build();
     }
 
     synchronized void enviar(String destinatario, String asunto, String cuerpo) throws Exception {

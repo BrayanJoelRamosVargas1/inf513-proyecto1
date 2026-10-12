@@ -12,7 +12,8 @@ public record AppConfig(
         String outboundMode, String roundcubeUrl,
         String mailUser, String mailAddress, String mailPassword,
         String dbUrl, String dbUser, String dbPassword,
-        int pollSeconds, String mailFolder) {
+        int pollSeconds, int connectSeconds, int readSeconds, int maxMessagesPerCycle,
+        int retryMaxSeconds, String mailFolder) {
 
     public static AppConfig load() throws IOException {
         Properties p = new Properties();
@@ -36,6 +37,10 @@ public record AppConfig(
             value(p,"db.username","DB_USERNAME","grupo09sa"),
             required(p,"db.password","DB_PASSWORD"),
             integer(p,"poll.seconds","POLL_SECONDS",10),
+            integer(p,"network.connect.seconds","NETWORK_CONNECT_SECONDS",10),
+            integer(p,"network.read.seconds","NETWORK_READ_SECONDS",30),
+            integer(p,"mail.max.messages.per.cycle","MAIL_MAX_MESSAGES_PER_CYCLE",25),
+            integer(p,"retry.max.seconds","RETRY_MAX_SECONDS",300),
             value(p,"mail.folder","MAIL_FOLDER","INBOX"));
     }
 

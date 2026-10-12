@@ -33,6 +33,21 @@ Copie `config/application.example.properties` como `config/application.propertie
 java -jar target/inf513-proyecto1-1.0.0.jar
 ```
 
+Ejecución supervisada en Windows:
+
+```powershell
+.\scripts\run-service.ps1
+```
+
+Ejecución supervisada en Fedora/Linux:
+
+```sh
+chmod +x scripts/run-service.sh
+./scripts/run-service.sh
+```
+
+Para un servidor Fedora se incluye `deploy/inf513-grupo09sa.service`, que reinicia el proceso mediante systemd.
+
 El servidor expone POP3 en el puerto 110. Para las respuestas, la configuración predeterminada utiliza el Roundcube institucional, de modo que la entrega se realiza desde el propio servidor de Tecnoweb y también funciona fuera de la red del laboratorio. Si el docente habilita SMTP autenticado, puede seleccionarse con `MAIL_OUTBOUND_MODE=smtp`.
 
 La orden completa debe escribirse en el asunto, por ejemplo `LISCON["*"]` o `AYUDA[]`.
@@ -42,5 +57,13 @@ La orden completa debe escribirse en el asunto, por ejemplo `LISCON["*"]` o `AYU
 - Los comandos sensibles verifican el rol asociado al correo remitente.
 - Las escrituras principales utilizan consultas preparadas.
 - Los mensajes se marcan como leídos después de enviar la respuesta.
+- Cada UIDL se ejecuta de manera idempotente: operación, auditoría y resultado comparten una transacción.
+- Una respuesta que no pudo enviarse queda en una cola persistente y se reintenta sin repetir el cambio de negocio.
+- PostgreSQL, POP3 y Roundcube tienen tiempos máximos y reintentos progresivos.
+- Los asuntos y parámetros excesivos, los listados enormes y las ráfagas de mensajes están limitados.
 - Las credenciales se mantienen fuera del código y de GitHub.
 - Antes de producción se debe aplicar `database/schema.sql` y registrar las cuentas autorizadas.
+
+## Recuperación ante fallos
+
+El proceso no termina cuando PostgreSQL, POP3, Roundcube o Internet dejan de responder temporalmente. Conserva las respuestas pendientes en `p1_correo_control`, aumenta gradualmente el tiempo entre reintentos y continúa cuando el servicio vuelve. `p1_resultado_orden` impide ejecutar dos veces el mismo correo.
