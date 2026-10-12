@@ -43,7 +43,13 @@ public final class Main {
             System.out.println("Bandeja inicializada: "+ids.size()+" mensajes históricos omitidos.");return;
         }
         var conocidos=repo.correosConocidos();
-        for(MensajeEntrada msg:mail.noProcesados(conocidos::contains))repo.registrarEntrada(msg.id(),msg.remitente(),limitar(msg.asunto(),998));
+        for(MensajeEntrada msg:mail.noProcesados(conocidos::contains)){
+            if(msg.id()==null||msg.id().isBlank()||msg.id().length()>255||msg.remitente()==null||msg.remitente().length()>160){
+                System.err.println("Correo descartado por identificador o remitente fuera de límite.");continue;
+            }
+            try{repo.registrarEntrada(msg.id(),msg.remitente(),limitar(msg.asunto(),998));}
+            catch(Exception ex){System.err.println("No se pudo registrar un correo; los demás continuarán: "+seguro(ex));}
+        }
         for(var pendiente:repo.correosPendientes(cfg.maxMessagesPerCycle())){
             try{
                 if("RECIBIDO".equals(pendiente.estado())){

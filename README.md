@@ -67,3 +67,7 @@ La orden completa debe escribirse en el asunto, por ejemplo `LISCON["*"]` o `AYU
 ## Recuperación ante fallos
 
 El proceso no termina cuando PostgreSQL, POP3, Roundcube o Internet dejan de responder temporalmente. Conserva las respuestas pendientes en `p1_correo_control`, aumenta gradualmente el tiempo entre reintentos y continúa cuando el servicio vuelve. `p1_resultado_orden` impide ejecutar dos veces el mismo correo.
+
+## Límite impuesto por la infraestructura institucional
+
+El 12 de octubre de 2026 se comprobó que el servidor publica POP3 únicamente en el puerto 110 y no anuncia `STLS`; POP3S 995 e IMAPS 993 no están disponibles. Por ello, la contraseña de lectura no puede protegerse con TLS desde este cliente mientras el servidor mantenga esa configuración. Ejecute el servicio solamente en la red confiable del laboratorio, en el servidor institucional o mediante una VPN administrada. El envío por Roundcube sí usa HTTPS. Esta limitación externa no debe ocultarse ni “solucionarse” desactivando validaciones TLS.

@@ -43,12 +43,13 @@ final class ClientePop3 {
     }
 
     private static final class Conexion implements AutoCloseable {
+        private static final int MAX_RESPUESTA=2*1024*1024;
         private final Socket socket;private final BufferedReader in;private final BufferedWriter out;
         Conexion(Socket socket)throws IOException{this.socket=socket;in=new BufferedReader(new InputStreamReader(socket.getInputStream(),StandardCharsets.ISO_8859_1));out=new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(),StandardCharsets.ISO_8859_1));}
         String linea()throws IOException{String l=in.readLine();if(l==null)throw new EOFException("POP3 cerró la conexión");return l;}
         void ok(String l){if(!l.startsWith("+OK"))throw new IllegalStateException("POP3 rechazó la operación: "+l);}
         void comando(String cmd)throws IOException{out.write(cmd+"\r\n");out.flush();ok(linea());}
-        byte[] multilinea(String cmd)throws IOException{out.write(cmd+"\r\n");out.flush();ok(linea());ByteArrayOutputStream b=new ByteArrayOutputStream();for(String l;(l=linea())!=null;){if(l.equals("."))break;if(l.startsWith(".."))l=l.substring(1);b.write(l.getBytes(StandardCharsets.ISO_8859_1));b.write('\r');b.write('\n');}return b.toByteArray();}
+        byte[] multilinea(String cmd)throws IOException{out.write(cmd+"\r\n");out.flush();ok(linea());ByteArrayOutputStream b=new ByteArrayOutputStream();for(String l;(l=linea())!=null;){if(l.equals("."))break;if(l.length()>16_384||b.size()+l.length()>MAX_RESPUESTA)throw new IOException("Respuesta POP3 excede el límite seguro");if(l.startsWith(".."))l=l.substring(1);b.write(l.getBytes(StandardCharsets.ISO_8859_1));b.write('\r');b.write('\n');}return b.toByteArray();}
         Map<Integer,String> uidl()throws IOException{String text=new String(multilinea("UIDL"),StandardCharsets.ISO_8859_1);Map<Integer,String> r=new LinkedHashMap<>();for(String l:text.split("\\r?\\n")){String[] p=l.trim().split("\\s+",2);if(p.length==2)r.put(Integer.parseInt(p[0]),p[1]);}return r;}
         public void close(){try{out.write("QUIT\r\n");out.flush();}catch(Exception ignored){}try{socket.close();}catch(Exception ignored){}}
     }
