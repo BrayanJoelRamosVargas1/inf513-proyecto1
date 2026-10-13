@@ -39,9 +39,9 @@ INSCAR["Auxiliar de docencia","Facultad","true"]
 LISCAR["*"]
 INSPOST["1","1","https://ejemplo.com/expediente.pdf"]
 LISPOST["*"]
+ASIEVA["1","2","MERITOS_Y_EXAMEN"]
 EVAREQ["1","Documento de identidad","true","Documento vigente"]
 HABPOS["1","HABILITADO","Cumple requisitos"]
-ASIEVA["1","2","MERITOS_Y_EXAMEN"]
 REGMER["1","Experiencia","80","Documentación revisada"]
 REGEXA["1","85","Examen revisado"]
 GENRAN["1"]
@@ -51,6 +51,8 @@ REPEST["1"]
 ```
 
 Los identificadores dependen de los registros existentes en PostgreSQL. Consultar primero los listados y reemplazar los valores de ejemplo.
+
+En el paquete descargado use `dist/inf513-proyecto1-1.0.0.jar` si no ha compilado. Prepare previamente cuentas con roles DECANO, EVALUADOR y POSTULANTE y use el remitente correspondiente a cada orden. Asigne el evaluador con ASIEVA antes de EVAREQ. Después evalúe requisitos, habilite la postulación y registre su examen. No use fechas vencidas: sustituya las fechas de INSCON por el periodo vigente de la demostración. Confirme cada operación privada antes de continuar con la siguiente.
 
 ## Cierre de la demostración
 

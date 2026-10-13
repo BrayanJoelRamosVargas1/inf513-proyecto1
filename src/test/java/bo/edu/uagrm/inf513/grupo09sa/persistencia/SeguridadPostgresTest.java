@@ -28,6 +28,48 @@ class SeguridadPostgresTest {
         if(schema!=null)try(var c=ds.getConnection();var s=c.createStatement()){s.execute("drop schema "+schema+" cascade");}
     }
     Orden alta(){return new Orden("INSUSU",List.of("1","Ana","Perez","DECANO","70000000","admin@example.com","true"));}
+    int secuencia;
+    Resultado ordenar(String correo,String comando,String... argumentos){
+        String id="flujo-"+(++secuencia);Resultado r=procesador.procesar(id,correo,new Orden(comando,List.of(argumentos)));
+        return r.asunto().startsWith("CONFIRMACIÓN REQUERIDA")?confirmar(id+"-confirmado",correo,codigo(r)):r;
+    }
+    void iniciarFlujo()throws Exception{
+        assertTrue(confirmar("inicio", "admin@example.com",codigo(procesador.procesar("alta-inicio","admin@example.com",alta()))).exito());
+        assertTrue(ordenar("admin@example.com","INSUSU","2","Eva","Lopez","EVALUADOR","70000001","eva@example.com","true").exito());
+        assertTrue(ordenar("admin@example.com","INSUSU","3","Luis","Diaz","POSTULANTE","70000002","luis@example.com","true").exito());
+        var hoy=java.time.LocalDate.now();
+        assertTrue(ordenar("admin@example.com","INSCON","AUX","Auxiliaturas",hoy.minusDays(1).toString(),hoy.plusDays(1).toString(),"ABIERTA","1").exito());
+        assertTrue(ordenar("admin@example.com","INSCAR","Auxiliar","Facultad","true").exito());
+        assertTrue(ordenar("luis@example.com","INSPOST","1","1","https://example.com/expediente.pdf").exito());
+        assertTrue(ordenar("admin@example.com","ASIEVA","1","2","MERITOS_Y_EXAMEN").exito());
+    }
+    @Test void recorridoDeLosOchoCasosDeUsoConConfirmacionesYBaseReal()throws Exception{
+        iniciarFlujo();
+        assertTrue(ordenar("admin@example.com","LISUSU","*").cuerpo().contains("luis@example.com"));
+        assertTrue(ordenar("admin@example.com","LISUSU","*").cuerpo().startsWith("id |"));
+        assertTrue(ordenar("luis@example.com","LISCON","*").cuerpo().startsWith("id |"));
+        assertTrue(ordenar("luis@example.com","LISCAR","*").exito());
+        assertTrue(ordenar("luis@example.com","LISPOST","*").cuerpo().contains("REGISTRADA"));
+        assertTrue(ordenar("eva@example.com","EVAREQ","1","Identidad","true","Vigente").exito());
+        assertTrue(ordenar("admin@example.com","HABPOS","1","HABILITADO","Cumple requisitos").exito());
+        assertTrue(ordenar("eva@example.com","REGMER","1","Experiencia","80","Revisado").exito());
+        assertTrue(ordenar("eva@example.com","REGEXA","1","85","Revisado").exito());
+        assertEquals(83,numero("select puntaje_final::int from p1_postulacion where id=1"));
+        assertTrue(ordenar("admin@example.com","GENRAN","1").cuerpo().contains("Luis"));
+        assertTrue(ordenar("admin@example.com","ASIPLA","1","true").exito());
+        assertTrue(ordenar("admin@example.com","AUDCAL","ASIPLA","1").cuerpo().contains("admin@example.com"));
+        assertTrue(ordenar("admin@example.com","REPEST","1").cuerpo().contains("GANADOR"));
+        assertTrue(ordenar("atacante@example.com","AYUDA").exito());
+        assertEquals(1,numero("select count(*) from p1_expediente"));
+    }
+    @Test void examenExigeHabilitacionYRetirarPlazaNoHabilitaAlRechazado()throws Exception{
+        iniciarFlujo();
+        assertFalse(ordenar("eva@example.com","REGEXA","1","85","Revisado").exito());
+        assertEquals(0,numero("select count(*) from p1_examen"));
+        assertTrue(ordenar("admin@example.com","HABPOS","1","INHABILITADO","No cumple").exito());
+        assertTrue(ordenar("admin@example.com","ASIPLA","1","false").exito());
+        assertEquals(1,numero("select count(*) from p1_postulacion where estado='INHABILITADO' and not plaza_asignada"));
+    }
     String codigo(Resultado r){var m=Pattern.compile("CONFIRMAR\\[\"([A-Za-z0-9_-]{43})\"\\]").matcher(r.cuerpo());assertTrue(m.find(),r.cuerpo());return m.group(1);}
     Resultado confirmar(String id,String correo,String token){return procesador.procesar(id,correo,new Orden("CONFIRMAR",List.of(token)));}
     int usuarios()throws Exception{return numero("select count(*) from p1_usuario");}
