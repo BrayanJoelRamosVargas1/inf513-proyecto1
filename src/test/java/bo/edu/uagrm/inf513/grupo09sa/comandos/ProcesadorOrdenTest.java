@@ -46,12 +46,18 @@ class ProcesadorOrdenTest {
         Resultado r=new ProcesadorOrden(new CatalogoComandos(),new FakeRepo(false,false)).procesar("admin@gmail.com",new Orden("INSUSU",java.util.List.of("1","Ana\nInyectada","Pérez","DECANO","70000000","admin@gmail.com","true")));
         assertFalse(r.exito());assertTrue(r.cuerpo().contains("control"));
     }
-    private static final class FakeRepo implements RepositorioProyecto {
+    @Test void fallosTemporalesDePostgresSeReintentanYNoSeConviertenEnErrorDefinitivo(){
+        for(String estado:java.util.List.of("08006","40001","40P01","55P03","57014","57P01","53300")){
+            var repo=new FakeRepo(true,true){@Override public Resultado ejecutar(String remitente,Orden orden)throws java.sql.SQLException{throw new java.sql.SQLException("fallo temporal simulado",estado);}};
+            assertThrows(bo.edu.uagrm.inf513.grupo09sa.InfraestructuraException.class,()->new ProcesadorOrden(new CatalogoComandos(),repo).procesar("id","a@example.com",new Orden("LISCON",java.util.List.of("*"))),estado);
+        }
+    }
+    private static class FakeRepo implements RepositorioProyecto {
         private final boolean usuarios,autorizado;FakeRepo(boolean u,boolean a){usuarios=u;autorizado=a;}
         public boolean autorizado(String c,String r){return autorizado;}public boolean hayUsuarios(){return usuarios;}public java.util.Set<String> correosProcesados(){return java.util.Set.of();}
         public boolean correoProcesado(String id){return false;}public boolean servicioInicializado(){return true;}
         public void marcarServicioInicializado(){}public void registrarCorreoProcesado(String a,String b,String c,boolean d){}
-        public Resultado ejecutar(String r,Orden o){return Resultado.ok("ejecutado");}
+        public Resultado ejecutar(String r,Orden o)throws java.sql.SQLException{return Resultado.ok("ejecutado");}
         public Resultado solicitarConfirmacion(String id,String r,Orden o){return Resultado.ok("confirmación solicitada, sin ejecutar");}
     }
 }

@@ -22,6 +22,6 @@ Luego ejecute `scripts/run-service.ps1` en Windows o `sh scripts/run-service.sh`
 
 ## Estado de comprobación
 
-Código y JAR probados localmente con 44 pruebas automatizadas y PostgreSQL 15 aislado, incluido el recorrido de los ocho casos de uso. El informe diferencia esas pruebas de la comprobación institucional previa de AYUDA y LISCON. La migración y ejecución institucional de esta revisión no se presentan como realizadas: falta acceso a las credenciales del grupo. Antes de defender, comprueben recepción, confirmación, cambio en PostgreSQL y respuesta al correo con la versión nueva.
+Código y JAR probados localmente con 50 pruebas automatizadas y PostgreSQL 15 aislado, incluido el recorrido de los ocho casos de uso y fallos simulados de lectura, envío y marcado del correo. El informe diferencia esas pruebas de la comprobación institucional previa de AYUDA y LISCON. La migración y ejecución institucional de esta revisión no se presentan como realizadas: falta acceso a las credenciales del grupo. Antes de defender, comprueben recepción, confirmación, cambio en PostgreSQL y respuesta al correo con la versión nueva.
 
 Los cortes se recuperan mediante cola y reintentos cuando regresan los servicios. Ningún programa puede enviar correo o consultar una base inaccesible mientras dure el corte.

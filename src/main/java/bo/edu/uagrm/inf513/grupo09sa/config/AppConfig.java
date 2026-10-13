@@ -18,6 +18,8 @@ public record AppConfig(
         int retryMaxSeconds, String mailFolder) {
 
     public AppConfig {
+        inboundProtocol=inboundProtocol.toLowerCase(Locale.ROOT);
+        outboundMode=outboundMode.toLowerCase(Locale.ROOT);
         if(!java.util.Set.of("roundcube","pop3","imap","imaps").contains(inboundProtocol.toLowerCase(Locale.ROOT)))throw new IllegalArgumentException("MAIL_INBOUND_PROTOCOL no permitido");
         if(!java.util.Set.of("roundcube","smtp").contains(outboundMode.toLowerCase(Locale.ROOT)))throw new IllegalArgumentException("MAIL_OUTBOUND_MODE no permitido");
         if(outboundMode.equalsIgnoreCase("roundcube")&&!roundcubeUrl.toLowerCase(Locale.ROOT).startsWith("https://"))throw new IllegalArgumentException("MAIL_ROUNDCUBE_URL debe usar HTTPS");

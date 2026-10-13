@@ -2,6 +2,8 @@
 
 ## Preparación
 
+En Windows puede usar `powershell -NoProfile -File scripts/prepare-service.ps1`: solicita las claves de forma oculta, confirma antes de aplicar la migración y arranca el servicio. Las claves no se guardan en el paquete ni se muestran en pantalla. Si PowerShell bloquea el script por la política del equipo, use los pasos manuales siguientes, sin modificar permanentemente esa política.
+
 1. Instalar Java 17.
 2. Abrir PowerShell en la carpeta del proyecto.
 3. Definir las credenciales como variables de entorno temporales, sin guardarlas en archivos ni subirlas a GitHub:
@@ -16,6 +18,8 @@ java -jar target/inf513-proyecto1-1.0.0.jar
 No mostrar la terminal mientras se escriben las claves y cerrar la ventana al terminar.
 
 ## Primera inicialización
+
+Inicie primero el servicio y espere el mensaje de bandeja inicializada. Solo después envíe las órdenes de demostración: el primer arranque omite deliberadamente los correos históricos. No cambie de canal de entrada durante la defensa, porque cada canal tiene su propia inicialización.
 
 Si `p1_usuario` está vacía, el primer correo debe crear un usuario con rol `DECANO`. El remitente y el correo registrado deben coincidir exactamente con `BOOTSTRAP_ADMIN_EMAIL`; así un desconocido no puede apropiarse del primer usuario.
 
