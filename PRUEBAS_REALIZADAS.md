@@ -38,6 +38,8 @@ La suite actual se ejecutó en Windows con Java 17 y PostgreSQL 15 local aislado
 
 ## Integración real por correo
 
+El 13 de octubre de 2026 se verificó además el alta real del primer DECANO: recepción desde la cuenta autorizada de CONFIRMAR, comprobación del código vigente, consumo del código y creación del usuario activo en PostgreSQL, seguida del envío de la respuesta de éxito por Roundcube. Un intento anterior con el código vencido fue rechazado sin crear el usuario. No se publican los códigos ni la dirección privada del administrador en este registro de pruebas.
+
 Se verificó el recorrido completo con mensajes enviados desde Gmail a la cuenta institucional del Grupo 09 SA:
 
 1. Gmail envió la orden en el asunto.
