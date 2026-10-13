@@ -22,6 +22,6 @@ Luego ejecute `scripts/run-service.ps1` en Windows o `sh scripts/run-service.sh`
 
 ## Estado de comprobación
 
-Código y JAR probados localmente con 50 pruebas automatizadas y PostgreSQL 15 aislado, incluido el recorrido de los ocho casos de uso y fallos simulados de lectura, envío y marcado del correo. El informe diferencia esas pruebas de la comprobación institucional previa de AYUDA y LISCON. La migración y ejecución institucional de esta revisión no se presentan como realizadas: falta acceso a las credenciales del grupo. Antes de defender, comprueben recepción, confirmación, cambio en PostgreSQL y respuesta al correo con la versión nueva.
+Código y JAR probados localmente con 50 pruebas automatizadas y PostgreSQL 15 aislado, incluido el recorrido de los ocho casos de uso y fallos simulados de lectura, envío y marcado del correo. El 13 de octubre de 2026 autenticamos en PostgreSQL 18 y en el correo institucional, respaldamos los datos p1_ y aplicamos la migración. El servicio Java se inició en este equipo Windows, conectado a los servicios institucionales; no se afirma que Java esté instalado ni ejecutándose en el servidor de la Facultad. La base no tiene usuarios: falta indicar el correo del primer DECANO, registrarlo y comprobar el ciclo externo completo de confirmación y respuesta de esta revisión. El equipo que ejecuta Java debe permanecer encendido y conectado.
 
 Los cortes se recuperan mediante cola y reintentos cuando regresan los servicios. Ningún programa puede enviar correo o consultar una base inaccesible mientras dure el corte.

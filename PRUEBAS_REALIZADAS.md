@@ -2,6 +2,8 @@
 
 Fecha de comprobación: 12 de octubre de 2026.
 
+Actualización institucional comprobada el 13 de octubre de 2026: autenticación correcta en PostgreSQL 18.6 y Roundcube HTTPS (149 mensajes), respaldo lógico de las 14 tablas p1_ anteriores (183 filas) y migración confirmada en una transacción. Arranque del JAR corregido en Windows conectado a los servicios institucionales; se comprobó que conserva el bloqueo de instancia única. No hay usuarios registrados, por lo que quedan pendientes la configuración del correo del primer DECANO y su prueba externa de confirmación. Esta evidencia no implica ejecución del programa Java dentro del servidor de la Facultad ni una prueba integral de todos los comandos por Gmail.
+
 ## Automatizadas
 
 ### Correcciones de seguridad verificadas localmente
