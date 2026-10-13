@@ -9,10 +9,19 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Collection;
 import java.lang.reflect.Proxy;
+import java.security.SecureRandom;
+import java.security.MessageDigest;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.HexFormat;
+import java.util.UUID;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public final class RepositorioPostgres implements RepositorioProyecto {
     private final DataSource ds;
     private final ThreadLocal<Connection> transaccion=new ThreadLocal<>();
+    private static final ObjectMapper JSON=new ObjectMapper();
+    private static final SecureRandom ALEATORIO=new SecureRandom();
     public RepositorioPostgres(DataSource ds){this.ds=ds;}
     public record CorreoControl(String id,String remitente,String asunto,String estado,String respuestaAsunto,String respuestaCuerpo,Boolean exito,int intentos){}
 
@@ -25,16 +34,23 @@ public final class RepositorioPostgres implements RepositorioProyecto {
         try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement(sql)){int i=1;for(String id:candidatos)p.setString(i++,id);for(String id:candidatos)p.setString(i++,id);try(ResultSet r=p.executeQuery()){while(r.next())ids.add(r.getString(1));}}
         return ids;
     }
-    /** Admite hasta 60 correos por remitente y 1000 globales por hora para evitar crecimiento abusivo. */
-    public boolean registrarEntrada(String id,String remitente,String asunto)throws SQLException{
-        String sql="insert into p1_correo_control(mensaje_id,remitente,asunto,estado) select ?,?,?,'RECIBIDO' where (select count(*) from p1_correo_control where creado_en>now()-interval '1 hour')<1000 and (select count(*) from p1_correo_control where lower(remitente)=lower(?) and creado_en>now()-interval '1 hour')<60 on conflict(mensaje_id) do nothing";
+    public enum Admision { ADMITIDO, DIFERIDO, DUPLICADO, SATURADO }
+    /** La saturación es temporal: conserva la orden en la cola o en la bandeja. */
+    public Admision registrarEntrada(String id,String remitente,String asunto)throws SQLException{
+        String sql="insert into p1_correo_control(mensaje_id,remitente,asunto,estado,admitido_en) select ?,?,?,'DIFERIDO',null where (select count(*) from p1_correo_control where estado<>'RESPONDIDO')<10000 on conflict(mensaje_id) do nothing";
         try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement(sql)){
-            p.setString(1,id);p.setString(2,remitente);p.setString(3,asunto);p.setString(4,remitente);return p.executeUpdate()==1;
+            p.setString(1,id);p.setString(2,remitente);p.setString(3,asunto);
+            if(p.executeUpdate()==1)return Admision.DIFERIDO;
+            try(PreparedStatement q=c.prepareStatement("select 1 from p1_correo_control where mensaje_id=? union select 1 from p1_correo_procesado where mensaje_id=?")){q.setString(1,id);q.setString(2,id);try(ResultSet r=q.executeQuery()){return r.next()?Admision.DUPLICADO:Admision.SATURADO;}}
         }
+    }
+    public int promoverDiferidos(int limite)throws SQLException{
+        String sql="with tasas as (select lower(remitente) remitente,count(*) n from p1_correo_control where admitido_en>now()-interval '1 hour' group by lower(remitente)), candidatos as (select c.mensaje_id,c.creado_en,row_number() over(partition by lower(c.remitente) order by c.creado_en,c.mensaje_id) posicion,60-coalesce(t.n,0) cupo from p1_correo_control c left join tasas t on t.remitente=lower(c.remitente) where c.estado='DIFERIDO'), elegidos as (select mensaje_id from candidatos where posicion<=cupo order by posicion,creado_en,mensaje_id limit least(?,greatest(0,1000-(select count(*) from p1_correo_control where admitido_en>now()-interval '1 hour')))) update p1_correo_control set estado='RECIBIDO',admitido_en=now(),actualizado_en=now() where mensaje_id in(select mensaje_id from elegidos)";
+        try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement(sql)){p.setInt(1,limite);return p.executeUpdate();}
     }
     public List<CorreoControl> correosPendientes(int limite)throws SQLException{
         java.util.ArrayList<CorreoControl> out=new java.util.ArrayList<>();
-        String sql="select mensaje_id,remitente,asunto,estado,respuesta_asunto,respuesta_cuerpo,exito,intentos from p1_correo_control where estado<>'RESPONDIDO' and siguiente_intento<=now() order by intentos asc,siguiente_intento asc,creado_en asc limit ?";
+        String sql="select mensaje_id,remitente,asunto,estado,respuesta_asunto,respuesta_cuerpo,exito,intentos from p1_correo_control where estado in('RECIBIDO','RESPUESTA_PENDIENTE') and siguiente_intento<=now() order by intentos asc,siguiente_intento asc,creado_en asc limit ?";
         try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement(sql)){p.setInt(1,limite);try(ResultSet r=p.executeQuery()){while(r.next())out.add(new CorreoControl(r.getString(1),r.getString(2),r.getString(3),r.getString(4),r.getString(5),r.getString(6),(Boolean)r.getObject(7),r.getInt(8)));}}
         return out;
     }
@@ -62,16 +78,77 @@ public final class RepositorioPostgres implements RepositorioProyecto {
 
     /** Ejecuta negocio, auditoría y resultado en una sola transacción. El mensaje es la clave idempotente. */
     @Override public Resultado ejecutarIdempotente(String mensajeId,String remitente,Orden orden)throws Exception{
+        if(transaccion.get()!=null)return ejecutarEnTransaccion(transaccion.get(),mensajeId,remitente,orden);
         try(Connection real=ds.getConnection()){
             real.setAutoCommit(false);transaccion.set(real);
             try{
-                try(PreparedStatement q=real.prepareStatement("select exito,respuesta_asunto,respuesta_cuerpo from p1_resultado_orden where mensaje_id=?")){q.setString(1,mensajeId);try(ResultSet r=q.executeQuery()){if(r.next()){real.commit();return new Resultado(r.getBoolean(1),r.getString(2),r.getString(3));}}}
-                Resultado resultado=ejecutar(remitente,orden);
-                try(PreparedStatement p=real.prepareStatement("insert into p1_resultado_orden(mensaje_id,exito,respuesta_asunto,respuesta_cuerpo) values(?,?,?,?)")){p.setString(1,mensajeId);p.setBoolean(2,resultado.exito());p.setString(3,resultado.asunto());p.setString(4,resultado.cuerpo());p.executeUpdate();}
+                Resultado resultado=ejecutarEnTransaccion(real,mensajeId,remitente,orden);
                 real.commit();return resultado;
             }catch(Exception ex){real.rollback();throw ex;}finally{transaccion.remove();}
         }
     }
+    private Resultado ejecutarEnTransaccion(Connection c,String id,String remitente,Orden orden)throws Exception{
+        Resultado anterior=resultadoGuardado(c,id);if(anterior!=null)return anterior;
+        Resultado resultado=ejecutar(remitente,orden);guardarResultado(c,id,resultado);return resultado;
+    }
+    private static Resultado resultadoGuardado(Connection c,String id)throws SQLException{
+        try(PreparedStatement q=c.prepareStatement("select exito,respuesta_asunto,respuesta_cuerpo from p1_resultado_orden where mensaje_id=?")){q.setString(1,id);try(ResultSet r=q.executeQuery()){return r.next()?new Resultado(r.getBoolean(1),r.getString(2),r.getString(3)):null;}}
+    }
+    private static void guardarResultado(Connection c,String id,Resultado resultado)throws SQLException{
+        try(PreparedStatement p=c.prepareStatement("insert into p1_resultado_orden(mensaje_id,exito,respuesta_asunto,respuesta_cuerpo) values(?,?,?,?)")){p.setString(1,id);p.setBoolean(2,resultado.exito());p.setString(3,resultado.asunto());p.setString(4,resultado.cuerpo());p.executeUpdate();}
+    }
+    @Override public Resultado solicitarConfirmacion(String mensajeId,String remitente,Orden orden)throws Exception{
+        String id=mensajeId==null?"local:"+UUID.randomUUID():mensajeId;
+        try(Connection c=ds.getConnection()){
+            c.setAutoCommit(false);
+            try{
+                try(PreparedStatement lock=c.prepareStatement("select pg_advisory_xact_lock(hashtextextended(?,0))")){lock.setString(1,id);lock.execute();}
+                try(PreparedStatement q=c.prepareStatement("select respuesta_asunto,respuesta_cuerpo,exito from p1_correo_control where mensaje_id=? and estado='RESPUESTA_PENDIENTE'")){q.setString(1,id);try(ResultSet r=q.executeQuery()){if(r.next()){c.commit();return new Resultado(r.getBoolean(3),r.getString(1),r.getString(2));}}}
+                byte[] bytes=new byte[32];ALEATORIO.nextBytes(bytes);String token=Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+                try(PreparedStatement p=c.prepareStatement("insert into p1_confirmacion(mensaje_id,remitente,token_hash,orden_json) values(?,?,?,?) on conflict(mensaje_id) do update set token_hash=excluded.token_hash,vence_en=now()+interval '30 minutes' where not p1_confirmacion.usado")){p.setString(1,id);p.setString(2,remitente);p.setString(3,hash(token));p.setString(4,JSON.writeValueAsString(orden));if(p.executeUpdate()!=1){c.rollback();return Resultado.error("La orden ya fue confirmada.");}}
+                Resultado respuesta=new Resultado(false,"CONFIRMACIÓN REQUERIDA - "+orden.comando(),"Orden pendiente: "+JSON.writeValueAsString(orden)+"\nSi solicitó esta operación, envíe desde esta misma cuenta el asunto:\nCONFIRMAR[\""+token+"\"]\nEl código vence en 30 minutos y solo autoriza esta orden. Si no la solicitó, ignore este mensaje.");
+                try(PreparedStatement p=c.prepareStatement("update p1_correo_control set estado='RESPUESTA_PENDIENTE',respuesta_asunto=?,respuesta_cuerpo=?,exito=false,actualizado_en=now() where mensaje_id=? and estado='RECIBIDO'")){p.setString(1,respuesta.asunto());p.setString(2,respuesta.cuerpo());p.setString(3,id);p.executeUpdate();}
+                c.commit();return respuesta;
+            }catch(Exception ex){c.rollback();throw ex;}
+        }
+    }
+    @Override public Resultado confirmarOrden(String mensajeId,String remitente,String token,OrdenConfirmada ejecutar)throws Exception{
+        if(mensajeId==null||!token.matches("[A-Za-z0-9_-]{43}"))return Resultado.error("Confirmación inválida.");
+        try(Connection c=ds.getConnection()){
+            c.setAutoCommit(false);transaccion.set(c);
+            try{
+                Resultado respuesta;
+                Timestamp recibido=null;
+                try(PreparedStatement entrada=c.prepareStatement("select creado_en,asunto from p1_correo_control where mensaje_id=? and lower(remitente)=lower(?)")){
+                    entrada.setString(1,mensajeId);entrada.setString(2,remitente);
+                    try(ResultSet fila=entrada.executeQuery()){if(fila.next()){
+                        try{Orden guardada=new bo.edu.uagrm.inf513.grupo09sa.comandos.AnalizadorOrden().analizar(fila.getString(2));
+                            if(guardada.comando().equals("CONFIRMAR")&&guardada.parametros().equals(List.of(token)))recibido=fila.getTimestamp(1);
+                        }catch(bo.edu.uagrm.inf513.grupo09sa.comandos.OrdenInvalidaException ignorada){}
+                    }}
+                }
+                try(PreparedStatement q=c.prepareStatement("select mensaje_id,orden_json,usado,confirmacion_id,vence_en>coalesce(?::timestamptz,now()) vigente from p1_confirmacion where token_hash=? and lower(remitente)=lower(?) for update")){
+                    q.setTimestamp(1,recibido);q.setString(2,hash(token));q.setString(3,remitente);
+                    try(ResultSet r=q.executeQuery()){
+                        if(!r.next()){c.rollback();return Resultado.error("Código inválido, vencido o ya utilizado.");}
+                        String original=r.getString(1);
+                        if(r.getBoolean(3)){
+                            if(!mensajeId.equals(r.getString(4))){c.rollback();return Resultado.error("Código inválido, vencido o ya utilizado.");}
+                            respuesta=resultadoGuardado(c,"confirmacion:"+hash(original));c.commit();return respuesta;
+                        }
+                        if(!r.getBoolean(5)){c.rollback();return Resultado.error("Código inválido, vencido o ya utilizado.");}
+                        Savepoint negocio=c.setSavepoint();
+                        respuesta=ejecutar.ejecutar(original,JSON.readValue(r.getString(2),Orden.class));
+                        if(!respuesta.exito())c.rollback(negocio);
+                        guardarResultado(c,"confirmacion:"+hash(original),respuesta);
+                        try(PreparedStatement p=c.prepareStatement("update p1_confirmacion set usado=true,confirmacion_id=? where mensaje_id=?")){p.setString(1,mensajeId);p.setString(2,original);p.executeUpdate();}
+                    }
+                }
+                c.commit();return respuesta;
+            }catch(Exception ex){c.rollback();throw ex;}finally{transaccion.remove();}
+        }
+    }
+    private static String hash(String token)throws Exception{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(token.getBytes(StandardCharsets.UTF_8)));}
     private Connection conexion()throws SQLException{
         Connection real=transaccion.get();if(real==null)return ds.getConnection();
         return (Connection)Proxy.newProxyInstance(Connection.class.getClassLoader(),new Class[]{Connection.class},(proxy,method,args)->{

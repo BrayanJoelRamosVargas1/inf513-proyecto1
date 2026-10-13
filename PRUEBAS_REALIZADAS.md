@@ -4,6 +4,12 @@ Fecha de comprobación: 12 de octubre de 2026.
 
 ## Automatizadas
 
+### Correcciones de seguridad verificadas localmente
+
+Resultado de la ejecución final: 42 pruebas, cero fallos, cero errores y ninguna omitida; compilación y JAR ejecutable generados correctamente.
+
+La suite actual se ejecutó en Windows con Java 17 y PostgreSQL 15 local aislado. Incluye confirmación por correo ligada a la orden, rechazo de remitente/código incorrectos, vencimiento, repetición y permisos revocados; reversión ante fallo de base de datos; cola diferida y saturación; tiempos máximos de SMTP y limpieza de referencias IMAP. La confirmación registrada dentro del plazo conserva su validez mientras espera en la cola. Estos resultados no equivalen a desplegar la nueva versión en el servidor institucional.
+
 - Compilación con Java 17 y Maven.
 - Ejecución de las pruebas unitarias del intérprete de órdenes y sus validaciones.
 - Generación correcta del JAR ejecutable.

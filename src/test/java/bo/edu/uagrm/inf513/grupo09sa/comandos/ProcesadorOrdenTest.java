@@ -52,5 +52,6 @@ class ProcesadorOrdenTest {
         public boolean correoProcesado(String id){return false;}public boolean servicioInicializado(){return true;}
         public void marcarServicioInicializado(){}public void registrarCorreoProcesado(String a,String b,String c,boolean d){}
         public Resultado ejecutar(String r,Orden o){return Resultado.ok("ejecutado");}
+        public Resultado solicitarConfirmacion(String id,String r,Orden o){return Resultado.ok("confirmación solicitada, sin ejecutar");}
     }
 }

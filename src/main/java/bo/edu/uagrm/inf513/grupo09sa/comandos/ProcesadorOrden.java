@@ -19,13 +19,21 @@ public final class ProcesadorOrden {
     public ProcesadorOrden(CatalogoComandos catalogo,RepositorioProyecto repo,String bootstrapAdminEmail){this.catalogo=catalogo;this.repo=repo;this.bootstrapAdminEmail=bootstrapAdminEmail==null?"":bootstrapAdminEmail.trim();}
     public Resultado procesar(String remitente, Orden orden){return procesar(null,remitente,orden);}
     public Resultado procesar(String mensajeId,String remitente, Orden orden){
+        return procesarInterno(mensajeId,remitente,orden,false);
+    }
+    private Resultado procesarInterno(String mensajeId,String remitente,Orden orden,boolean confirmado){
         try{
+            if(orden.comando().equals("CONFIRMAR")){
+                if(confirmado||orden.parametros().size()!=1||!orden.parametros().get(0).matches("[A-Za-z0-9_-]{43}"))return Resultado.error("Confirmación inválida.");
+                return repo.confirmarOrden(mensajeId,remitente,orden.parametros().get(0),(original,o)->procesarInterno(original,remitente,o,true));
+            }
             CatalogoComandos.Definicion def=catalogo.buscar(orden.comando());
             if(def==null)return Resultado.error("El comando " + orden.comando() + " no existe. Use AYUDA[].");
             if(orden.parametros().size()!=def.parametros())return Resultado.error("Cantidad incorrecta de parámetros para " + orden.comando()+". Esperados: "+def.parametros()+"; recibidos: "+orden.parametros().size()+".");
             String validacion=validar(orden);if(validacion!=null)return Resultado.error(validacion);
             boolean bootstrap=orden.comando().equals("INSUSU")&&!repo.hayUsuarios()&&orden.parametros().get(3).equals("DECANO")&&!bootstrapAdminEmail.isBlank()&&remitente.equalsIgnoreCase(bootstrapAdminEmail)&&orden.parametros().get(5).equalsIgnoreCase(remitente);
             if(!bootstrap&&!def.rol().equals("PUBLICO")&&!repo.autorizado(remitente,def.rol()))return Resultado.error("El remitente no tiene el rol requerido: "+def.rol()+".");
+            if(!confirmado&&!def.rol().equals("PUBLICO"))return repo.solicitarConfirmacion(mensajeId,remitente,orden);
             if(orden.comando().equals("AYUDA"))return Resultado.ok(catalogo.todos().entrySet().stream().map(e->e.getKey()+" - "+e.getValue().descripcion()+" ("+e.getValue().parametros()+" parámetros)").sorted().collect(Collectors.joining("\n")));
             return mensajeId==null?repo.ejecutar(remitente,orden):repo.ejecutarIdempotente(mensajeId,remitente,orden);
         }catch(Exception ex){

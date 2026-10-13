@@ -13,7 +13,7 @@ create table if not exists p1_correo_control(
   mensaje_id varchar(255) primary key,
   remitente varchar(160) not null,
   asunto text,
-  estado varchar(30) not null check(estado in('RECIBIDO','RESPUESTA_PENDIENTE','RESPONDIDO')),
+  estado varchar(30) not null check(estado in('DIFERIDO','RECIBIDO','RESPUESTA_PENDIENTE','RESPONDIDO')),
   respuesta_asunto text,
   respuesta_cuerpo text,
   exito boolean,
@@ -22,6 +22,20 @@ create table if not exists p1_correo_control(
   siguiente_intento timestamptz not null default now(),
   creado_en timestamptz not null default now(),
   actualizado_en timestamptz not null default now()
+);
+alter table p1_correo_control drop constraint if exists p1_correo_control_estado_check;
+alter table p1_correo_control add constraint p1_correo_control_estado_check check(estado in('DIFERIDO','RECIBIDO','RESPUESTA_PENDIENTE','RESPONDIDO'));
+alter table p1_correo_control add column if not exists admitido_en timestamptz;
+update p1_correo_control set admitido_en=creado_en where admitido_en is null and estado<>'DIFERIDO';
+create index if not exists idx_correo_admitido on p1_correo_control(admitido_en,lower(remitente));
+create table if not exists p1_confirmacion(
+  mensaje_id varchar(255) primary key,
+  remitente varchar(160) not null,
+  token_hash varchar(64) unique not null,
+  orden_json text not null,
+  vence_en timestamptz not null default now()+interval '30 minutes',
+  confirmacion_id varchar(255),
+  usado boolean not null default false
 );
 create table if not exists p1_resultado_orden(
   mensaje_id varchar(255) primary key,

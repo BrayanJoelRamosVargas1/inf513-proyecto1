@@ -49,15 +49,16 @@ public final class Main {
             repo.marcarServicioInicializado(cfg.inboundProtocol());
             System.out.println("Bandeja inicializada: "+ids.size()+" mensajes históricos omitidos.");return;
         }
-        for(MensajeEntrada msg:mail.noProcesados(repo::correosConocidos)){
+        try{for(MensajeEntrada msg:mail.noProcesados(repo::correosConocidos)){
             if(!idSeguro(msg.id())){
                 System.err.println("Correo descartado por identificador inválido.");continue;
             }
             String asunto=normalizarAsunto(msg.asunto());
             if(!correoSeguro(msg.remitente())){repo.registrarCorreoProcesado(msg.id(),"invalido@local",asunto,false);System.err.println("Correo descartado por remitente inválido.");continue;}
-            try{if(!repo.registrarEntrada(msg.id(),msg.remitente(),asunto)){repo.registrarCorreoProcesado(msg.id(),msg.remitente(),"DESCARTADO_POR_LIMITE",false);System.err.println("Correo descartado por límite de admisión.");}}
+            try{if(repo.registrarEntrada(msg.id(),msg.remitente(),asunto)!=RepositorioPostgres.Admision.SATURADO)mail.marcarProcesado(msg);}
             catch(Exception ex){System.err.println("No se pudo registrar un correo; los demás continuarán: "+seguro(ex));}
-        }
+        }}finally{mail.liberarReferencias();}
+        repo.promoverDiferidos(cfg.maxMessagesPerCycle());
         for(var pendiente:repo.correosPendientes(cfg.maxMessagesPerCycle())){
             try{
                 if("RECIBIDO".equals(pendiente.estado())){

@@ -53,17 +53,27 @@ La configuración predeterminada utiliza Roundcube HTTPS tanto para leer como pa
 
 La orden completa debe escribirse en el asunto, por ejemplo `LISCON["*"]` o `AYUDA[]`.
 
+Los comandos con datos privados o cambios de negocio requieren confirmar acceso a la cuenta de correo. Envíe la orden habitual; el sistema devuelve a esa dirección un código aleatorio y el asunto `CONFIRMAR["codigo"]` que debe enviar desde la misma cuenta. El código dura 30 minutos, autoriza exclusivamente la orden original y se consume junto con la operación en una transacción. `AYUDA`, `LISCON` y `LISCAR` permanecen públicos. Una cabecera `From` falsificada solo provoca una solicitud de confirmación al titular; no ejecuta la orden. El primer DECANO también requiere confirmación.
+
+Para actualizar una instalación existente, detenga el proceso, aplique `database/schema.sql` mediante `AplicarEsquema` y arranque el JAR actualizado. Las migraciones conservan los datos existentes. La cola admite hasta 10.000 pendientes; la promoción respeta 60 órdenes por remitente y 1.000 globales por hora. Los excedentes esperan en la cola o en la bandeja sin marcarse como procesados. Tras una espera superior a la vigencia del código, vuelva a enviar la orden original para obtener un código nuevo.
+
 ## Seguridad
 
-- Los comandos sensibles verifican el rol asociado al correo remitente.
+- Los comandos sensibles requieren demostrar acceso al correo y vuelven a verificar el rol al confirmar.
 - Las escrituras principales utilizan consultas preparadas.
-- Los mensajes se marcan como leídos después de enviar la respuesta.
+- En IMAP, los mensajes se marcan como leídos después de guardarlos de forma duradera en PostgreSQL; la cola persiste aunque falle el envío. Los excedentes sin guardar permanecen no leídos.
 - Cada UIDL se ejecuta de manera idempotente: operación, auditoría y resultado comparten una transacción.
 - Una respuesta que no pudo enviarse queda en una cola persistente y se reintenta sin repetir el cambio de negocio.
 - PostgreSQL, POP3 y Roundcube tienen tiempos máximos y reintentos progresivos.
 - Los asuntos y parámetros excesivos, los listados enormes y las ráfagas de mensajes están limitados.
 - Las credenciales se mantienen fuera del código y de GitHub.
 - Antes de producción se debe aplicar `database/schema.sql` y registrar las cuentas autorizadas.
+
+Los códigos activos se almacenan como hash en `p1_confirmacion`; el correo pendiente de envío contiene necesariamente el código en su cuerpo. PostgreSQL y la cuenta institucional deben estar restringidos a operadores autorizados. No muestre códigos activos durante la defensa. El respaldo POP3 sin cifrar solo es apropiado para una red confiable porque transporta estos mensajes. La deduplicación de IMAP usa PostgreSQL como registro principal; las referencias del lote se liberan incluso si falla la lectura.
+
+Pruebas con PostgreSQL desechable: defina `TEST_DB_URL`, `TEST_DB_USER` y `TEST_DB_PASSWORD` y ejecute `mvn clean verify`. La suite crea y elimina únicamente esquemas temporales propios, sin tocar las tablas del proyecto. GitHub Actions ejecuta estas pruebas automáticamente en PostgreSQL 15.
+
+El plazo de confirmación se comprueba contra la hora en que el servicio registró el correo, no contra la hora posterior de ejecución. Una confirmación registrada dentro de los 30 minutos puede esperar diferida sin perder validez. Si no llegó a registrarse dentro del plazo, solicite un código nuevo.
 
 ## Recuperación ante fallos
 

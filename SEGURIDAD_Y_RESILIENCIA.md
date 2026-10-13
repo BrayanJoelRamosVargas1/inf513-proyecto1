@@ -39,6 +39,10 @@
 
 ## Garantía realista
 
+La identidad declarada en `From` no basta para autorizar operaciones privadas. Cada orden protegida genera un código aleatorio de 256 bits enviado a esa dirección. `CONFIRMAR` valida el hash, dirección, caducidad y uso; revalida el rol actual y ejecuta solo la orden almacenada. Consumo del código, negocio, auditoría y resultado se confirman atómicamente. Un fallo temporal revierte también el consumo. Repetir el mismo mensaje de confirmación recupera el resultado; usar el código desde otro mensaje se rechaza.
+
+La admisión distingue duplicado, diferido y saturado. Los diferidos se promueven con cupos por remitente y globales; ninguna saturación temporal produce un descarte definitivo. La cola pendiente tiene un máximo de 10.000 y los excedentes permanecen reintentables en la bandeja. Las referencias IMAP se liberan al terminar cada lectura, incluso ante excepciones. SMTP, IMAP e IMAPS tienen tiempos máximos de conexión, lectura y escritura y verificación de identidad del servidor TLS.
+
 El sistema se recupera de fallos temporales y evita repetir cambios de negocio. La entrega de correo es de tipo *al menos una vez*: si Roundcube envía una respuesta y la conexión se corta antes de confirmarlo, puede producirse una respuesta duplicada, pero no una operación duplicada en PostgreSQL. Ningún software puede continuar comunicándose mientras todos los servidores o la red estén apagados; la garantía es reanudar el trabajo pendiente cuando vuelvan.
 
 ## Transporte seguro
