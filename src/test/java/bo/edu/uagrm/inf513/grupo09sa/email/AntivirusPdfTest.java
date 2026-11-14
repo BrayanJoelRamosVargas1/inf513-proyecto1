@@ -32,6 +32,7 @@ class AntivirusPdfTest {
     /** Process fixture only, not an antivirus result or a production scanner. */
     public static class Simulador {
         public static void main(String[] args)throws Exception{
+            if(System.getenv("MAIL_PASSWORD")!=null||System.getenv("DB_PASSWORD")!=null||System.getenv("TEST_DB_PASSWORD")!=null)System.exit(8);
             Path pdf=Path.of(args[1]);
             if(!pdf.getFileName().toString().equals("documento.pdf")||!new String(Files.readAllBytes(pdf),java.nio.charset.StandardCharsets.US_ASCII).startsWith("%PDF-"))System.exit(9);
             if(args[0].equals("esperar")){Thread.sleep(60_000);return;}
