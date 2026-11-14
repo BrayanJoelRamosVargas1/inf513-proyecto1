@@ -89,6 +89,24 @@ class SeguridadPostgresTest {
         assertTrue(ordenar("luis@example.com","INSPOST","1","1","https://example.com/expediente.pdf").exito());
         assertTrue(ordenar("admin@example.com","ASIEVA","1","2","MERITOS_Y_EXAMEN").exito());
     }
+    @Test void correccionDeRequisitoConservaHistorialYPermiteHabilitar()throws Exception{
+        iniciarFlujo();
+        assertTrue(ordenar("eva@example.com","EVAREQ","1","Identidad","false","Falta documento").exito());
+        assertFalse(ordenar("admin@example.com","HABPOS","1","HABILITADO","Revisar").exito());
+        assertTrue(ordenar("eva@example.com","EVAREQ","1","Identidad","true","Documento subsanado").exito());
+        assertTrue(ordenar("admin@example.com","HABPOS","1","HABILITADO","Verificado").exito());
+        assertEquals(2,numero("select count(*) from p1_evaluacion_requisito"));
+    }
+    @Test void inhabilitarGanadorLiberaPlazaSinRomperRestricciones()throws Exception{
+        iniciarFlujo();
+        assertTrue(ordenar("eva@example.com","EVAREQ","1","Identidad","true","Vigente").exito());
+        assertTrue(ordenar("admin@example.com","HABPOS","1","HABILITADO","Cumple").exito());
+        assertTrue(ordenar("admin@example.com","ASIPLA","1","true").exito());
+        assertTrue(ordenar("admin@example.com","HABPOS","1","HABILITADO","Revisado").exito());
+        assertEquals(1,numero("select count(*) from p1_postulacion where estado='GANADOR' and plaza_asignada"));
+        assertTrue(ordenar("admin@example.com","HABPOS","1","INHABILITADO","Requisito revocado").exito());
+        assertEquals(1,numero("select count(*) from p1_postulacion where estado='INHABILITADO' and not plaza_asignada"));
+    }
     @Test void recorridoDeLosOchoCasosDeUsoConConfirmacionesYBaseReal()throws Exception{
         iniciarFlujo();
         assertTrue(ordenar("admin@example.com","LISUSU","*").cuerpo().contains("luis@example.com"));

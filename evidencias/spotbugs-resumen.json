@@ -1,0 +1,24 @@
+{
+  "herramienta": "SpotBugs 4.10.5.0 + Find Security Bugs 1.14.0",
+  "esfuerzo": "Max",
+  "umbral": "Low",
+  "alertas": 61,
+  "por_tipo": {
+    "SQL_INJECTION_JDBC": 5,
+    "SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE": 1,
+    "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION": 27,
+    "RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE": 2,
+    "PREDICTABLE_RANDOM": 1,
+    "REC_CATCH_EXCEPTION": 5,
+    "IMPROPER_UNICODE": 14,
+    "UNENCRYPTED_SOCKET": 1,
+    "DE_MIGHT_IGNORE": 1,
+    "DM_CONVERT_CASE": 1,
+    "SIC_INNER_SHOULD_BE_STATIC_ANON": 1,
+    "EI_EXPOSE_REP2": 1,
+    "SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING": 1
+  },
+  "errores_analisis": 0,
+  "clases_faltantes": 0,
+  "interpretacion": "Alertas conservadas sin supresión; revisión y límites en docs/AUDITORIA_SEGURIDAD.md"
+}

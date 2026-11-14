@@ -1,9 +1,9 @@
 {
   "fecha": "2026-11-14",
   "entorno": "Windows Java 17 PostgreSQL 15 aislado",
-  "correo": "pasarela simulada sin envíos externos",
+  "correo": "pasarela simulada y servidores locales de prueba; sin despliegue institucional",
   "resultado": {
-    "tests": 70,
+    "tests": 78,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -54,12 +54,16 @@
       "pruebas": 4
     },
     {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.SeguridadTransporteTest",
+      "pruebas": 6
+    },
+    {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.MainTest",
       "pruebas": 5
     },
     {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest",
-      "pruebas": 20
+      "pruebas": 22
     }
   ],
   "institucional_actualizado": false

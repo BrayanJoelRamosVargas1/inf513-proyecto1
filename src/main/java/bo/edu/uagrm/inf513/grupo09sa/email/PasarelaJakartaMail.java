@@ -14,6 +14,12 @@ public final class PasarelaJakartaMail implements PasarelaCorreo {
     static Properties propiedades(AppConfig cfg){
         Properties p=new Properties();p.put("mail.smtp.host",cfg.smtpHost());p.put("mail.smtp.port",cfg.smtpPort());p.put("mail.smtp.auth",cfg.smtpAuth());p.put("mail.smtp.ssl.enable",cfg.smtpSsl());
         p.put("mail."+cfg.inboundProtocol().toLowerCase(Locale.ROOT)+".ssl.enable",cfg.imapSsl());
+        if(cfg.smtpAuth()&&!cfg.smtpSsl()){
+            p.setProperty("mail.smtp.starttls.enable","true");p.setProperty("mail.smtp.starttls.required","true");
+        }
+        if(cfg.inboundProtocol().equals("imap")&&!cfg.imapSsl()){
+            p.setProperty("mail.imap.starttls.enable","true");p.setProperty("mail.imap.starttls.required","true");
+        }
         for(String protocolo:List.of("smtp","imap","imaps")){
             p.setProperty("mail."+protocolo+".connectiontimeout",String.valueOf(cfg.connectSeconds()*1000));
             p.setProperty("mail."+protocolo+".timeout",String.valueOf(cfg.readSeconds()*1000));

@@ -1,5 +1,7 @@
 # Revisión del código contra la consigna y la referencia
 
+Auditoría posterior de esta misma primera parte: **78 pruebas aprobadas**. Véase [el informe de seguridad](AUDITORIA_SEGURIDAD.md), con las correcciones y límites actuales. Las cifras de 70 o 50 que siguen corresponden a revisiones anteriores.
+
 Revisión del 14 de noviembre de 2026. Se contrastaron el texto de observaciones recibido, la actividad de Presencial identificada en `CONSIGNA_Y_TRAZABILIDAD.md`, los ocho casos aprobados y el código de BarberSeven del Grupo 05. La referencia orienta la separación de correo, analizador, validación de negocio y persistencia; sus reglas de citas y ventas no corresponden a auxiliaturas y no se trasladan al dominio del Grupo 09.
 
 ## Recorridos comprobados

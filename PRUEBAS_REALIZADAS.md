@@ -1,5 +1,7 @@
 # Pruebas realizadas
 
+Auditoría posterior de esta misma primera parte: **78 pruebas aprobadas**. Véase [el informe de seguridad](docs/AUDITORIA_SEGURIDAD.md), con las correcciones y límites actuales. Las cifras de 70 o 50 que siguen corresponden a revisiones anteriores.
+
 ## Revisión del 14 de noviembre de 2026
 
 Resultado ejecutado en esta revisión: **70 pruebas, cero fallos, cero errores y cero omitidas**, con Java 17 y PostgreSQL 15 aislado. El detalle estructurado se conserva en `evidencias/pruebas-locales.json` y el resumen reproducible en `evidencias/maven-verificacion.txt`.

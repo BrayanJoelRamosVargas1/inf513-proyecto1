@@ -53,6 +53,14 @@ final class ClienteRoundcube implements AutoCloseable {
                 .setConnectionRequestTimeout(Timeout.ofSeconds(cfg.connectSeconds()))
                 .setResponseTimeout(Timeout.ofSeconds(cfg.readSeconds())).build();
         this.http=HttpClients.custom().setDefaultCookieStore(cookies).setDefaultRequestConfig(tiempos)
+                .setRedirectStrategy(new org.apache.hc.client5.http.impl.DefaultRedirectStrategy(){
+                  @Override public boolean isRedirected(org.apache.hc.core5.http.HttpRequest request,org.apache.hc.core5.http.HttpResponse response,org.apache.hc.core5.http.protocol.HttpContext context)throws org.apache.hc.core5.http.ProtocolException{
+                    String destino=response.getFirstHeader("Location")==null?null:response.getFirstHeader("Location").getValue();
+                    if(destino==null)return false;
+                    try{validarRedireccion(base,destino);}catch(org.apache.hc.core5.http.ProtocolException|IllegalArgumentException ex){return false;}
+                    return super.isRedirected(request,response,context);
+                  }
+                })
                 .disableAutomaticRetries().build();
     }
 
@@ -161,6 +169,11 @@ final class ClienteRoundcube implements AutoCloseable {
             return new RespuestaHttp(res.getCode(),res.getEntity()==null?"":EntityUtils.toString(res.getEntity(),StandardCharsets.UTF_8,MAX_RESPUESTA_HTTP));
         }
     }
+    static void validarRedireccion(URI base,String destino)throws org.apache.hc.core5.http.ProtocolException{
+        URI uri=base.resolve(destino);
+        if(!"https".equalsIgnoreCase(uri.getScheme())||!base.getHost().equalsIgnoreCase(uri.getHost())||puerto(base)!=puerto(uri)||uri.getUserInfo()!=null)throw new org.apache.hc.core5.http.ProtocolException("Redirección de correo fuera del origen HTTPS permitido");
+    }
+    private static int puerto(URI uri){return uri.getPort()==-1?443:uri.getPort();}
     private static String extraer(Pattern p,String s,String nombre){Matcher m=p.matcher(s);if(!m.find())throw new IllegalStateException("No se encontró "+nombre+" en Roundcube.");return m.group(1);}
     private static String enc(String s){return URLEncoder.encode(s,StandardCharsets.UTF_8).replace("*","%2A");}
     private static String form(Map<String,String> values){StringBuilder b=new StringBuilder();values.forEach((k,v)->{if(!b.isEmpty())b.append('&');b.append(enc(k)).append('=').append(enc(v));});return b.toString();}

@@ -4,6 +4,8 @@
 
 El alcance de esta primera parte comprende únicamente los ocho casos de uso aprobados: usuarios; convocatorias; postulación múltiple y expediente; requisitos y habilitación; méritos, examen y evaluadores; ranking y plazas; auditoría; reportes. Los 30 requisitos del foro no son 30 casos de uso ni amplían el alcance de esta entrega. Las operaciones y límites implementados están detallados en [la revisión del código](docs/REVISION_CODIGO.md).
 
+La auditoría posterior está documentada en [AUDITORIA_SEGURIDAD.md](docs/AUDITORIA_SEGURIDAD.md): 78 pruebas, análisis de dependencias OSV, SpotBugs con Find Security Bugs y búsqueda de secretos con Gitleaks. Ese informe complementa el PUDS y la evidencia anterior de 70 pruebas; no añade casos de uso. La versión institucional sigue pendiente de migración y ensayo completo.
+
 La [consigna oficial y su trazabilidad](docs/CONSIGNA_Y_TRAZABILIDAD.md) se verificaron en Presencial UAGRM. El [guion de cambios y defensa](docs/CAMBIOS_Y_DEFENSA.md) distingue pruebas locales, evidencia histórica y el despliegue institucional aún pendiente de esta revisión.
 
 ### Ejemplos exactos del docente

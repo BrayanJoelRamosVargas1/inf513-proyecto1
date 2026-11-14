@@ -46,18 +46,32 @@ final class ClientePop3 {
     }
 
     private Conexion conectar() throws Exception {
-        Socket s=new Socket();
-        s.connect(new InetSocketAddress(cfg.imapHost(),cfg.imapPort()),cfg.connectSeconds()*1000);
-        s.setSoTimeout(cfg.readSeconds()*1000);
-        Conexion c=new Conexion(s);c.ok(c.linea());c.comando("USER "+cfg.mailUser());c.comando("PASS "+cfg.mailPassword());return c;
+        Socket s=cfg.imapSsl()?javax.net.ssl.SSLSocketFactory.getDefault().createSocket():new Socket();
+        try {
+            s.connect(new InetSocketAddress(cfg.imapHost(),cfg.imapPort()),cfg.connectSeconds()*1000);
+            s.setSoTimeout(cfg.readSeconds()*1000);
+            if(s instanceof javax.net.ssl.SSLSocket tls){
+                var parametros=tls.getSSLParameters();parametros.setEndpointIdentificationAlgorithm("HTTPS");tls.setSSLParameters(parametros);tls.startHandshake();
+            }
+            Conexion c=new Conexion(s);c.ok(c.linea());c.comando("USER "+cfg.mailUser());c.comando("PASS "+cfg.mailPassword());return c;
+        } catch(Exception ex) {try{s.close();}catch(IOException cierre){ex.addSuppressed(cierre);}throw ex;}
     }
 
     private static final class Conexion implements AutoCloseable {
         private static final int MAX_RESPUESTA=4*1024*1024;
         private final Socket socket;private final BufferedReader in;private final BufferedWriter out;
         Conexion(Socket socket)throws IOException{this.socket=socket;in=new BufferedReader(new InputStreamReader(socket.getInputStream(),StandardCharsets.ISO_8859_1));out=new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(),StandardCharsets.ISO_8859_1));}
-        String linea()throws IOException{String l=in.readLine();if(l==null)throw new EOFException("POP3 cerró la conexión");return l;}
-        void ok(String l){if(!l.startsWith("+OK"))throw new IllegalStateException("POP3 rechazó la operación: "+l);}
+        String linea()throws IOException{
+            StringBuilder linea=new StringBuilder();
+            int leidos=0;
+            for(int c;(c=in.read())!=-1;){
+                if(++leidos>16_384)throw new IOException("Línea POP3 excede el límite seguro");
+                if(c=='\n')return linea.toString();
+                if(c!='\r')linea.append((char)c);
+            }
+            throw new EOFException("POP3 cerró la conexión");
+        }
+        void ok(String l){if(!l.startsWith("+OK"))throw new IllegalStateException("POP3 rechazó la operación");}
         void comando(String cmd)throws IOException{out.write(cmd+"\r\n");out.flush();ok(linea());}
         long tamano(int numero)throws IOException{out.write("LIST "+numero+"\r\n");out.flush();String respuesta=linea();ok(respuesta);try{return Long.parseLong(respuesta.trim().split("\\s+")[2]);}catch(RuntimeException ex){throw new IOException("Tamaño de mensaje POP3 inválido",ex);}}
         byte[] multilinea(String cmd)throws IOException{out.write(cmd+"\r\n");out.flush();ok(linea());ByteArrayOutputStream b=new ByteArrayOutputStream();for(;;){String l=linea();if(l.equals("."))break;if(l.length()>16_384||b.size()+l.length()>MAX_RESPUESTA)throw new IOException("Respuesta POP3 excede el límite seguro");if(l.startsWith(".."))l=l.substring(1);b.write(l.getBytes(StandardCharsets.ISO_8859_1));b.write('\r');b.write('\n');}return b.toByteArray();}

@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Distribución externa de herramientas y resultados de compilación; no son fuentes de la entrega"
+paths = ['''^tools/''', '''^target/''']
