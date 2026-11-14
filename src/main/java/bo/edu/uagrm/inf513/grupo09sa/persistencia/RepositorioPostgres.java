@@ -101,6 +101,8 @@ public final class RepositorioPostgres implements RepositorioProyecto {
         }
     }
     private Resultado ejecutarEnTransaccion(Connection c,String id,String remitente,Orden orden)throws Exception{
+        // Serialize retries with the same message before looking up their durable result.
+        try(PreparedStatement lock=c.prepareStatement("select pg_advisory_xact_lock(hashtextextended(?,0))")){lock.setString(1,id);lock.execute();}
         Resultado anterior=resultadoGuardado(c,id);if(anterior!=null)return anterior;
         String anteriorId=mensajeActual.get();mensajeActual.set(id);
         try{Resultado resultado=ejecutar(remitente,orden);guardarResultado(c,id,resultado);return resultado;}
@@ -183,6 +185,15 @@ public final class RepositorioPostgres implements RepositorioProyecto {
     public void marcarServicioInicializado(String canal)throws SQLException{try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement("insert into p1_servicio_estado(clave,valor) values(?,'true') on conflict(clave) do update set valor=excluded.valor,actualizado_en=now()")){p.setString(1,"bandeja_inicializada_"+canal.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]","_"));p.executeUpdate();}}
     @Override public void registrarCorreoProcesado(String id,String remitente,String asunto,boolean exito)throws SQLException{try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement("insert into p1_correo_procesado(mensaje_id,remitente,asunto,exito) values(?,?,?,?) on conflict(mensaje_id) do nothing")){p.setString(1,id);p.setString(2,remitente);p.setString(3,asunto);p.setBoolean(4,exito);p.executeUpdate();}}
     @Override public Resultado ejecutar(String remitente,Orden o)throws Exception{
+        if(transaccion.get()!=null)return ejecutarNegocio(remitente,o);
+        try(Connection c=ds.getConnection()){
+            c.setAutoCommit(false);transaccion.set(c);
+            try{Resultado r=ejecutarNegocio(remitente,o);if(r.exito())c.commit();else c.rollback();return r;}
+            catch(Exception ex){c.rollback();throw ex;}finally{transaccion.remove();}
+        }
+    }
+    private Resultado ejecutarNegocio(String remitente,Orden o)throws Exception{
+        String anterior=estadoAuditable(o,true);
         Resultado resultado=switch(o.comando()){
             case "INSPER"->{Resultado r=actualizar("insert into persona(ci,nombres,apellidos,ocupacion,telefono,celular,correo) values(?,?,?,?,?,?,?)",o.parametros(),"Persona insertada.");yield r.exito()?Resultado.ok("Éxito: Registro insertado correctamente"):r;}
             case "LISPER"->consultar("select ci,nombres,apellidos,ocupacion,telefono,celular,correo from persona where ?='*' or concat_ws(' ',ci,nombres,apellidos,ocupacion,correo) ilike ? escape '\\' order by apellidos,nombres,ci",List.of(o.parametros().get(0),patron(o.parametros().get(0))));
@@ -195,7 +206,7 @@ public final class RepositorioPostgres implements RepositorioProyecto {
             case "ASIEVA"->asignarEvaluador(o.parametros()); case "GENRAN"->generarRanking(o.parametros().get(0));
             case "ASIPLA"->asignarPlaza(o.parametros()); case "AUDCAL"->auditoriaProyecto(o.parametros());
             case "REPEST"->estadisticas(o.parametros().get(0)); default->Resultado.error("Comando sin implementación.");};
-        if(resultado.exito()&&java.util.Set.of("INSPER","INSUSU","INSCON","INSCAR","INSPOST","EVAREQ","HABPOS","REGMER","REGEXA","ASIEVA","ASIPLA").contains(o.comando()))registrarAuditoria(remitente,o);
+        if(resultado.exito()&&java.util.Set.of("INSPER","INSUSU","INSCON","INSCAR","INSPOST","EVAREQ","HABPOS","REGMER","REGEXA","ASIEVA","ASIPLA").contains(o.comando()))registrarAuditoria(remitente,o,anterior,estadoAuditable(o,false));
         return resultado;
     }
     private Resultado insertarUsuario(List<String> p)throws SQLException{return actualizar("insert into p1_usuario(registro,nombres,apellidos,rol,telefono,correo,activo) values(?,?,?,?,?,?,?::boolean)",p,"Usuario creado.");}
@@ -254,8 +265,27 @@ private Resultado listarUsuarios(String filtro)throws SQLException{return consul
     private Resultado auditoriaProyecto(List<String> p)throws SQLException{return consultar("select fecha,actor,accion,detalle from p1_auditoria where entidad=? and entidad_id=? order by fecha desc",p);}
     private Resultado estadisticas(String convocatoria)throws SQLException{return consultar("select estado,count(*) cantidad,round(avg(puntaje_final),2) promedio from p1_postulacion where convocatoria_id=?::bigint group by estado order by estado",List.of(convocatoria));}
     private Resultado actualizar(String sql,List<String> p,String ok)throws SQLException{try(Connection c=conexion();PreparedStatement s=c.prepareStatement(sql)){s.setQueryTimeout(30);for(int i=0;i<p.size();i++)s.setString(i+1,p.get(i));int n=s.executeUpdate();return n>0?Resultado.ok(ok+" Filas afectadas: "+n):Resultado.error("La operación no afectó registros.");}}
-    private Resultado consultar(String sql,List<String> parametros)throws SQLException{StringBuilder b=new StringBuilder();try(Connection c=conexion();PreparedStatement s=c.prepareStatement(sql)){s.setQueryTimeout(30);s.setMaxRows(201);for(int i=0;i<parametros.size();i++)s.setString(i+1,parametros.get(i));try(ResultSet r=s.executeQuery()){ResultSetMetaData m=r.getMetaData();for(int i=1;i<=m.getColumnCount();i++){if(i>1)b.append(" | ");b.append(m.getColumnLabel(i));}b.append('\n');int n=0;while(r.next()){if(n==200||b.length()>45_000){b.append("... resultado limitado por seguridad\n");break;}for(int i=1;i<=m.getColumnCount();i++){if(i>1)b.append(" | ");b.append(limitarDato(r.getString(i),500));}b.append('\n');n++;}if(n==0)return Resultado.ok("Sin resultados.");}}return Resultado.ok(limitarDato(b.toString(),50_000));}
+    private Resultado consultar(String sql,List<String> parametros)throws SQLException{StringBuilder b=new StringBuilder();try(Connection c=conexion();PreparedStatement s=c.prepareStatement(sql)){s.setQueryTimeout(30);s.setMaxRows(201);for(int i=0;i<parametros.size();i++)s.setString(i+1,parametros.get(i));try(ResultSet r=s.executeQuery()){ResultSetMetaData m=r.getMetaData();for(int i=1;i<=m.getColumnCount();i++){if(i>1)b.append(" | ");b.append(m.getColumnLabel(i));}b.append('\n');int n=0;while(r.next()){if(n==200||b.length()>45_000){b.append("... resultado limitado por seguridad\n");break;}for(int i=1;i<=m.getColumnCount();i++){if(i>1)b.append(" | ");b.append(limitarDato(r.getString(i),m.getColumnLabel(i).equals("detalle")?4000:500));}b.append('\n');n++;}if(n==0)return Resultado.ok("Sin resultados.");}}return Resultado.ok(limitarDato(b.toString(),50_000));}
     private void recalcularPuntaje(String postulacion)throws SQLException{actualizar("update p1_postulacion p set puntaje_meritos=least(100,coalesce((select sum(m.puntaje) from p1_merito m where m.postulacion_id=p.id),0)),puntaje_examen=coalesce((select avg(e.puntaje) from p1_examen e where e.postulacion_id=p.id),0) where p.id=?::bigint",List.of(postulacion),"Puntaje recalculado");try(Connection c=conexion();PreparedStatement s=c.prepareStatement("update p1_postulacion set puntaje_final=round(least(100,puntaje_meritos*0.4+puntaje_examen*0.6),2) where id=?::bigint")){s.setQueryTimeout(30);s.setString(1,postulacion);s.executeUpdate();}}
-    private void registrarAuditoria(String actor,Orden o)throws SQLException{try(Connection c=conexion();PreparedStatement s=c.prepareStatement("insert into p1_auditoria(actor,accion,entidad,entidad_id,detalle) values(?,?,?,?,?)")){s.setString(1,actor);s.setString(2,o.comando());s.setString(3,o.comando());s.setString(4,o.parametros().isEmpty()?null:o.parametros().get(0));s.setString(5,"Orden ejecutada correctamente con "+o.parametros().size()+" parámetros.");s.executeUpdate();}}
+    private static final Set<String> CAMBIOS_POSTULACION=Set.of("EVAREQ","HABPOS","REGMER","REGEXA","ASIEVA","ASIPLA");
+    private String estadoAuditable(Orden o,boolean bloquear)throws SQLException{
+        if(!CAMBIOS_POSTULACION.contains(o.comando()))return null;
+        // The row lock also serializes recalculation by different evaluators.
+        String sql="select row_to_json(p)::text from (select id,estado,observacion,puntaje_meritos,puntaje_examen,puntaje_final,plaza_asignada from p1_postulacion where id=?::bigint"+(bloquear?" for update":"")+") p";
+        try(Connection c=conexion();PreparedStatement q=c.prepareStatement(sql)){
+            q.setQueryTimeout(30);q.setString(1,o.parametros().get(0));try(ResultSet r=q.executeQuery()){return r.next()?r.getString(1):null;}
+        }
+    }
+    private void registrarAuditoria(String actor,Orden o,String anterior,String posterior)throws Exception{
+        String detalle="Orden ejecutada correctamente con "+o.parametros().size()+" parámetros.";
+        if(CAMBIOS_POSTULACION.contains(o.comando())){
+            var datos=new java.util.LinkedHashMap<String,Object>();
+            datos.put("parametros",o.parametros());datos.put("anterior",anterior==null?null:JSON.readTree(anterior));datos.put("posterior",posterior==null?null:JSON.readTree(posterior));
+            detalle=JSON.writeValueAsString(datos);
+        }
+        try(Connection c=conexion();PreparedStatement s=c.prepareStatement("insert into p1_auditoria(actor,accion,entidad,entidad_id,detalle) values(?,?,?,?,?)")){
+            s.setString(1,actor);s.setString(2,o.comando());s.setString(3,o.comando());s.setString(4,o.parametros().isEmpty()?null:o.parametros().get(0));s.setString(5,detalle);s.executeUpdate();
+        }
+    }
 }
 

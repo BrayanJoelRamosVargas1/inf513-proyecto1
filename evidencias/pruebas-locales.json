@@ -3,7 +3,7 @@
   "entorno": "Windows Java 17 PostgreSQL 15 aislado",
   "correo": "pasarela simulada sin envíos externos",
   "resultado": {
-    "tests": 66,
+    "tests": 70,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -59,7 +59,7 @@
     },
     {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest",
-      "pruebas": 16
+      "pruebas": 20
     }
   ],
   "institucional_actualizado": false

@@ -2,7 +2,7 @@
 
 ## Revisión del 14 de noviembre de 2026
 
-Resultado ejecutado en esta revisión: **66 pruebas, cero fallos, cero errores y cero omitidas**, con Java 17 y PostgreSQL 15 aislado. El detalle estructurado se conserva en `evidencias/pruebas-locales.json` y el resumen reproducible en `evidencias/maven-verificacion.txt`.
+Resultado ejecutado en esta revisión: **70 pruebas, cero fallos, cero errores y cero omitidas**, con Java 17 y PostgreSQL 15 aislado. El detalle estructurado se conserva en `evidencias/pruebas-locales.json` y el resumen reproducible en `evidencias/maven-verificacion.txt`.
 
 Se verificaron los dos ejemplos literales de persona, su duplicado y filtro; la coma final con espacios; MIME serializado con PDF y rechazo de archivos inválidos; carga transaccional de bytes y SHA-256 tras confirmar; repetición sin duplicado; falta de adjunto sin alta parcial; decodificación UTF-8 y comillas de Roundcube; logs y rotación. Se volvió a ejecutar la suite previa de roles, ocho casos y recuperación del ciclo.
 

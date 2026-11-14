@@ -4,7 +4,7 @@
 
 Utilice los documentos PUDS Word y PDF actualizados de `entrega/`, el JAR recién construido de `dist/` y el nuevo paquete `2026-2_INF513-P1_grupo09sa.zip`. La fuente oficial consultada muestra cierre el **20 de noviembre de 2026 a las 15:00** y exige el PUDS impreso el día de la defensa. No se realizó ningún envío a la plataforma.
 
-La revisión se respalda con **66 pruebas locales aprobadas, sin omisiones**. Incluye `persona` con `LISPER` e `INSPER`, logs locales y carga real del PDF en PostgreSQL. Consulte `docs/CAMBIOS_Y_DEFENSA.md` para el recorrido actualizado. La presentación PowerPoint heredada del repositorio es material anterior y no reemplaza el documento ni la evidencia nueva.
+La revisión se respalda con **70 pruebas locales aprobadas, sin omisiones**. Incluye `persona` con `LISPER` e `INSPER`, logs locales y carga real del PDF en PostgreSQL. Consulte `docs/CAMBIOS_Y_DEFENSA.md` para el recorrido actualizado. La presentación PowerPoint heredada del repositorio es material anterior y no reemplaza el documento ni la evidencia nueva.
 
 Antes de defender falta migrar y probar esta versión en la infraestructura institucional con las cuentas del grupo. El informe identifica expresamente esa tarea pendiente. No use un resultado local como si fuera una captura de Gmail o una confirmación del servidor.
 

@@ -116,6 +116,60 @@ class SeguridadPostgresTest {
         assertTrue(ordenar("admin@example.com","ASIPLA","1","false").exito());
         assertEquals(1,numero("select count(*) from p1_postulacion where estado='INHABILITADO' and not plaza_asignada"));
     }
+    @Test void auditoriaReconstruyeLaCalificacionAnteriorYPosterior()throws Exception{
+        iniciarFlujo();
+        assertTrue(ordenar("eva@example.com","REGMER","1","Experiencia","80","Documento revisado").exito());
+        try(var c=ds.getConnection();var s=c.createStatement();var r=s.executeQuery("select actor,detalle from p1_auditoria where accion='REGMER'")){
+            assertTrue(r.next());assertEquals("eva@example.com",r.getString(1));
+            var d=new com.fasterxml.jackson.databind.ObjectMapper().readTree(r.getString(2));
+            assertEquals("80",d.path("parametros").get(2).asText());
+            assertEquals(0,d.path("anterior").path("puntaje_meritos").asInt());
+            assertEquals(80,d.path("posterior").path("puntaje_meritos").asInt());
+            assertEquals(32,d.path("posterior").path("puntaje_final").asInt());assertFalse(r.next());
+        }
+        String historial=ordenar("admin@example.com","AUDCAL","REGMER","1").cuerpo();
+        assertTrue(historial.contains("Documento revisado"));assertTrue(historial.contains("posterior"));
+    }
+    @Test void falloDeAuditoriaRevierteTambienUnaLlamadaDirecta()throws Exception{
+        iniciarFlujo();
+        ejecutarSql("create function rechazar_auditoria() returns trigger language plpgsql as $$ begin raise exception 'Auditoria no disponible'; end $$; create trigger qa_auditoria before insert on p1_auditoria for each row execute function rechazar_auditoria()");
+        assertThrows(SQLException.class,()->repo.ejecutar("eva@example.com",new Orden("REGMER",List.of("1","Experiencia","80","Revisado"))));
+        assertEquals(0,numero("select count(*) from p1_merito"));
+        assertEquals(0,numero("select puntaje_final::int from p1_postulacion where id=1"));
+        ejecutarSql("drop trigger qa_auditoria on p1_auditoria");
+        assertTrue(ordenar("eva@example.com","REGMER","1","Experiencia","80","Revisado").exito());
+        assertEquals(1,numero("select count(*) from p1_merito"));
+    }
+    @Test void correosSimultaneosRecalculanLasNotasSinPerderAportes()throws Exception{
+        iniciarFlujo();
+        assertTrue(ordenar("eva@example.com","EVAREQ","1","Identidad","true","Vigente").exito());
+        assertTrue(ordenar("admin@example.com","HABPOS","1","HABILITADO","Cumple").exito());
+        assertTrue(ordenar("eva@example.com","REGMER","1","Experiencia","80","Revisado").exito());
+        var pool=java.util.concurrent.Executors.newFixedThreadPool(2);
+        var inicio=new java.util.concurrent.CountDownLatch(1);
+        try{
+            var a=pool.submit(()->{inicio.await();return repo.ejecutarIdempotente("nota-a","eva@example.com",new Orden("REGEXA",List.of("1","85","Primera")));});
+            var b=pool.submit(()->{inicio.await();return repo.ejecutarIdempotente("nota-b","eva@example.com",new Orden("REGEXA",List.of("1","95","Segunda")));});
+            inicio.countDown();assertTrue(a.get(15,java.util.concurrent.TimeUnit.SECONDS).exito());assertTrue(b.get(15,java.util.concurrent.TimeUnit.SECONDS).exito());
+        }finally{pool.shutdownNow();}
+        assertEquals(2,numero("select count(*) from p1_examen"));
+        assertEquals(90,numero("select puntaje_examen::int from p1_postulacion where id=1"));
+        assertEquals(86,numero("select puntaje_final::int from p1_postulacion where id=1"));
+        assertEquals(2,numero("select count(*) from p1_auditoria where accion='REGEXA'"));
+    }
+    @Test void reintentosConcurrentesDelMismoMensajeRecuperanElMismoResultado()throws Exception{
+        Orden persona=new Orden("INSPER",List.of("123","Ana","Lopez","Estudiante","33333","77777","ana@example.com"));
+        var pool=java.util.concurrent.Executors.newFixedThreadPool(2);
+        var inicio=new java.util.concurrent.CountDownLatch(1);
+        try{
+            var a=pool.submit(()->{inicio.await();return repo.ejecutarIdempotente("mismo-correo","a@example.com",persona);});
+            var b=pool.submit(()->{inicio.await();return repo.ejecutarIdempotente("mismo-correo","a@example.com",persona);});
+            inicio.countDown();var primero=a.get(15,java.util.concurrent.TimeUnit.SECONDS);var segundo=b.get(15,java.util.concurrent.TimeUnit.SECONDS);
+            assertTrue(primero.exito());assertEquals(primero,segundo);
+        }finally{pool.shutdownNow();}
+        assertEquals(1,numero("select count(*) from persona"));
+        assertEquals(1,numero("select count(*) from p1_auditoria where accion='INSPER'"));
+    }
     String codigo(Resultado r){var m=Pattern.compile("CONFIRMAR\\[\"([A-Za-z0-9_-]{43})\"\\]").matcher(r.cuerpo());assertTrue(m.find(),r.cuerpo());return m.group(1);}
     Resultado confirmar(String id,String correo,String token){return procesador.procesar(id,correo,new Orden("CONFIRMAR",List.of(token)));}
     int usuarios()throws Exception{return numero("select count(*) from p1_usuario");}
