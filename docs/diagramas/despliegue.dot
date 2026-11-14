@@ -1,0 +1,9 @@
+digraph G { graph [bgcolor="white",pad="0.2",nodesep="0.35",ranksep="0.6",fontname="Arial",fontsize=13];node [shape=box,fontname="Arial",fontsize=12,margin="0.14,0.10",color="#34465d",style="filled",fillcolor="#f3f6fa"];edge [fontname="Arial",fontsize=10,color="#34465d",arrowsize=0.7]; rankdir=LR;cliente[label="Equipo del solicitante
+Cliente de correo"];mail[label="Servidor de correo
+tecnoweb.org.bo
+HTTPS o IMAP/POP3 y SMTP"];app[label="Host del servicio Java 17
+Script supervisado o systemd
+config privada y logs locales"];db[shape=cylinder,label="Servidor PostgreSQL
+db.tecnoweb.org.bo
+db_grupo09sa"];git[label="GitHub público
+Código, manual y documentación"];cliente->mail[label="comando en asunto"];mail->cliente[label="respuesta"];app->mail[label="lectura y envío"];app->db[label="JDBC y transacciones"];git->app[label="compilar o instalar JAR"]; }

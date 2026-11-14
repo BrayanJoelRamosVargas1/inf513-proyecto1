@@ -1,0 +1,66 @@
+{
+  "fecha": "2026-11-14",
+  "entorno": "Windows Java 17 PostgreSQL 15 aislado",
+  "correo": "pasarela simulada sin envíos externos",
+  "resultado": {
+    "tests": 66,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "suites": [
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivosTest",
+      "pruebas": 2
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.CicloCorreoPostgresTest",
+      "pruebas": 5
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.comandos.AnalizadorOrdenTest",
+      "pruebas": 9
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.comandos.ConcurrenciaAnalizadorTest",
+      "pruebas": 1
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.comandos.FuzzAnalizadorTest",
+      "pruebas": 1
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.comandos.ProcesadorOrdenTest",
+      "pruebas": 11
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.config.AppConfigTest",
+      "pruebas": 4
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.ClientePop3LimiteTest",
+      "pruebas": 1
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.DecodificacionRoundcubeTest",
+      "pruebas": 2
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.LectorAdjuntosTest",
+      "pruebas": 5
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.PasarelaJakartaMailTest",
+      "pruebas": 4
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.MainTest",
+      "pruebas": 5
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest",
+      "pruebas": 16
+    }
+  ],
+  "institucional_actualizado": false
+}

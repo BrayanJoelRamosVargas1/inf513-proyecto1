@@ -32,7 +32,12 @@ final class ClientePop3 {
                 try{
                     MimeMessage m=new MimeMessage(Session.getInstance(new Properties()),new ByteArrayInputStream(raw));
                     var origen=m.getFrom();String remitente=origen!=null&&origen.length>0&&origen[0] instanceof InternetAddress a?a.getAddress():"";
-                    salida.add(new MensajeEntrada(e.getValue(),remitente,m.getSubject()));
+                    MensajeEntrada entrada=new MensajeEntrada(e.getValue(),remitente,m.getSubject());
+                    if(LectorAdjuntos.requiereFuente(m.getSubject())){
+                        if(c.tamano(e.getKey())>4L*1024*1024){salida.add(new MensajeEntrada(e.getValue(),remitente,"ADJUNTO_RECHAZADO: mensaje mayor a 4 MiB"));if(salida.size()>=cfg.maxMessagesPerCycle())break;continue;}
+                        m=new MimeMessage(Session.getInstance(new Properties()),new ByteArrayInputStream(c.multilinea("RETR "+e.getKey())));
+                    }
+                    salida.add(LectorAdjuntos.completar(entrada,m));
                 }catch(MessagingException|RuntimeException correoInvalido){salida.add(new MensajeEntrada(e.getValue(),"","CORREO MALFORMADO"));}
                 if(salida.size()>=cfg.maxMessagesPerCycle())break;
             }
@@ -48,12 +53,13 @@ final class ClientePop3 {
     }
 
     private static final class Conexion implements AutoCloseable {
-        private static final int MAX_RESPUESTA=2*1024*1024;
+        private static final int MAX_RESPUESTA=4*1024*1024;
         private final Socket socket;private final BufferedReader in;private final BufferedWriter out;
         Conexion(Socket socket)throws IOException{this.socket=socket;in=new BufferedReader(new InputStreamReader(socket.getInputStream(),StandardCharsets.ISO_8859_1));out=new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(),StandardCharsets.ISO_8859_1));}
         String linea()throws IOException{String l=in.readLine();if(l==null)throw new EOFException("POP3 cerró la conexión");return l;}
         void ok(String l){if(!l.startsWith("+OK"))throw new IllegalStateException("POP3 rechazó la operación: "+l);}
         void comando(String cmd)throws IOException{out.write(cmd+"\r\n");out.flush();ok(linea());}
+        long tamano(int numero)throws IOException{out.write("LIST "+numero+"\r\n");out.flush();String respuesta=linea();ok(respuesta);try{return Long.parseLong(respuesta.trim().split("\\s+")[2]);}catch(RuntimeException ex){throw new IOException("Tamaño de mensaje POP3 inválido",ex);}}
         byte[] multilinea(String cmd)throws IOException{out.write(cmd+"\r\n");out.flush();ok(linea());ByteArrayOutputStream b=new ByteArrayOutputStream();for(;;){String l=linea();if(l.equals("."))break;if(l.length()>16_384||b.size()+l.length()>MAX_RESPUESTA)throw new IOException("Respuesta POP3 excede el límite seguro");if(l.startsWith(".."))l=l.substring(1);b.write(l.getBytes(StandardCharsets.ISO_8859_1));b.write('\r');b.write('\n');}return b.toByteArray();}
         Map<Integer,String> uidl()throws IOException{String text=new String(multilinea("UIDL"),StandardCharsets.ISO_8859_1);Map<Integer,String> r=new LinkedHashMap<>();for(String l:text.split("\\r?\\n")){String[] p=l.trim().split("\\s+",2);if(p.length!=2||p[1].isBlank()||p[1].length()>255||p[1].chars().anyMatch(Character::isISOControl))continue;try{int numero=Integer.parseInt(p[0]);if(numero>0)r.put(numero,p[1]);}catch(NumberFormatException ignorado){/* Una línea UIDL inválida no bloquea las demás. */}}return r;}
         public void close()throws IOException{IOException fallo=null;try{out.write("QUIT\r\n");out.flush();}catch(IOException ex){fallo=ex;}try{socket.close();}catch(IOException ex){if(fallo==null)fallo=ex;else fallo.addSuppressed(ex);}if(fallo!=null)throw fallo;}

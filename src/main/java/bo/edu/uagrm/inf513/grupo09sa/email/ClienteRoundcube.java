@@ -91,13 +91,29 @@ final class ClienteRoundcube implements AutoCloseable {
 
     synchronized List<MensajeEntrada> nuevos(PasarelaCorreo.ConsultaProcesados consulta)throws Exception{
         asegurarSesion();List<MensajeEntrada> out=new ArrayList<>();JsonNode primera=listarPagina(1);int paginas=paginasSeguras(primera);for(int pagina=1;pagina<=paginas&&out.size()<cfg.maxMessagesPerCycle();pagina++){
-            JsonNode datos=pagina==1?primera:listarPagina(pagina);List<MensajeEntrada> temporal=new ArrayList<>();extraerFilas(datos,temporal);var conocidos=consulta.conocidos(temporal.stream().map(MensajeEntrada::id).toList());for(MensajeEntrada m:temporal)if(!conocidos.contains(m.id())){out.add(m);if(out.size()>=cfg.maxMessagesPerCycle())break;}
+            JsonNode datos=pagina==1?primera:listarPagina(pagina);List<MensajeEntrada> temporal=new ArrayList<>();extraerFilas(datos,temporal);var conocidos=consulta.conocidos(temporal.stream().map(MensajeEntrada::id).toList());for(MensajeEntrada m:temporal)if(!conocidos.contains(m.id())){out.add(conAdjuntos(m));if(out.size()>=cfg.maxMessagesPerCycle())break;}
         }return out;
     }
 
     private List<MensajeEntrada> listarTodos()throws Exception{
         asegurarSesion();JsonNode primera=listarPagina(1);int paginas=paginasSeguras(primera);List<MensajeEntrada> out=new ArrayList<>();extraerFilas(primera,out);
         for(int pagina=2;pagina<=paginas;pagina++){extraerFilas(listarPagina(pagina),out);if(out.size()>MAX_MENSAJES_BASELINE)throw new IllegalStateException("La bandeja supera el límite seguro para inicialización.");}return out;
+    }
+
+    private MensajeEntrada conAdjuntos(MensajeEntrada entrada)throws Exception{
+        if(!LectorAdjuntos.requiereFuente(entrada.asunto()))return entrada;
+        String uid=entrada.id().substring("roundcube:INBOX:".length());
+        if(!uid.matches("[0-9]+"))throw new IllegalArgumentException("UID inválido");
+        HttpGet req=new HttpGet(base.resolve("?_task=mail&_action=viewsource&_save=1&_mbox=INBOX&_uid="+uid+"&_token="+enc(tokenSesion)));
+        try(CloseableHttpResponse res=http.execute(req)){
+            if(res.getCode()!=200||res.getEntity()==null)throw new java.io.IOException("No se pudo recuperar el mensaje MIME (HTTP "+res.getCode()+")");
+            try(var in=res.getEntity().getContent()){
+                byte[] raw=in.readNBytes(4*1024*1024+1);
+                if(raw.length>4*1024*1024)return new MensajeEntrada(entrada.id(),entrada.remitente(),"ADJUNTO_RECHAZADO: mensaje mayor a 4 MiB");
+                var mime=new jakarta.mail.internet.MimeMessage(jakarta.mail.Session.getInstance(new java.util.Properties()),new java.io.ByteArrayInputStream(raw));
+                return LectorAdjuntos.completar(entrada,mime);
+            }
+        }
     }
     private static int paginasSeguras(JsonNode primera){int paginas=Math.max(1,primera.path("env").path("pagecount").asInt(1));if(paginas>MAX_PAGINAS)throw new IllegalStateException("Roundcube informó demasiadas páginas.");return paginas;}
 
@@ -112,7 +128,10 @@ final class ClienteRoundcube implements AutoCloseable {
             String uid="roundcube:INBOX:"+filas.group(1);String asunto=html(filas.group(2));Matcher correo=CORREO_FILA.matcher(filas.group(3));if(!correo.find())continue;out.add(new MensajeEntrada(uid,correo.group(1),asunto));
         }
     }
-    private static String html(String s){return s.replace("&quot;","\"").replace("&#039;","'").replace("&lt;","<").replace("&gt;",">").replace("&amp;","&");}
+    static String html(String s){
+        try{s=JSON.readValue("\""+s+"\"",String.class);}catch(java.io.IOException ignorada){/* Preserve already-decoded HTML when not a JSON string fragment. */}
+        return s.replace("&quot;","\"").replace("&#039;","'").replace("&lt;","<").replace("&gt;",">").replace("&amp;","&");
+    }
 
     private void asegurarSesion() throws Exception {
         if (tokenSesion != null) return;

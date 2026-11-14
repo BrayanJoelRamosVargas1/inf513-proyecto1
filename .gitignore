@@ -11,6 +11,8 @@ config/application.properties
 application.properties
 logs/
 *.log
+evidencias/*.log
+~$*
 entrega/*.zip
 entrega/*.final*.pptx
 dist/inf513-proyecto1.jar

@@ -2,6 +2,10 @@ package bo.edu.uagrm.inf513.grupo09sa.comandos;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 class AnalizadorOrdenTest {
+    @Test void rechazaComaFinalAunqueHayaEspacios() {
+        for(String asunto : java.util.List.of("LISCON[\"*\", ]", "LISCON[\"*\",\t]", "AYUDA[, ]", "LISCON[\"*\",]"))
+            assertThrows(OrdenInvalidaException.class, () -> new AnalizadorOrden().analizar(asunto), asunto);
+    }
     private final AnalizadorOrden parser=new AnalizadorOrden();
     @Test void interpretaEjemploDelDocente()throws Exception{Orden o=parser.analizar("INSPER[\"4715292\",\"Juan Carlos\",\"Perez Seras\"]");assertEquals("INSPER",o.comando());assertEquals(3,o.parametros().size());assertEquals("Juan Carlos",o.parametros().get(1));}
     @Test void admiteComandoSinParametros()throws Exception{assertTrue(parser.analizar("AYUDA[]").parametros().isEmpty());}

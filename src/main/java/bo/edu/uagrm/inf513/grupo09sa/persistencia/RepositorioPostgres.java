@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public final class RepositorioPostgres implements RepositorioProyecto {
     private final DataSource ds;
     private final ThreadLocal<Connection> transaccion=new ThreadLocal<>();
+    private final ThreadLocal<String> mensajeActual=new ThreadLocal<>();
     private static final ObjectMapper JSON=new ObjectMapper();
     private static final SecureRandom ALEATORIO=new SecureRandom();
     public RepositorioPostgres(DataSource ds){this.ds=ds;}
@@ -37,11 +38,23 @@ public final class RepositorioPostgres implements RepositorioProyecto {
     public enum Admision { ADMITIDO, DIFERIDO, DUPLICADO, SATURADO }
     /** La saturación es temporal: conserva la orden en la cola o en la bandeja. */
     public Admision registrarEntrada(String id,String remitente,String asunto)throws SQLException{
+        return registrarEntrada(id,remitente,asunto,List.of());
+    }
+    public Admision registrarEntrada(String id,String remitente,String asunto,List<bo.edu.uagrm.inf513.grupo09sa.email.AdjuntoPdf> adjuntos)throws SQLException{
+        if(adjuntos.size()>1)throw new IllegalArgumentException("Se admite un PDF por orden");
         String sql="insert into p1_correo_control(mensaje_id,remitente,asunto,estado,admitido_en) select ?,?,?,'DIFERIDO',null where (select count(*) from p1_correo_control where estado<>'RESPONDIDO')<10000 on conflict(mensaje_id) do nothing";
         try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement(sql)){
+            c.setAutoCommit(false);
+            try{
             p.setString(1,id);p.setString(2,remitente);p.setString(3,asunto);
-            if(p.executeUpdate()==1)return Admision.DIFERIDO;
-            try(PreparedStatement q=c.prepareStatement("select 1 from p1_correo_control where mensaje_id=? union select 1 from p1_correo_procesado where mensaje_id=?")){q.setString(1,id);q.setString(2,id);try(ResultSet r=q.executeQuery()){return r.next()?Admision.DUPLICADO:Admision.SATURADO;}}
+            if(p.executeUpdate()==1){
+                for(var a:adjuntos)try(PreparedStatement insert=c.prepareStatement("insert into p1_adjunto_correo(mensaje_id,nombre,contenido,sha256) values(?,?,?,?)")){
+                    insert.setString(1,id);insert.setString(2,a.nombre());insert.setBytes(3,a.contenido());insert.setString(4,a.sha256());insert.executeUpdate();
+                }
+                c.commit();return Admision.DIFERIDO;
+            }
+            try(PreparedStatement q=c.prepareStatement("select 1 from p1_correo_control where mensaje_id=? union select 1 from p1_correo_procesado where mensaje_id=?")){q.setString(1,id);q.setString(2,id);try(ResultSet r=q.executeQuery()){Admision resultado=r.next()?Admision.DUPLICADO:Admision.SATURADO;c.commit();return resultado;}}
+            }catch(SQLException|RuntimeException ex){c.rollback();throw ex;}
         }
     }
     public int promoverDiferidos(int limite)throws SQLException{
@@ -89,7 +102,9 @@ public final class RepositorioPostgres implements RepositorioProyecto {
     }
     private Resultado ejecutarEnTransaccion(Connection c,String id,String remitente,Orden orden)throws Exception{
         Resultado anterior=resultadoGuardado(c,id);if(anterior!=null)return anterior;
-        Resultado resultado=ejecutar(remitente,orden);guardarResultado(c,id,resultado);return resultado;
+        String anteriorId=mensajeActual.get();mensajeActual.set(id);
+        try{Resultado resultado=ejecutar(remitente,orden);guardarResultado(c,id,resultado);return resultado;}
+        finally{if(anteriorId==null)mensajeActual.remove();else mensajeActual.set(anteriorId);}
     }
     private static Resultado resultadoGuardado(Connection c,String id)throws SQLException{
         try(PreparedStatement q=c.prepareStatement("select exito,respuesta_asunto,respuesta_cuerpo from p1_resultado_orden where mensaje_id=?")){q.setString(1,id);try(ResultSet r=q.executeQuery()){return r.next()?new Resultado(r.getBoolean(1),r.getString(2),r.getString(3)):null;}}
@@ -169,6 +184,8 @@ public final class RepositorioPostgres implements RepositorioProyecto {
     @Override public void registrarCorreoProcesado(String id,String remitente,String asunto,boolean exito)throws SQLException{try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement("insert into p1_correo_procesado(mensaje_id,remitente,asunto,exito) values(?,?,?,?) on conflict(mensaje_id) do nothing")){p.setString(1,id);p.setString(2,remitente);p.setString(3,asunto);p.setBoolean(4,exito);p.executeUpdate();}}
     @Override public Resultado ejecutar(String remitente,Orden o)throws Exception{
         Resultado resultado=switch(o.comando()){
+            case "INSPER"->{Resultado r=actualizar("insert into persona(ci,nombres,apellidos,ocupacion,telefono,celular,correo) values(?,?,?,?,?,?,?)",o.parametros(),"Persona insertada.");yield r.exito()?Resultado.ok("Éxito: Registro insertado correctamente"):r;}
+            case "LISPER"->consultar("select ci,nombres,apellidos,ocupacion,telefono,celular,correo from persona where ?='*' or concat_ws(' ',ci,nombres,apellidos,ocupacion,correo) ilike ? escape '\\' order by apellidos,nombres,ci",List.of(o.parametros().get(0),patron(o.parametros().get(0))));
             case "INSUSU"->insertarUsuario(o.parametros()); case "LISUSU"->listarUsuarios(o.parametros().get(0));
             case "INSCON"->insertarConvocatoria(o.parametros()); case "LISCON"->listarConvocatorias(o.parametros().get(0));
             case "INSCAR"->insertarCargo(o.parametros()); case "LISCAR"->listarCargos(o.parametros().get(0));
@@ -178,7 +195,7 @@ public final class RepositorioPostgres implements RepositorioProyecto {
             case "ASIEVA"->asignarEvaluador(o.parametros()); case "GENRAN"->generarRanking(o.parametros().get(0));
             case "ASIPLA"->asignarPlaza(o.parametros()); case "AUDCAL"->auditoriaProyecto(o.parametros());
             case "REPEST"->estadisticas(o.parametros().get(0)); default->Resultado.error("Comando sin implementación.");};
-        if(resultado.exito()&&java.util.Set.of("INSUSU","INSCON","INSCAR","INSPOST","EVAREQ","HABPOS","REGMER","REGEXA","ASIEVA","ASIPLA").contains(o.comando()))registrarAuditoria(remitente,o);
+        if(resultado.exito()&&java.util.Set.of("INSPER","INSUSU","INSCON","INSCAR","INSPOST","EVAREQ","HABPOS","REGMER","REGEXA","ASIEVA","ASIPLA").contains(o.comando()))registrarAuditoria(remitente,o);
         return resultado;
     }
     private Resultado insertarUsuario(List<String> p)throws SQLException{return actualizar("insert into p1_usuario(registro,nombres,apellidos,rol,telefono,correo,activo) values(?,?,?,?,?,?,?::boolean)",p,"Usuario creado.");}
@@ -187,7 +204,36 @@ private Resultado listarUsuarios(String filtro)throws SQLException{return consul
     private Resultado listarConvocatorias(String filtro)throws SQLException{return consultar("select id,codigo,titulo,fecha_inicio,fecha_fin,estado,plazas from p1_convocatoria where ?='*' or concat_ws(' ',codigo,titulo,estado) ilike ? escape '\\' order by fecha_inicio desc",List.of(filtro,patron(filtro)));}
     private Resultado insertarCargo(List<String> p)throws SQLException{return actualizar("insert into p1_cargo(nombre,unidad,activo) values(?,?,?::boolean)",p,"Cargo creado.");}
     private Resultado listarCargos(String filtro)throws SQLException{return consultar("select id,nombre,unidad,activo from p1_cargo where ?='*' or concat_ws(' ',id::text,nombre,unidad) ilike ? escape '\\' order by unidad,nombre",List.of(filtro,patron(filtro)));}
-    private Resultado insertarPostulacion(String correo,List<String> p)throws SQLException{try(Connection c=conexion()){c.setAutoCommit(false);try(PreparedStatement s=c.prepareStatement("insert into p1_postulacion(convocatoria_id,postulante_id,cargo_id,estado) select co.id,u.id,ca.id,'REGISTRADA' from p1_usuario u join p1_convocatoria co on co.id=?::bigint join p1_cargo ca on ca.id=?::bigint where lower(u.correo)=lower(?) and u.activo=true and u.rol='POSTULANTE' and ca.activo=true and co.estado='ABIERTA' and current_date between co.fecha_inicio and co.fecha_fin returning id")){s.setString(1,p.get(0));s.setString(2,p.get(1));s.setString(3,correo);ResultSet r=s.executeQuery();if(!r.next()){c.rollback();return Resultado.error("La postulación no es válida: verifique postulante, convocatoria abierta y vigente, y cargo activo.");}long id=r.getLong(1);try(PreparedStatement e=c.prepareStatement("insert into p1_expediente(postulacion_id,descripcion,ruta_archivo,tipo_mime) values(?,'Expediente digital',?,'application/pdf')")){e.setLong(1,id);e.setString(2,p.get(2));e.executeUpdate();}c.commit();return Resultado.ok("Postulación y expediente registrados. ID: "+id);}catch(SQLException ex){c.rollback();throw ex;}}}
+    private Resultado insertarPostulacion(String correo,List<String> p)throws SQLException {
+        try(Connection c=conexion()) {
+            c.setAutoCommit(false);
+            try {
+                String nombre=null,sha=null;byte[] contenido=null;
+                if(p.get(2).equalsIgnoreCase("ADJUNTO")) {
+                    try(PreparedStatement q=c.prepareStatement("select nombre,contenido,sha256 from p1_adjunto_correo where mensaje_id=?")) {
+                        q.setString(1,mensajeActual.get());
+                        try(ResultSet r=q.executeQuery()) {
+                            if(!r.next()){c.rollback();return Resultado.error("No se recibió el PDF. Adjunte un archivo de máximo 2 MiB al correo INSPOST original.");}
+                            nombre=r.getString(1);contenido=r.getBytes(2);sha=r.getString(3);
+                        }
+                    }
+                }
+                try(PreparedStatement s=c.prepareStatement("insert into p1_postulacion(convocatoria_id,postulante_id,cargo_id,estado) select co.id,u.id,ca.id,'REGISTRADA' from p1_usuario u join p1_convocatoria co on co.id=?::bigint join p1_cargo ca on ca.id=?::bigint where lower(u.correo)=lower(?) and u.activo=true and u.rol='POSTULANTE' and ca.activo=true and co.estado='ABIERTA' and current_date between co.fecha_inicio and co.fecha_fin returning id")) {
+                    s.setString(1,p.get(0));s.setString(2,p.get(1));s.setString(3,correo);
+                    try(ResultSet r=s.executeQuery()) {
+                        if(!r.next()){c.rollback();return Resultado.error("La postulación no es válida: verifique postulante, convocatoria abierta y vigente, y cargo activo.");}
+                        long id=r.getLong(1);
+                        try(PreparedStatement e=c.prepareStatement("insert into p1_expediente(postulacion_id,descripcion,ruta_archivo,tipo_mime,nombre_archivo,contenido,sha256) values(?,'Expediente digital',?,'application/pdf',?,?,?)")) {
+                            e.setLong(1,id);e.setString(2,contenido==null?p.get(2):"postgres:p1_expediente/"+id);
+                            e.setString(3,nombre);e.setBytes(4,contenido);e.setString(5,sha);e.executeUpdate();
+                        }
+                        c.commit();
+                        return Resultado.ok("Postulación y expediente registrados. ID: "+id+(sha==null?" (referencia externa)":". PDF almacenado. SHA-256: "+sha));
+                    }
+                }
+            } catch(SQLException ex) {c.rollback();throw ex;}
+        }
+    }
     private Resultado listarPostulaciones(String correo,String filtro)throws SQLException{return consultar("select p.id,c.codigo,p.estado,p.puntaje_meritos,p.puntaje_examen,p.puntaje_final,p.plaza_asignada from p1_postulacion p join p1_convocatoria c on c.id=p.convocatoria_id join p1_usuario u on u.id=p.postulante_id where lower(u.correo)=lower(?) and (?='*' or concat_ws(' ',p.id::text,c.codigo,p.estado) ilike ? escape '\\') order by p.id desc",List.of(correo,filtro,patron(filtro)));}
     private static String patron(String filtro){return "%"+filtro.replace("\\","\\\\").replace("%","\\%").replace("_","\\_")+"%";}
     private Resultado evaluarRequisito(String correo,List<String> p)throws SQLException{return actualizar("insert into p1_evaluacion_requisito(postulacion_id,requisito,cumple,observacion,evaluador_correo) select ?::bigint,?,?::boolean,?,? where exists(select 1 from p1_asignacion_evaluador a join p1_usuario u on u.id=a.evaluador_id where a.postulacion_id=?::bigint and lower(u.correo)=lower(?) and u.activo=true)",List.of(p.get(0),p.get(1),p.get(2),p.get(3),correo,p.get(0),correo),"Requisito evaluado.");}

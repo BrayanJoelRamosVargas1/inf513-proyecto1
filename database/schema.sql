@@ -1,3 +1,13 @@
+-- Literal example from section 3 of the official assignment. This is NOT p1_usuario.
+create table if not exists persona(
+ ci varchar(20) primary key check(ci ~ '^[0-9]+$'),
+ nombres varchar(100) not null,
+ apellidos varchar(120) not null,
+ ocupacion varchar(80) not null,
+ telefono varchar(30) not null check(telefono ~ '^[0-9]+$'),
+ celular varchar(30) not null check(celular ~ '^[0-9]+$'),
+ correo varchar(160) not null unique
+);
 create table if not exists p1_usuario(id bigserial primary key,registro varchar(20) unique not null,nombres varchar(100) not null,apellidos varchar(120) not null,rol varchar(20) not null check(rol in('DECANO','VICEDECANO','EVALUADOR','POSTULANTE')),telefono varchar(30),correo varchar(160) unique not null,activo boolean not null default true,creado_en timestamptz not null default now());
 create table if not exists p1_convocatoria(id bigserial primary key,codigo varchar(30) unique not null,titulo varchar(200) not null,fecha_inicio date not null,fecha_fin date not null,estado varchar(20) not null,plazas integer not null check(plazas>=0),creado_en timestamptz not null default now());
 create table if not exists p1_cargo(id bigserial primary key,nombre varchar(160) not null,unidad varchar(160),activo boolean not null default true);
@@ -45,6 +55,18 @@ create table if not exists p1_resultado_orden(
   ejecutado_en timestamptz not null default now()
 );
 create table if not exists p1_servicio_estado(clave varchar(80) primary key,valor text not null,actualizado_en timestamptz not null default now());
+
+-- Non-destructive migration for actual PDF upload, separate from legacy file references.
+alter table p1_expediente add column if not exists nombre_archivo varchar(180);
+alter table p1_expediente add column if not exists contenido bytea;
+alter table p1_expediente add column if not exists sha256 char(64);
+create table if not exists p1_adjunto_correo(
+  mensaje_id varchar(255) primary key references p1_correo_control(mensaje_id),
+  nombre varchar(180) not null,
+  contenido bytea not null check(octet_length(contenido) between 5 and 2097152),
+  sha256 char(64) not null,
+  creado_en timestamptz not null default now()
+);
 drop index if exists idx_usuario_correo;
 create unique index if not exists uq_p1_usuario_correo_ci on p1_usuario(lower(correo));
 create index if not exists idx_postulacion_convocatoria on p1_postulacion(convocatoria_id);

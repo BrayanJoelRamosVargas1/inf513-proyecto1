@@ -28,6 +28,52 @@ class SeguridadPostgresTest {
         if(schema!=null)try(var c=ds.getConnection();var s=c.createStatement()){s.execute("drop schema "+schema+" cascade");}
     }
     Orden alta(){return new Orden("INSUSU",List.of("1","Ana","Perez","DECANO","70000000","admin@example.com","true"));}
+    @Test void ejemplosLiteralesDeLaPlataformaInsertanYListanPersona()throws Exception {
+        var parser=new AnalizadorOrden();
+        Orden orden=parser.analizar("INSPER[\"4715292\",\"Juan Carlos\",\"Perez Seras\",\"Estudiante\",\"33554433\",\"71055123\",\"juanperez@uagrm.edu.bo\"]");
+        Resultado insertado=procesador.procesar("persona-1","remitente@example.com",orden);
+        assertTrue(insertado.exito());assertEquals("Éxito: Registro insertado correctamente",insertado.cuerpo());
+        assertTrue(procesador.procesar("persona-1","remitente@example.com",orden).exito());
+        assertEquals(1,numero("select count(*) from persona"));
+        assertEquals(0,usuarios());
+        Resultado listado=procesador.procesar("persona-lista","remitente@example.com",parser.analizar("LISPER[\"*\"]"));
+        assertTrue(listado.exito());assertTrue(listado.cuerpo().contains("4715292 | Juan Carlos | Perez Seras"));
+        Resultado duplicado=procesador.procesar("persona-2","remitente@example.com",orden);
+        assertFalse(duplicado.exito());assertTrue(duplicado.cuerpo().startsWith("Error:"));
+        assertEquals(1,numero("select count(*) from persona"));
+    }
+    @Test void filtroDePersonaEscapaComodinesEInyeccionSql()throws Exception {
+        var parser=new AnalizadorOrden();
+        Resultado incorrecto=procesador.procesar("persona-invalida","a@example.com",parser.analizar("INSPER[\"4715292\",\"Juan\"]"));
+        assertFalse(incorrecto.exito());assertEquals(0,numero("select count(*) from persona"));
+        assertTrue(procesador.procesar("persona-filtro","a@example.com",new Orden("LISPER",List.of("%\u0027 OR 1=1 --"))).exito());
+        assertEquals(0,numero("select count(*) from persona"));
+    }
+    @Test void cargaPdfRealTrasConfirmarYNoLoDuplica()throws Exception {
+        iniciarFlujo();
+        assertTrue(ordenar("admin@example.com","INSCAR","Segundo cargo","Facultad","true").exito());
+        byte[] bytes="%PDF-1.4\nexpediente de prueba\n%%EOF".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        var archivo=new bo.edu.uagrm.inf513.grupo09sa.email.AdjuntoPdf("expediente.pdf",bytes);
+        Orden orden=new Orden("INSPOST",List.of("1","2","ADJUNTO"));
+        assertEquals(RepositorioPostgres.Admision.DIFERIDO,repo.registrarEntrada("correo-pdf","luis@example.com","INSPOST[]",List.of(archivo)));
+        assertEquals(RepositorioPostgres.Admision.DUPLICADO,repo.registrarEntrada("correo-pdf","luis@example.com","INSPOST[]",List.of(archivo)));
+        Resultado desafio=procesador.procesar("correo-pdf","luis@example.com",orden);
+        assertEquals(1,numero("select count(*) from p1_postulacion"));
+        String token=codigo(desafio);
+        assertTrue(confirmar("pdf-confirmado","luis@example.com",token).exito());
+        assertTrue(confirmar("pdf-confirmado","luis@example.com",token).exito());
+        assertEquals(2,numero("select count(*) from p1_postulacion"));
+        try(var c=ds.getConnection();var s=c.createStatement();var r=s.executeQuery("select contenido,sha256,nombre_archivo from p1_expediente where contenido is not null")){
+            assertTrue(r.next());assertArrayEquals(bytes,r.getBytes(1));assertEquals(archivo.sha256(),r.getString(2));assertEquals("expediente.pdf",r.getString(3));assertFalse(r.next());
+        }
+    }
+    @Test void adjuntoAusenteNoCreaPostulacionParcial()throws Exception {
+        iniciarFlujo();
+        assertTrue(ordenar("admin@example.com","INSCAR","Segundo cargo","Facultad","true").exito());
+        Resultado resultado=ordenar("luis@example.com","INSPOST","1","2","ADJUNTO");
+        assertFalse(resultado.exito());assertTrue(resultado.cuerpo().contains("No se recibió el PDF"));
+        assertEquals(1,numero("select count(*) from p1_postulacion"));
+    }
     int secuencia;
     Resultado ordenar(String correo,String comando,String... argumentos){
         String id="flujo-"+(++secuencia);Resultado r=procesador.procesar(id,correo,new Orden(comando,List.of(argumentos)));

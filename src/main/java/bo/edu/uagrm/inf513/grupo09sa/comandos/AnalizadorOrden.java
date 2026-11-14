@@ -26,7 +26,12 @@ public final class AnalizadorOrden {
             if(!cerrado)throw new OrdenInvalidaException("Parámetro sin comillas de cierre");if(b.length()>500)throw new OrdenInvalidaException("Un parámetro supera 500 caracteres");out.add(b.toString());
             if(out.size()>20)throw new OrdenInvalidaException("Demasiados parámetros");
             while(i<texto.length()&&Character.isWhitespace(texto.charAt(i)))i++;
-            if(i<texto.length()){if(texto.charAt(i)!=',')throw new OrdenInvalidaException("Los parámetros deben separarse con comas"); i++;if(i>=texto.length())throw new OrdenInvalidaException("No se permite una coma final sin parámetro");}
+            if(i<texto.length()){
+                if(texto.charAt(i)!=',')throw new OrdenInvalidaException("Los parámetros deben separarse con comas");
+                i++;
+                while(i<texto.length()&&Character.isWhitespace(texto.charAt(i)))i++;
+                if(i>=texto.length())throw new OrdenInvalidaException("No se permite una coma final sin parámetro");
+            }
         }
         return List.copyOf(out);
     }

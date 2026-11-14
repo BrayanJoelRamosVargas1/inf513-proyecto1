@@ -38,7 +38,8 @@ public final class ProcesadorOrden {
             return mensajeId==null?repo.ejecutar(remitente,orden):repo.ejecutarIdempotente(mensajeId,remitente,orden);
         }catch(Exception ex){
             if(esFalloTemporal(ex))throw new InfraestructuraException("Servicio de datos temporalmente no disponible",ex);
-            if(ex instanceof SQLException s)return Resultado.error(mensajeSqlSeguro(s));
+            bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivos.sistema().error("EXCEPCION_ORDEN",mensajeId,ex);
+            if(ex instanceof SQLException s)return Resultado.error((orden.comando().equals("INSPER")?"Error: ":"")+mensajeSqlSeguro(s));
             return Resultado.error("No se pudo ejecutar la orden: "+mensajeSeguro(ex));
         }
     }
@@ -50,6 +51,7 @@ public final class ProcesadorOrden {
                 if(p.chars().anyMatch(c->Character.isISOControl(c)))return "Los parámetros no pueden contener caracteres de control.";
             }
             switch(o.comando()){
+                case "INSPER"->{max(o,20,100,120,80,30,30,160);soloDigitos(o.parametros().get(0),"CI");soloDigitos(o.parametros().get(4),"teléfono");soloDigitos(o.parametros().get(5),"celular");if(!CORREO.matcher(o.parametros().get(6)).matches())return "Correo electrónico inválido.";}
                 case "INSUSU"->{max(o,20,100,120,20,30,160,5);soloDigitos(o.parametros().get(0),"registro");if(!ROLES.contains(o.parametros().get(3)))return "Rol inválido. Use exactamente DECANO, VICEDECANO, EVALUADOR o POSTULANTE.";if(!CORREO.matcher(o.parametros().get(5)).matches())return "Correo electrónico inválido.";booleanActivo(o.parametros().get(6));}
                 case "INSCON"->{max(o,30,200,10,10,20,9);LocalDate inicio=LocalDate.parse(o.parametros().get(2));LocalDate fin=LocalDate.parse(o.parametros().get(3));if(fin.isBefore(inicio))return "La fecha final no puede ser anterior a la fecha inicial.";if(!ESTADOS_CONVOCATORIA.contains(o.parametros().get(4)))return "Estado de convocatoria inválido. Use mayúsculas.";enteroNoNegativo(o.parametros().get(5));}
                 case "INSCAR"->{max(o,160,160,5);booleanActivo(o.parametros().get(2));}
@@ -61,7 +63,7 @@ public final class ProcesadorOrden {
                 case "REGEXA"->{max(o,19,8,500);enteroPositivo(o.parametros().get(0));puntaje(o.parametros().get(1));}
                 case "GENRAN","REPEST"->enteroPositivo(o.parametros().get(0));
                 case "AUDCAL"->{max(o,80,80);enteroPositivo(o.parametros().get(1));}
-                case "LISUSU","LISCON","LISCAR","LISPOST"->max(o,100);
+                case "LISPER","LISUSU","LISCON","LISCAR","LISPOST"->max(o,100);
                 case "AYUDA" -> { }
                 default -> { return "Comando no reconocido por el validador."; }
             }

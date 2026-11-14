@@ -25,6 +25,13 @@ class CicloCorreoPostgresTest {
     void sql(String sql)throws Exception{try(var c=ds.getConnection();var s=c.createStatement()){s.execute(sql);}}
     int cantidad(String tabla)throws Exception{try(var c=ds.getConnection();var s=c.createStatement();var rs=s.executeQuery("select count(*) from "+tabla)){rs.next();return rs.getInt(1);}}
     void ciclo(CorreoFalso mail)throws Exception{Main.ejecutarCiclo(cfg,mail,repo,processor,new AnalizadorOrden());}
+    @Test void respondeConLaCausaDelRechazoDelPdf()throws Exception {
+        var mail=new CorreoFalso();mail.entrada.add(new MensajeEntrada("pdf-malo","a@example.com","ADJUNTO_RECHAZADO: Nombre de PDF inválido"));
+        ciclo(mail);
+        try(var c=ds.getConnection();var s=c.createStatement();var r=s.executeQuery("select respuesta_cuerpo from p1_correo_control where mensaje_id='pdf-malo'")){
+            assertTrue(r.next());assertEquals("Nombre de PDF inválido",r.getString(1));
+        }
+    }
     @Test void envioFallidoConservaRespuestaYNoDuplicaElResultado()throws Exception{
         var mail=new CorreoFalso();mail.entrada.add(new MensajeEntrada("uno","a@example.com","LISCON[\"*\"]"));
         ciclo(mail);assertEquals(1,cantidad("p1_resultado_orden"));assertTrue(mail.marcados.contains("uno"));

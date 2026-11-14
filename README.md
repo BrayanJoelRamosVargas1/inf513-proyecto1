@@ -1,6 +1,57 @@
 # INF513 Proyecto 1 Grupo 09 SA
 
-Sistema por correo electrónico para gestionar convocatorias de auxiliaturas. El servicio Java revisa la bandeja del grupo, interpreta la orden escrita en el asunto, valida permisos y parámetros, ejecuta la operación en PostgreSQL y responde al remitente.
+## Revisión para la entrega de noviembre de 2026
+
+La [consigna oficial y su trazabilidad](docs/CONSIGNA_Y_TRAZABILIDAD.md) se verificaron en Presencial UAGRM. El [guion de cambios y defensa](docs/CAMBIOS_Y_DEFENSA.md) distingue pruebas locales, evidencia histórica y el despliegue institucional aún pendiente de esta revisión.
+
+### Ejemplos exactos del docente
+
+```text
+LISPER["*"]
+INSPER["4715292","Juan Carlos","Perez Seras","Estudiante","33554433","71055123","juanperez@uagrm.edu.bo"]
+```
+
+Son operaciones sobre `persona`, con campos `ci, nombres, apellidos, ocupacion, telefono, celular, correo`. Son públicas para reproducir el intercambio directo de la consigna y no crean roles del sistema de auxiliaturas. La inserción correcta responde `Éxito: Registro insertado correctamente`; una CI o correo duplicados producen un error y no otra fila.
+
+### Cargar un expediente PDF real
+
+El POSTULANTE envía el asunto siguiente y adjunta **un archivo PDF de hasta 2 MiB** al mismo correo:
+
+```text
+INSPOST["1","1","ADJUNTO"]
+```
+
+Debe sustituir los IDs por los de una convocatoria abierta y vigente y un cargo activo. El PDF se conserva en la cola durable junto al asunto. Después de responder con el `CONFIRMAR` recibido, el servicio crea la postulación y guarda los bytes, nombre y SHA-256 en `p1_expediente`. La cabecera `%PDF-`, el nombre y el tamaño se validan; el programa no ejecuta el PDF ni realiza un análisis antivirus. La extracción está implementada para Roundcube, IMAP y POP3; la suite de esta revisión verifica MIME y persistencia local, sin afirmar una nueva prueba contra el Roundcube institucional.
+
+El tercer parámetro también puede seguir siendo una ruta o URL externa. En ese caso solo se guarda una **referencia**; el servicio no descarga ese enlace y la respuesta lo identifica expresamente.
+
+### Archivos de actividad
+
+El servicio crea `logs/access.log` y `logs/error.log` al iniciar. `LOG_DIR` o la propiedad Java `-Dapp.log.dir=...` permiten cambiar el directorio. Se registran fecha UTC, evento, ID, remitente, nombre del comando y resultado. Las excepciones registran clase y SQLSTATE, sin su mensaje crudo. No se guardan los parámetros ni códigos de confirmación. Se conserva el archivo activo y tres rotaciones de hasta 5 MiB; dé permisos de escritura únicamente al operador del servicio.
+
+### Arquitectura
+
+![Arquitectura del sistema](docs/diagramas/arquitectura.png)
+
+### Flujo del analizador de correos
+
+![Flujo del analizador](docs/diagramas/analizador.png)
+
+La recepción guarda de forma durable antes de marcar leído. El analizador crea una `Orden` inmutable; `ProcesadorOrden` aplica catálogo, validación y permisos. El repositorio comparte negocio, auditoría y resultado en una transacción. La cola separa la ejecución del posterior envío de la respuesta. Una confirmación pendiente no representa un fallo de infraestructura.
+
+### Esquema y relaciones
+
+![Modelo de datos del negocio](docs/diagramas/mer_negocio.png)
+
+`p1_postulacion` une convocatoria, usuario postulante y cargo y evita duplicar esa combinación. Expedientes, requisitos, méritos, exámenes y asignaciones se vinculan por claves foráneas. `p1_asignacion_evaluador` vincula además al usuario evaluador. `p1_usuario` mantiene roles y estado; `persona` es el catálogo independiente del ejemplo docente.
+
+![Modelo de soporte del correo](docs/diagramas/mer_infraestructura.png)
+
+`p1_correo_control` conserva recepción, diferimiento, respuesta pendiente e intentos. `p1_adjunto_correo` tiene una relación física de uno a cero o un PDF con esa cola. Confirmaciones, resultados e histórico se correlacionan por IDs; las líneas discontinuas del diagrama representan esa correlación lógica y no claves foráneas inexistentes. `p1_auditoria` conserva actor, acción y referencia; `p1_servicio_estado` identifica la inicialización de cada transporte.
+
+La migración no borra datos ni reemplaza tablas: añade `persona`, `p1_adjunto_correo` y tres columnas opcionales a expedientes. Antes de aplicarla a una base compartida, compruebe si ya existe `persona` y que su estructura coincide. No aplique sobre esa tabla una migración destructiva para resolver incompatibilidades.
+
+Sistema por correo electrónico para gestionar convocatorias de auxiliaturas. Incluye además los ejemplos literales LISPER e INSPER de la consigna, sobre la tabla persona. El servicio Java revisa la bandeja del grupo, interpreta la orden escrita en el asunto, valida permisos y parámetros, ejecuta la operación en PostgreSQL y responde al remitente.
 
 ## Integrantes
 

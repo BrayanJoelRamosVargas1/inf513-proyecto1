@@ -1,5 +1,15 @@
 # Pruebas realizadas
 
+## Revisión del 14 de noviembre de 2026
+
+Resultado ejecutado en esta revisión: **66 pruebas, cero fallos, cero errores y cero omitidas**, con Java 17 y PostgreSQL 15 aislado. El detalle estructurado se conserva en `evidencias/pruebas-locales.json` y el resumen reproducible en `evidencias/maven-verificacion.txt`.
+
+Se verificaron los dos ejemplos literales de persona, su duplicado y filtro; la coma final con espacios; MIME serializado con PDF y rechazo de archivos inválidos; carga transaccional de bytes y SHA-256 tras confirmar; repetición sin duplicado; falta de adjunto sin alta parcial; decodificación UTF-8 y comillas de Roundcube; logs y rotación. Se volvió a ejecutar la suite previa de roles, ocho casos y recuperación del ciclo.
+
+La pasarela de los recorridos locales es simulada: **no se enviaron correos institucionales ni se aplicó la migración al servidor en esta revisión**. Los apartados siguientes son historial anterior y no acreditan despliegue de los cambios de noviembre. Las capturas y confirmaciones institucionales deben añadirse después del ensayo real de la misma versión.
+
+## Historial anterior a esta revisión
+
 Fecha de comprobación: 12 de octubre de 2026.
 
 Actualización institucional comprobada el 13 de octubre de 2026: autenticación correcta en PostgreSQL 18.6 y Roundcube HTTPS (149 mensajes), respaldo lógico de las 14 tablas p1_ anteriores (183 filas) y migración confirmada en una transacción. Arranque del JAR corregido en Windows conectado a los servicios institucionales; se comprobó que conserva el bloqueo de instancia única. No hay usuarios registrados, por lo que quedan pendientes la configuración del correo del primer DECANO y su prueba externa de confirmación. Esta evidencia no implica ejecución del programa Java dentro del servidor de la Facultad ni una prueba integral de todos los comandos por Gmail.

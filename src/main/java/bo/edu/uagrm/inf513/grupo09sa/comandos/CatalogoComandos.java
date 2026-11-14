@@ -7,6 +7,7 @@ public final class CatalogoComandos {
     public record Definicion(int parametros, String rol, String descripcion) {}
     private final Map<String,Definicion> comandos=new LinkedHashMap<>();
     public CatalogoComandos(){
+        registrar("INSPER",7,"PUBLICO","Ejemplo de la consigna: insertar persona"); registrar("LISPER",1,"PUBLICO","Ejemplo de la consigna: listar personas");
         registrar("INSUSU",7,"DECANO","Crear usuario"); registrar("LISUSU",1,"DECANO","Listar usuarios");
         registrar("INSCON",6,"DECANO","Crear convocatoria"); registrar("LISCON",1,"PUBLICO","Listar convocatorias");
         registrar("INSCAR",3,"DECANO","Crear cargo de auxiliatura"); registrar("LISCAR",1,"PUBLICO","Listar cargos de auxiliatura");

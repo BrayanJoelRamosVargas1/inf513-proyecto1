@@ -1,0 +1,10 @@
+digraph G { graph [bgcolor="white",pad="0.2",nodesep="0.35",ranksep="0.6",fontname="Arial",fontsize=13];node [shape=box,fontname="Arial",fontsize=12,margin="0.14,0.10",color="#34465d",style="filled",fillcolor="#f3f6fa"];edge [fontname="Arial",fontsize=10,color="#34465d",arrowsize=0.7]; rankdir=TB; cliente[label="Cliente de correo
+Asunto estructurado y PDF opcional"]; correo[label="Servidor institucional
+tecnoweb.org.bo"]; pasarela[label="PasarelaCorreo
+Roundcube HTTPS o IMAP/POP3 y SMTP"]; cola[label="Main y cola durable
+Recepción antes de marcar leído"]; parser[label="AnalizadorOrden
+Sintaxis y escape de parámetros"]; negocio[label="ProcesadorOrden
+Catálogo, tipos, permisos y confirmación"]; repo[label="RepositorioPostgres
+SQL preparado y transacciones"]; db[shape=cylinder,label="PostgreSQL
+Negocio, auditoría, cola y PDF"]; logs[shape=note,label="BitacoraArchivos
+access.log y error.log"]; cliente->correo->pasarela->cola->parser->negocio->repo->db; repo->cola[label="resultado persistido"]; cola->pasarela[label="respuesta pendiente"]; pasarela->correo[label="respuesta"]; correo->cliente[label="éxito o error"]; cola->logs; negocio->logs; }
