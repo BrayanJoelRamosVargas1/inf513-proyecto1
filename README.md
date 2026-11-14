@@ -4,7 +4,7 @@
 
 El alcance de esta primera parte comprende únicamente los ocho casos de uso aprobados: usuarios; convocatorias; postulación múltiple y expediente; requisitos y habilitación; méritos, examen y evaluadores; ranking y plazas; auditoría; reportes. Los 30 requisitos del foro no son 30 casos de uso ni amplían el alcance de esta entrega. Las operaciones y límites implementados están detallados en [la revisión del código](docs/REVISION_CODIGO.md).
 
-La auditoría está documentada en [AUDITORIA_SEGURIDAD.md](docs/AUDITORIA_SEGURIDAD.md): 79 pruebas, OSV, SpotBugs con Find Security Bugs y Gitleaks. El [estado de despliegue](docs/ESTADO_DESPLIEGUE.md) registra respaldo restaurado, migración aplicada y servicio activo con correo real. El servidor PostgreSQL institucional no admite SSL; esta limitación requiere intervención de su administrador.
+La revisión adversarial y sus siete correcciones están en [AUDITORIA_ADVERSARIAL.md](docs/AUDITORIA_ADVERSARIAL.md). La auditoría está documentada en [AUDITORIA_SEGURIDAD.md](docs/AUDITORIA_SEGURIDAD.md): 90 pruebas, OSV, SpotBugs con Find Security Bugs y Gitleaks. El [estado de despliegue](docs/ESTADO_DESPLIEGUE.md) registra respaldo restaurado, migración aplicada y servicio activo con correo real. El servidor PostgreSQL institucional no admite SSL; esta limitación requiere intervención de su administrador.
 
 La [consigna oficial y su trazabilidad](docs/CONSIGNA_Y_TRAZABILIDAD.md) se verificaron en Presencial UAGRM. El [guion de defensa](docs/CAMBIOS_Y_DEFENSA.md) se complementa con el estado de despliegue actual; las referencias anteriores a migración pendiente corresponden a revisiones previas.
 

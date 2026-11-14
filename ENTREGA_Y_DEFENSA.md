@@ -4,11 +4,11 @@
 
 Esta primera parte se limita a los ocho casos de uso aprobados. La ampliación posterior se conserva en una rama separada y no forma parte del comprimido de entrega.
 
-La auditoría posterior elevó la suite a 79 pruebas y corrigió dependencias, transporte y dos errores del flujo. Su estado y límites se describen en `docs/AUDITORIA_SEGURIDAD.md`; complementa el PUDS y las 70 pruebas de la revisión previa.
+La auditoría posterior elevó la suite a 90 pruebas y corrigió dependencias, transporte y dos errores del flujo. Su estado y límites se describen en `docs/AUDITORIA_SEGURIDAD.md`; complementa el PUDS y las 70 pruebas de la revisión previa.
 
 Utilice los documentos PUDS Word y PDF actualizados de `entrega/`, el JAR recién construido de `dist/` y el nuevo paquete `2026-2_INF513-P1_grupo09sa.zip`. La fuente oficial consultada muestra cierre el **20 de noviembre de 2026 a las 15:00** y exige el PUDS impreso el día de la defensa. No se realizó ningún envío a la plataforma.
 
-La revisión se respalda con **79 pruebas locales aprobadas, sin omisiones**. Incluye `persona` con `LISPER` e `INSPER`, logs locales y carga real del PDF en PostgreSQL. Consulte `docs/CAMBIOS_Y_DEFENSA.md` para el recorrido actualizado. La presentación PowerPoint heredada del repositorio es material anterior y no reemplaza el documento ni la evidencia nueva.
+La revisión se respalda con **90 pruebas locales aprobadas, sin omisiones**. Incluye `persona` con `LISPER` e `INSPER`, logs locales y carga real del PDF en PostgreSQL. Consulte `docs/CAMBIOS_Y_DEFENSA.md` para el recorrido actualizado. La presentación PowerPoint heredada del repositorio es material anterior y no reemplaza el documento ni la evidencia nueva.
 
 La migración ya se aplicó con respaldo restaurado y el servicio quedó activo. Se verificaron respuestas reales y recepción del PDF. Consulte `docs/ESTADO_DESPLIEGUE.md` para evidencias, operación y la limitación SSL del servidor PostgreSQL. Antes de defender ensayen desde las cuentas de cada rol; las pruebas locales no sustituyen ese ensayo.
 

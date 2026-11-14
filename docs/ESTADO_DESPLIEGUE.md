@@ -23,12 +23,16 @@ Los respaldos contienen datos privados y se conservaron fuera de la entrega. La 
 | INSPER con datos ficticios | Respuesta exacta de éxito y una sola fila. Persona ficticia retirada al terminar. |
 | Segundo correo con la misma persona | Duplicado rechazado, sin otra fila. |
 | Comando inexistente | Respuesta de error recibida por la casilla del grupo. |
-| PDF adjunto a INSPOST | 1488 bytes recibidos y persistidos; SHA-256 `62b8953cd0e8327037b2822f9bf17c22f9f5bb68569ed99c410d4a291ceffe2a`, idéntico al original ficticio. El remitente de ensayo no tenía rol POSTULANTE y se rechazó la orden, sin crear una postulación. |
+| PDF adjunto a INSPOST | Ensayo anterior a la revisión adversarial: 1488 bytes recibidos y persistidos; SHA-256 `62b8953cd0e8327037b2822f9bf17c22f9f5bb68569ed99c410d4a291ceffe2a`, idéntico al original ficticio. El remitente de ensayo no tenía rol POSTULANTE y se rechazó la orden, sin crear una postulación. La versión final evita almacenar ese binario sin rol; la regresión aislada lo verifica. |
 | Respuestas automáticas propias | Se ignoran, evitando el bucle descubierto y corregido durante el ensayo. |
 | Servicio y cola | Una instancia activa; cero pendientes al comprobar. |
-| Suite aislada | 79 pruebas aprobadas, sin fallos, errores ni omisiones. Incluye los ocho CU y el bucle de respuestas. |
+| Suite aislada | 90 pruebas aprobadas, sin fallos, errores ni omisiones. Incluye los ocho CU y el bucle de respuestas. |
 
 El ensayo real se dirigió exclusivamente a la casilla del propio grupo. No demuestra por sí solo el recorrido completo desde las cuentas personales de cada rol; ese recorrido está automatizado en la suite aislada y debe practicarse para defender.
+
+## Comprobación posterior a las siete correcciones
+
+Se desplegó el JAR de las 90 pruebas después de respaldar las 16 tablas p1. No hubo cambios de esquema ni notas anteriores que recalcular: méritos, exámenes y plazas estaban vacíos. El nuevo proceso respondió nuevamente a éxito, duplicado y comando inválido, y rechazó por correo real el PDF enviado sin rol POSTULANTE, sin guardar su binario. La comprobación final encontró una sola instancia y cero pendientes. Evidencia: `evidencias/despliegue-adversarial.txt`.
 
 ## Limitación del servidor PostgreSQL
 

@@ -58,3 +58,7 @@ Aunque el servidor institucional solo expone POP3 110 sin `STLS`, el sistema lee
 5. Enviar un comando inexistente, parámetros incorrectos y un remitente sin rol: debe responder `ERROR`.
 6. Enviar un asunto mayor al límite: debe rechazarse sin detener el servicio.
 7. Ejecutar en Windows con `scripts/run-service.ps1` y en Fedora con `scripts/run-service.sh` o systemd.
+
+## Revisión adversarial del 14 de noviembre
+
+La versión final supera 90 pruebas. Las correcciones de notas repetidas, requisitos revocados, plazas sin evaluación, cambios posteriores a asignación, carga no autorizada y MIME roto se documentan en `docs/AUDITORIA_ADVERSARIAL.md`. El almacenamiento temporal de PDF tiene cupos por remitente y globales; se conservan expedientes y confirmaciones pendientes. No se garantiza disponibilidad ante ataques sostenidos.

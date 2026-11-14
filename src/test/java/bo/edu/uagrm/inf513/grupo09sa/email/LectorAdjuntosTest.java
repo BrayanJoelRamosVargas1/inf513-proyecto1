@@ -44,4 +44,12 @@ class LectorAdjuntosTest {
         var entrada=new MensajeEntrada("m1","demo@example.com","AYUDA[]");
         assertEquals(entrada,LectorAdjuntos.completar(entrada,mensaje("archivo.exe","ejecutable")));
     }
+    @Test void mimeMultipartRotoSeRechazaSinInterrumpirElSiguienteCorreo()throws Exception {
+        String raw="Content-Type: multipart/mixed; boundary=ausente\r\n\r\ncontenido sin delimitadores";
+        var roto=new MimeMessage(Session.getInstance(new Properties()),new java.io.ByteArrayInputStream(raw.getBytes(StandardCharsets.US_ASCII)));
+        var entrada=new MensajeEntrada("roto","demo@example.com","INSPOST[]");
+        assertTrue(LectorAdjuntos.completar(entrada,roto).asunto().startsWith("ADJUNTO_RECHAZADO"));
+        var valido=LectorAdjuntos.completar(new MensajeEntrada("siguiente","demo@example.com","INSPOST[]"),mensaje("expediente.pdf",new String(PDF,StandardCharsets.US_ASCII)));
+        assertEquals(1,valido.adjuntos().size());
+    }
 }

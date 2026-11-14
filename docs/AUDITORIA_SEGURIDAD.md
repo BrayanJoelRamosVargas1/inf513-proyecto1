@@ -6,6 +6,10 @@ Fecha: 14 de noviembre de 2026. Alcance: los ocho casos aprobados, sin incorpora
 
 La [propuesta de cambios #1](https://github.com/BrayanJoelRamosVargas1/inf513-proyecto1/pull/1) contiene la revisión. La actividad no se ha enviado a Presencial. El 14 de noviembre se verificó la restauración del respaldo, se aplicó la migración y se inició el servicio en Windows con PostgreSQL y correo institucionales. Los resultados reales y sus límites figuran en [ESTADO_DESPLIEGUE.md](ESTADO_DESPLIEGUE.md).
 
+## Revisión adversarial posterior
+
+Se reprodujeron y corrigieron siete defectos adicionales. La suite final tiene 90 pruebas e incluye once regresiones nuevas; véase [AUDITORIA_ADVERSARIAL.md](AUDITORIA_ADVERSARIAL.md) para ataques, reglas, pruebas y fuentes consultadas.
+
 ## Problemas encontrados y corregidos
 
 | Hallazgo | Corrección y comprobación |
@@ -26,9 +30,9 @@ Los avisos de bibliotecas se documentan en `evidencias/auditoria-osv-antes.json`
 
 ## Herramientas y evidencia
 
-- **Maven/JUnit, Java 17 y PostgreSQL 15 aislado:** 79 pruebas, cero fallos, errores u omisiones. Incluyen recorrido de los ocho CU, permisos y revocación, tokens de confirmación, reintentos, duplicados, transacciones, concurrencia, inyección SQL, validación de adjuntos, seis pruebas de transporte y la regresión del bucle de respuestas. Resultados: `evidencias/pruebas-locales.json` y `evidencias/maven-verificacion.txt`.
+- **Maven/JUnit, Java 17 y PostgreSQL 15 aislado:** 90 pruebas, cero fallos, errores u omisiones. Incluyen recorrido de los ocho CU, permisos y revocación, tokens de confirmación, reintentos, duplicados, transacciones, concurrencia, inyección SQL, validación de adjuntos, seis pruebas de transporte y la regresión del bucle de respuestas. Resultados: `evidencias/pruebas-locales.json` y `evidencias/maven-verificacion.txt`.
 - **OSV API:** 23 coordenadas de dependencias Maven, sin transmitir código ni secretos. Evidencia final: `evidencias/auditoria-osv.json`. Excluye plugins de construcción, sistema operativo, servidor PostgreSQL y Roundcube. No se interpreta como garantía de ausencia de vulnerabilidades desconocidas.
-- **SpotBugs 4.10.5.0 y Find Security Bugs 1.14.0:** análisis con esfuerzo máximo y umbral bajo, sin filtros de supresión. El informe XML conserva las alertas para revisión. Compilar o terminar el análisis correctamente no significa que no existan alertas.
+- **SpotBugs 4.10.5.0 y Find Security Bugs 1.14.0:** análisis con esfuerzo máximo y umbral bajo, sin filtros de supresión. El informe XML conserva las 63 alertas para revisión. Dos nuevas corresponden a bloquearConvocatoria y convocatoriaConPlazas: eligen entre consultas constantes y vinculan el ID mediante parámetros preparados. Compilar o terminar el análisis correctamente no significa que no existan alertas.
 - **Gitleaks 8.30.1:** distribución oficial con SHA-256 contrastado con su archivo de sumas. Historial de todas las referencias locales y archivos actuales, con resultados redactados. Cero detecciones finales. La distribución externa del propio auditor contenía dos ejemplos que activaban reglas; se excluye únicamente `tools/` y los productos de compilación en `target/`, no el código ni la configuración del proyecto. Gitleaks no garantiza detectar cualquier contraseña humana ni examina el interior de binarios o documentos Office como código fuente.
 
 ## Revisión de alertas estáticas
@@ -53,7 +57,7 @@ El detalle exacto y sus ubicaciones se conservan en `evidencias/spotbugs-final.x
 3. **Correo real y configuración:** Roundcube HTTPS está operativo. Los modos alternativos y su aceptación docente deben comprobarse en el entorno de defensa. PostgreSQL declaró expresamente que no soporta SSL al intentar `sslmode=verify-full`; su conexión actual no está cifrada. Corregirlo requiere al administrador de ese servidor. No se desactivó ninguna verificación de certificados para ocultar el resultado.
 4. **PDF:** se comprueba cabecera, nombre, tamaño y SHA-256. No hay antivirus ni validación estructural completa; el servicio no ejecuta ni abre el documento. Las referencias externas solo se guardan, no se descargan.
 5. **Disponibilidad:** hay cola, límites y reintentos; siguen siendo necesarios control de espacio, retención de correos/adjuntos y monitoreo operativo. No se hicieron ataques de carga al servidor universitario.
-6. **Reglas académicas documentadas:** ponderación fija 40/60, desempate por ID y promedio de entradas de examen. Esta auditoría no inventa un reglamento ni incorpora nuevos CU. La carga de una nueva nota añade una entrada; no sustituye una anterior.
+6. **Reglas académicas documentadas:** ponderación fija 40/60 y desempate por ID. Se conserva cada entrada histórica, pero solo participa la última nota de cada evaluador. Los méritos se promedian por criterio y se suman hasta 100. No se recibió una rúbrica oficial; esta política no se presenta como reglamento ni incorpora nuevos CU.
 
 ## Reproducir
 
