@@ -9,7 +9,7 @@ import java.util.List;
 /** Extract only attachments belonging to INSPOST, without interpreting PDF contents. */
 final class LectorAdjuntos {
     static boolean requiereFuente(String asunto) {
-        return asunto != null && asunto.matches("(?is)^\\s*INSPOST\\s*\\[.*");
+        return asunto != null && asunto.matches("(?is)^\\s*(?:INSPOST|DOCPOST)\\s*\\[.*");
     }
     static MensajeEntrada completar(MensajeEntrada entrada, Part mime) throws Exception {
         if (!requiereFuente(entrada.asunto())) return entrada;

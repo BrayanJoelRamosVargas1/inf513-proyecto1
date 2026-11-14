@@ -1,9 +1,9 @@
 {
   "fecha": "2026-11-14",
   "entorno": "Windows Java 17 PostgreSQL 15 aislado",
-  "correo": "pasarela simulada sin envíos externos",
+  "correo": "negocio simulado; transporte PDF institucional verificado por separado",
   "resultado": {
-    "tests": 70,
+    "tests": 79,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -43,7 +43,7 @@
     },
     {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.DecodificacionRoundcubeTest",
-      "pruebas": 2
+      "pruebas": 3
     },
     {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.LectorAdjuntosTest",
@@ -59,7 +59,7 @@
     },
     {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest",
-      "pruebas": 20
+      "pruebas": 28
     }
   ],
   "institucional_actualizado": false

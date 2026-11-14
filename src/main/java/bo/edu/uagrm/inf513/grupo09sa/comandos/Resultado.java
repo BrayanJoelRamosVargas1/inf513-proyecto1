@@ -1,5 +1,8 @@
 package bo.edu.uagrm.inf513.grupo09sa.comandos;
-public record Resultado(boolean exito, String asunto, String cuerpo) {
+public record Resultado(boolean exito, String asunto, String cuerpo, String archivoNombre, byte[] archivoContenido) {
+    public Resultado(boolean exito,String asunto,String cuerpo){this(exito,asunto,cuerpo,null,null);}
+    public Resultado { archivoContenido=archivoContenido==null?null:archivoContenido.clone(); }
+    @Override public byte[] archivoContenido(){return archivoContenido==null?null:archivoContenido.clone();}
     public static Resultado ok(String cuerpo){return new Resultado(true,"ÉXITO - Orden procesada",cuerpo);}
     public static Resultado error(String cuerpo){return new Resultado(false,"ERROR - Orden no procesada",cuerpo);}
 }

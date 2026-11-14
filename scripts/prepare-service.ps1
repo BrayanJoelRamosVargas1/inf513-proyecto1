@@ -14,7 +14,7 @@ try {
     if (-not $env:DB_PASSWORD) { $env:DB_PASSWORD = Read-PrivateValue 'Contraseña de PostgreSQL (oculta)' }
     if (-not $env:BOOTSTRAP_ADMIN_EMAIL) { $env:BOOTSTRAP_ADMIN_EMAIL = Read-Host 'Correo del primer DECANO (Enter si ya existe)' }
     $jar = Join-Path (Get-Location) 'dist/inf513-proyecto1-1.0.0.jar'
-    Write-Host 'Detenga cualquier instancia anterior antes de continuar. No se modifican tablas ajenas al prefijo p1_.'
+    Write-Host 'Detenga cualquier instancia anterior antes de continuar. El esquema incorpora tablas p1_ y persona; confirme un respaldo y compatibilidad antes de aplicarlo.'
     if ((Read-Host 'Escriba ACTUALIZAR para aplicar el esquema y arrancar') -cne 'ACTUALIZAR') { throw 'Operación cancelada.' }
     & java -cp $jar bo.edu.uagrm.inf513.grupo09sa.AplicarEsquema
     if ($LASTEXITCODE -ne 0) { throw 'La migración falló. El servicio no se inició.' }

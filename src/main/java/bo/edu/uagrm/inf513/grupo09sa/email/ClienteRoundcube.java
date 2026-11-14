@@ -57,6 +57,9 @@ final class ClienteRoundcube implements AutoCloseable {
     }
 
     synchronized void enviar(String destinatario, String asunto, String cuerpo) throws Exception {
+        enviar(destinatario,asunto,cuerpo,null);
+    }
+    synchronized void enviar(String destinatario,String asunto,String cuerpo,AdjuntoPdf archivo)throws Exception {
         asegurarSesion();
         RespuestaHttp compose = request("GET","?_task=mail&_action=compose&_token=" + enc(tokenSesion),null,Map.of());
         if (compose.codigo() != 200 || compose.cuerpo().contains("id=\"login-form\"")) {
@@ -68,6 +71,20 @@ final class ClienteRoundcube implements AutoCloseable {
         String id = extraer(ID_COMPOSICION, html, "identificador de composición");
         String token = extraer(TOKEN_FORM, html, "token de composición");
         String identidad = extraer(IDENTIDAD, html, "identidad del remitente");
+        String adjuntos="";
+        if(archivo!=null){
+            var req=new HttpPost(base.resolve("?_task=mail&_action=upload&_id="+enc(id)+"&_uploadid=pdf&_token="+enc(token)+"&_remote=1&_framed=1"));
+            req.setHeader("X-Roundcube-Request",token);
+            req.setHeader("User-Agent","Mozilla/5.0 INF513-Grupo09SA/1.0");
+            req.setEntity(org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder.create()
+                .addTextBody("_token",token).addTextBody("_id",id)
+                .addBinaryBody("_attachments[]",archivo.contenido(),org.apache.hc.core5.http.ContentType.APPLICATION_PDF,archivo.nombre()).build());
+            try(var res=http.execute(req)){
+                String body=res.getEntity()==null?"":EntityUtils.toString(res.getEntity(),StandardCharsets.UTF_8);
+                adjuntos=identificadorAdjunto(body);
+                if(res.getCode()!=200||adjuntos==null)throw new java.io.IOException("Roundcube no confirmó la carga del PDF de respuesta (HTTP "+res.getCode()+", carga="+body.contains("add2attachment_list")+", error="+body.contains("display_message")+", sesion_invalida="+body.contains("Invalid session var")+", login="+body.contains("login-form")+", bytes_respuesta="+body.length()+")");
+            }
+        }
 
         Map<String,String> f = new LinkedHashMap<>();
         f.put("_task","mail"); f.put("_action","send"); f.put("_id",id); f.put("_token",token);
@@ -76,13 +93,18 @@ final class ClienteRoundcube implements AutoCloseable {
         f.put("_replyto",cfg.mailAddress()); f.put("_followupto","");
         f.put("_subject",asunto); f.put("_message",cuerpo); f.put("_is_html","0");
         f.put("_framed","1"); f.put("_priority","0"); f.put("_store_target","Sent");
-        f.put("_attachments",""); f.put("_dsn",""); f.put("_mdn","");
+        f.put("_attachments",adjuntos); f.put("_dsn",""); f.put("_mdn","");
         RespuestaHttp res=request("POST","?_task=mail",form(f),Map.of(
                 "Content-Type","application/x-www-form-urlencoded",
                 "X-Roundcube-Request",token,"X-Requested-With","XMLHttpRequest"));
         if (res.codigo()!=200 || !res.cuerpo().contains("remove_compose_data") || res.cuerpo().toLowerCase().contains("messageerror")) {
             throw new IllegalStateException("Roundcube no confirmó el envío (HTTP " + res.codigo() + ").");
         }
+    }
+    static String identificadorAdjunto(String respuesta){
+        String texto=respuesta.replace("\\\"","\"");
+        var m=Pattern.compile("add2attachment_list[\\s\"',()]{1,12}rcmfile([A-Za-z0-9_-]+)[\"']").matcher(texto);
+        return m.find()?m.group(1):null;
     }
 
     synchronized List<String> identificadores()throws Exception{

@@ -63,6 +63,18 @@ public final class ProcesadorOrden {
                 case "REGEXA"->{max(o,19,8,500);enteroPositivo(o.parametros().get(0));puntaje(o.parametros().get(1));}
                 case "GENRAN","REPEST"->enteroPositivo(o.parametros().get(0));
                 case "AUDCAL"->{max(o,80,80);enteroPositivo(o.parametros().get(1));}
+                case "MODUSU"->{max(o,19,100,120,20,30,160,5,500);enteroPositivo(o.parametros().get(0));if(!ROLES.contains(o.parametros().get(3)))return "Rol inválido.";if(!CORREO.matcher(o.parametros().get(5)).matches())return "Correo electrónico inválido.";booleanActivo(o.parametros().get(6));}
+                case "PERFIL"->{max(o,19,120,120);enteroPositivo(o.parametros().get(0));}
+                case "MODCON"->{max(o,19,200,10,10,20,9,20,30,500);enteroPositivo(o.parametros().get(0));if(LocalDate.parse(o.parametros().get(3)).isBefore(LocalDate.parse(o.parametros().get(2))))return "Fechas invertidas.";if(!ESTADOS_CONVOCATORIA.contains(o.parametros().get(4)))return "Estado inválido.";enteroNoNegativo(o.parametros().get(5));}
+                case "OFERTA"->{max(o,19,19,9,500,500,5);enteroPositivo(o.parametros().get(0));enteroPositivo(o.parametros().get(1));enteroNoNegativo(o.parametros().get(2));booleanActivo(o.parametros().get(5));}
+                case "REQUISITO"->{max(o,19,60,200,5,5,5);enteroPositivo(o.parametros().get(0));if(!o.parametros().get(1).matches("[A-Z0-9_]{1,60}"))return "Código de requisito inválido; use mayúsculas, dígitos y guion bajo.";for(int i=3;i<6;i++)booleanActivo(o.parametros().get(i));}
+                case "AREA"->{max(o,19,120,6,5,500);enteroPositivo(o.parametros().get(0));puntaje(o.parametros().get(2));if(new BigDecimal(o.parametros().get(2)).signum()==0)return "El porcentaje debe ser positivo.";booleanActivo(o.parametros().get(3));}
+                case "ASIAREA"->{max(o,19,19,19);for(String v:o.parametros())enteroPositivo(v);}
+                case "NOTAREA"->{max(o,19,19,8,500);enteroPositivo(o.parametros().get(0));enteroPositivo(o.parametros().get(1));puntaje(o.parametros().get(2));}
+                case "MER40"->{max(o,19,200,8,500);enteroPositivo(o.parametros().get(0));puntaje(o.parametros().get(2));if(new BigDecimal(o.parametros().get(2)).compareTo(new BigDecimal("40"))>0)return "Méritos: máximo 40 puntos.";}
+                case "DOCPOST"->{max(o,19,60);enteroPositivo(o.parametros().get(0));}
+                case "RESEMP"->{max(o,19,5,500);enteroPositivo(o.parametros().get(0));booleanActivo(o.parametros().get(1));}
+                case "LISOFE","LISREQ","LISAREA","LISDOC","VERDOC","REPFIN","REPDOC","REPAREA"->{max(o,19);enteroPositivo(o.parametros().get(0));}
                 case "LISPER","LISUSU","LISCON","LISCAR","LISPOST"->max(o,100);
                 case "AYUDA" -> { }
                 default -> { return "Comando no reconocido por el validador."; }

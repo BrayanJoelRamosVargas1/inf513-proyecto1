@@ -1,8 +1,12 @@
+# Ampliación por los treinta requisitos del foro
+
+La suite final verifica 79 pruebas sin fallos, errores ni omisiones. Incluye categorías, ponderaciones, documentos obligatorios, revisión de PDFs, empates, corrección de notas y reportes. El transporte institucional del PDF se probó por separado con envío a la misma casilla y comparación exacta de bytes; la migración y el servicio de negocio institucional siguen pendientes por el rechazo automático del respaldo. Consulte docs/REQUISITOS_FORO_GRUPO09.md y docs/COMANDOS_CATEGORIAS.md.
+
 # Pruebas realizadas
 
 ## Revisión del 14 de noviembre de 2026
 
-Resultado ejecutado en esta revisión: **70 pruebas, cero fallos, cero errores y cero omitidas**, con Java 17 y PostgreSQL 15 aislado. El detalle estructurado se conserva en `evidencias/pruebas-locales.json` y el resumen reproducible en `evidencias/maven-verificacion.txt`.
+Resultado ejecutado en esta revisión: **79 pruebas, cero fallos, cero errores y cero omitidas**, con Java 17 y PostgreSQL 15 aislado. El detalle estructurado se conserva en `evidencias/pruebas-locales.json` y el resumen reproducible en `evidencias/maven-verificacion.txt`.
 
 Se verificaron los dos ejemplos literales de persona, su duplicado y filtro; la coma final con espacios; MIME serializado con PDF y rechazo de archivos inválidos; carga transaccional de bytes y SHA-256 tras confirmar; repetición sin duplicado; falta de adjunto sin alta parcial; decodificación UTF-8 y comillas de Roundcube; logs y rotación. Se volvió a ejecutar la suite previa de roles, ocho casos y recuperación del ciclo.
 

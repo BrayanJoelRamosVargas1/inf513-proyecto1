@@ -1,3 +1,7 @@
+# Ruta vigente para la ampliación por categorías
+
+Para los 30 requisitos del foro utilice [COMANDOS_CATEGORIAS.md](docs/COMANDOS_CATEGORIAS.md) y la matriz [REQUISITOS_FORO_GRUPO09.md](docs/REQUISITOS_FORO_GRUPO09.md). La secuencia heredada que sigue es referencia del modo básico; no demuestra áreas, cupos por categoría, documentos tipificados ni empates. Use fechas vigentes e IDs consultados.
+
 # Manual de ejecución y defensa
 
 ## Preparación

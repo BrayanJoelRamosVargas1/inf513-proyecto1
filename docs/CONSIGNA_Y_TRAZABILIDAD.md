@@ -27,3 +27,7 @@ La tabla `persona` es independiente de `p1_usuario`. El orden de campos adoptado
 | Ejecución actualizada en infraestructura institucional | Pendiente de migración y prueba con credenciales reales; la suite local no equivale a este despliegue |
 
 La actividad menciona IMAP/POP3/SMTP según configuración de cátedra. El proyecto conserva esos adaptadores y usa Roundcube HTTPS por defecto debido a las restricciones documentadas previamente en el servidor. Debe demostrarse el transporte aceptado por el docente en el despliegue institucional; esta revisión no lo presenta como vuelto a probar.
+
+## Requisitos detallados del foro
+
+Se consultó además el [hilo propio del Grupo 09](https://presencial.uagrm.edu.bo/mod/forum/discuss.php?d=100932), que contiene 30 requisitos publicados el 13 de septiembre. La correspondencia completa está en REQUISITOS_FORO_GRUPO09.md y los comandos en COMANDOS_CATEGORIAS.md. Es una ampliación del alcance previamente revisado.

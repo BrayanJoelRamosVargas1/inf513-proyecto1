@@ -1,10 +1,14 @@
+# Ampliación por los treinta requisitos del foro
+
+La suite final verifica 79 pruebas sin fallos, errores ni omisiones. Incluye categorías, ponderaciones, documentos obligatorios, revisión de PDFs, empates, corrección de notas y reportes. El transporte institucional del PDF se probó por separado con envío a la misma casilla y comparación exacta de bytes; la migración y el servicio de negocio institucional siguen pendientes por el rechazo automático del respaldo. Consulte docs/REQUISITOS_FORO_GRUPO09.md y docs/COMANDOS_CATEGORIAS.md.
+
 # Entrega del Proyecto 1 Grupo 09 SA
 
 ## Versión revisada el 14 de noviembre de 2026
 
 Utilice los documentos PUDS Word y PDF actualizados de `entrega/`, el JAR recién construido de `dist/` y el nuevo paquete `2026-2_INF513-P1_grupo09sa.zip`. La fuente oficial consultada muestra cierre el **20 de noviembre de 2026 a las 15:00** y exige el PUDS impreso el día de la defensa. No se realizó ningún envío a la plataforma.
 
-La revisión se respalda con **70 pruebas locales aprobadas, sin omisiones**. Incluye `persona` con `LISPER` e `INSPER`, logs locales y carga real del PDF en PostgreSQL. Consulte `docs/CAMBIOS_Y_DEFENSA.md` para el recorrido actualizado. La presentación PowerPoint heredada del repositorio es material anterior y no reemplaza el documento ni la evidencia nueva.
+La revisión se respalda con **79 pruebas locales aprobadas, sin omisiones**. Incluye `persona` con `LISPER` e `INSPER`, logs locales y carga real del PDF en PostgreSQL. Consulte `docs/CAMBIOS_Y_DEFENSA.md` para el recorrido actualizado. La presentación PowerPoint heredada del repositorio es material anterior y no reemplaza el documento ni la evidencia nueva.
 
 Antes de defender falta migrar y probar esta versión en la infraestructura institucional con las cuentas del grupo. El informe identifica expresamente esa tarea pendiente. No use un resultado local como si fuera una captura de Gmail o una confirmación del servidor.
 

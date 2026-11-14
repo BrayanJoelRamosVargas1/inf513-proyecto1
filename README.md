@@ -1,3 +1,9 @@
+# Ampliación conforme al foro del Grupo 09
+
+La ruta vigente incluye ofertas por categoría, alcance académico, documentos tipificados, méritos sobre 40, examen por áreas sobre 60 y resolución motivada de empates. Consulte la [guía completa de comandos](docs/COMANDOS_CATEGORIAS.md) y la [matriz de los 30 requisitos originales](docs/REQUISITOS_FORO_GRUPO09.md). Los comandos REGMER y REGEXA se mantienen solo para convocatorias históricas sin ofertas; la demostración debe usar MER40 y NOTAREA.
+
+![Modelo de categorías](docs/diagramas/mer_categorias.png)
+
 # INF513 Proyecto 1 Grupo 09 SA
 
 ## Revisión para la entrega de noviembre de 2026

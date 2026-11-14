@@ -32,6 +32,14 @@ public final class PasarelaJakartaMail implements PasarelaCorreo {
         return "mensaje:"+mensaje.getMessageNumber();
     }
     @Override public void responder(MensajeEntrada original,String asunto,String cuerpo)throws Exception{if(cfg.outboundMode().equalsIgnoreCase("roundcube")){roundcube.enviar(original.remitente(),asunto,cuerpo);return;}MimeMessage m=new MimeMessage(session);m.setFrom(new InternetAddress(cfg.mailAddress(),"INF513 Grupo 09 SA"));m.setRecipients(Message.RecipientType.TO,InternetAddress.parse(original.remitente()));m.setSubject(asunto,"UTF-8");m.setText(cuerpo,"UTF-8");Transport.send(m);}
+    @Override public void responder(MensajeEntrada original,bo.edu.uagrm.inf513.grupo09sa.comandos.Resultado resultado)throws Exception{
+        if(resultado.archivoContenido()==null){responder(original,resultado.asunto(),resultado.cuerpo());return;}
+        var archivo=new AdjuntoPdf(resultado.archivoNombre(),resultado.archivoContenido());
+        if(cfg.outboundMode().equalsIgnoreCase("roundcube")){roundcube.enviar(original.remitente(),resultado.asunto(),resultado.cuerpo(),archivo);return;}
+        MimeMessage m=new MimeMessage(session);m.setFrom(new InternetAddress(cfg.mailAddress(),"INF513 Grupo 09 SA"));m.setRecipients(Message.RecipientType.TO,InternetAddress.parse(original.remitente()));m.setSubject(resultado.asunto(),"UTF-8");
+        var contenido=new jakarta.mail.internet.MimeMultipart();var texto=new jakarta.mail.internet.MimeBodyPart();texto.setText(resultado.cuerpo(),"UTF-8");contenido.addBodyPart(texto);
+        var pdf=new jakarta.mail.internet.MimeBodyPart();pdf.setDataHandler(new jakarta.activation.DataHandler(new jakarta.mail.util.ByteArrayDataSource(archivo.contenido(),"application/pdf")));pdf.setFileName(archivo.nombre());pdf.setDisposition(Part.ATTACHMENT);contenido.addBodyPart(pdf);m.setContent(contenido);Transport.send(m);
+    }
     @Override public void marcarProcesado(MensajeEntrada mensaje)throws Exception{Message m=mensajes.remove(mensaje.id());if(m!=null)m.setFlag(Flags.Flag.SEEN,true);}
     @Override public void liberarReferencias(){mensajes.clear();}
     int referenciasRetenidas(){return mensajes.size();}

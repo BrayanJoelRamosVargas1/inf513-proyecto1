@@ -75,6 +75,141 @@ class SeguridadPostgresTest {
         assertEquals(1,numero("select count(*) from p1_postulacion"));
     }
     int secuencia;
+    void prepararCategoria()throws Exception{
+        iniciarFlujo();var hoy=java.time.LocalDate.now();
+        assertTrue(ordenar("admin@example.com","INSCON","CAT","Por categorías",hoy.minusDays(1).toString(),hoy.plusDays(1).toString(),"ABIERTA","2").exito());
+        assertTrue(ordenar("admin@example.com","OFERTA","2","1","1","FICCT","SISTEMAS","true").exito());
+        assertTrue(ordenar("admin@example.com","REQUISITO","1","IDENTIDAD","Cédula de identidad","true","true","true").exito());
+        assertTrue(ordenar("admin@example.com","REQUISITO","1","FORM_MERITOS","Formulario CPD","true","true","true").exito());
+        assertTrue(ordenar("admin@example.com","AREA","1","Redes","60","true","Configuración inicial").exito());
+        assertTrue(ordenar("admin@example.com","AREA","1","Software","40","true","Configuración inicial").exito());
+        assertTrue(ordenar("admin@example.com","PERFIL","3","FICCT","SISTEMAS").exito());
+    }
+    void postularCategoria()throws Exception{
+        assertTrue(ordenar("luis@example.com","INSPOST","2","1","https://example.com/inicial.pdf").exito());
+        assertTrue(ordenar("admin@example.com","ASIEVA","2","2","MERITOS").exito());
+    }
+    void documento(long post,String codigo)throws Exception{
+        String id="doc-"+(++secuencia);
+        var pdf=new bo.edu.uagrm.inf513.grupo09sa.email.AdjuntoPdf("expediente.pdf","%PDF-1.4\nficticio\n%%EOF".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+        repo.registrarEntrada(id,"luis@example.com","DOCPOST[]",List.of(pdf));
+        Resultado r=procesador.procesar(id,"luis@example.com",new Orden("DOCPOST",List.of(Long.toString(post),codigo)));
+        assertTrue(confirmar(id+"-confirmado","luis@example.com",codigo(r)).exito());
+    }
+    void habilitarCategoria()throws Exception{
+        documento(2,"IDENTIDAD");documento(2,"FORM_MERITOS");
+        for(String cod:List.of("IDENTIDAD","FORM_MERITOS"))assertTrue(ordenar("eva@example.com","EVAREQ","2",cod,"true","Verificado").exito());
+        assertTrue(ordenar("admin@example.com","HABPOS","2","HABILITADO","Completo").exito());
+    }
+    void notasCategoria(String redes,String software)throws Exception{
+        assertTrue(ordenar("admin@example.com","ASIAREA","2","2","1").exito());
+        assertTrue(ordenar("admin@example.com","ASIAREA","2","2","2").exito());
+        assertTrue(ordenar("eva@example.com","MER40","2","Formulario CPD","32","Revisado").exito());
+        assertTrue(ordenar("eva@example.com","NOTAREA","2","1",redes,"Evaluación Redes").exito());
+        assertTrue(ordenar("eva@example.com","NOTAREA","2","2",software,"Evaluación Software").exito());
+    }
+    @Test void requisitosDocumentalesBloqueanYSeRecuperaPdfSoloConPermiso()throws Exception{
+        prepararCategoria();postularCategoria();
+        assertFalse(ordenar("admin@example.com","HABPOS","2","HABILITADO","Incompleto").exito());
+        assertFalse(ordenar("eva@example.com","EVAREQ","2","INVENTADO","true","Sin catálogo").exito());
+        habilitarCategoria();
+        assertEquals(1,numero("select count(*) from p1_postulacion where id=2 and estado='HABILITADO'"));
+        long doc=numero("select min(id) from p1_expediente where requisito_id is not null");
+        var pdf=ordenar("eva@example.com","VERDOC",Long.toString(doc));assertTrue(pdf.exito());assertNotNull(pdf.archivoContenido());
+        assertEquals("expediente.pdf",pdf.archivoNombre());
+        assertFalse(ordenar("intruso@example.com","VERDOC",Long.toString(doc)).exito());
+        assertTrue(ordenar("eva@example.com","LISDOC","2").cuerpo().contains("IDENTIDAD"));
+        repo.registrarEntrada("salida-pdf","eva@example.com","VERDOC[]");repo.promoverDiferidos(20);
+        repo.guardarRespuesta("salida-pdf",pdf);
+        var control=repo.correosPendientes(20).stream().filter(x->x.id().equals("salida-pdf")).findFirst().orElseThrow();
+        assertArrayEquals(pdf.archivoContenido(),repo.respuestaPendiente(control).archivoContenido());
+    }
+    @Test void ponderacionesPorAreaYMeritos40SeConsolidanConDosDecimales()throws Exception{
+        prepararCategoria();postularCategoria();habilitarCategoria();
+        assertFalse(ordenar("eva@example.com","NOTAREA","2","1","80","No asignada").exito());
+        assertFalse(ordenar("eva@example.com","MER40","2","Experiencia","40.01","Fuera de rango").exito());
+        notasCategoria("80","90");
+        try(var c=ds.getConnection();var s=c.createStatement();var r=s.executeQuery("select puntaje_final from p1_postulacion where id=2")){r.next();assertEquals(new java.math.BigDecimal("82.40"),r.getBigDecimal(1));}
+        assertFalse(ordenar("eva@example.com","REGEXA","2","100","Evitar áreas").exito());
+        assertFalse(ordenar("eva@example.com","REGMER","2","Otros","100","Evitar escala").exito());
+        assertFalse(ordenar("eva@example.com","MER40","2","Otro criterio","10","Total excedido").exito());
+        assertTrue(ordenar("admin@example.com","REPFIN","2").cuerpo().contains("82.40"));
+        assertTrue(ordenar("admin@example.com","REPAREA","2").cuerpo().contains("Software"));
+        assertTrue(ordenar("admin@example.com","REPDOC","2").cuerpo().contains("FORM_MERITOS"));
+        assertTrue(ordenar("admin@example.com","ASIPLA","2","true").exito());
+        assertFalse(ordenar("eva@example.com","NOTAREA","2","1","90","Cambio tras asignación").exito());
+    }
+    @Test void configuracionNoSuperaCupoNiPonderacionYSeCongelaTrasPostular()throws Exception{
+        prepararCategoria();
+        assertFalse(ordenar("admin@example.com","AREA","1","Extra","1","true","Exceso").exito());
+        assertFalse(ordenar("admin@example.com","OFERTA","2","1","3","*","*","true").exito());
+        postularCategoria();
+        assertFalse(ordenar("admin@example.com","AREA","1","Redes","50","true","Cambiar reglas").exito());
+        assertFalse(ordenar("admin@example.com","REQUISITO","1","NUEVO","Extra","true","true","true").exito());
+        assertFalse(ordenar("admin@example.com","OFERTA","2","1","1","*","*","true").exito());
+    }
+    @Test void alcanceAcademicoYPostulacionMultipleSeControlanPorOferta()throws Exception{
+        prepararCategoria();
+        assertTrue(ordenar("admin@example.com","PERFIL","3","OTRA","OTRA").exito());
+        assertFalse(ordenar("luis@example.com","INSPOST","2","1","https://example.com/x.pdf").exito());
+        assertTrue(ordenar("admin@example.com","PERFIL","3","FICCT","SISTEMAS").exito());
+        assertTrue(ordenar("admin@example.com","INSCAR","Redes","Facultad","true").exito());
+        assertTrue(ordenar("admin@example.com","OFERTA","2","2","1","*","*","false").exito());
+        postularCategoria();
+        assertFalse(ordenar("luis@example.com","INSPOST","2","2","https://example.com/x.pdf").exito());
+        assertEquals(1,numero("select count(*) from p1_postulacion where convocatoria_id=2"));
+    }
+    @Test void empateEnCorteExigeResolucionMotivadaYRespetaCategoria()throws Exception{
+        prepararCategoria();postularCategoria();habilitarCategoria();notasCategoria("80","90");
+        // A second enabled candidate in the same category, with complete assigned-area grades.
+        ejecutarSql("insert into p1_usuario(registro,nombres,apellidos,rol,correo) values('4','Otra','Persona','POSTULANTE','otra@example.com'); insert into p1_postulacion(convocatoria_id,postulante_id,cargo_id,estado,puntaje_meritos,puntaje_examen,puntaje_final) values(2,4,1,'HABILITADO',80,84,82.40); insert into p1_asignacion_area select 3,2,id from p1_area_examen; insert into p1_nota_area select 3,2,id,84,'Ensayo' from p1_area_examen;");
+        assertTrue(ordenar("admin@example.com","GENRAN","2").cuerpo().contains("empatados"));
+        assertFalse(ordenar("admin@example.com","ASIPLA","2","true").exito());
+        assertTrue(ordenar("admin@example.com","RESEMP","2","true","Acta de desempate de prueba").exito());
+        assertTrue(ordenar("admin@example.com","ASIPLA","2","true").exito());
+        assertFalse(ordenar("admin@example.com","ASIPLA","3","true").exito());
+        assertEquals(1,numero("select count(*) from p1_postulacion where convocatoria_id=2 and plaza_asignada"));
+    }
+    @Test void modificacionDeUsuarioYConvocatoriaConservaUltimaAutoridad()throws Exception{
+        iniciarFlujo();
+        assertFalse(ordenar("admin@example.com","MODUSU","1","Ana","Perez","DECANO","70000000","admin@example.com","false","Retiro").exito());
+        assertTrue(ordenar("admin@example.com","MODUSU","2","Eva","Lopez","EVALUADOR","70000001","eva@example.com","false","Baja de prueba").exito());
+        assertFalse(ordenar("eva@example.com","REGMER","1","Intento","10","Sin permiso").exito());
+        var hoy=java.time.LocalDate.now();
+        assertTrue(ordenar("admin@example.com","MODCON","1","Título actualizado",hoy.minusDays(1).toString(),hoy.plusDays(3).toString(),"CERRADA","1","2026-2","09","Cierre de ensayo").exito());
+        assertEquals(1,numero("select count(*) from p1_convocatoria where gestion='2026-2' and numero='09' and estado='CERRADA'"));
+    }
+    @Test void dosCategoriasConservanRankingCuposYPonderacionesIndependientes()throws Exception{
+        prepararCategoria();
+        assertTrue(ordenar("admin@example.com","INSCAR","Programación","Laboratorio","true").exito());
+        assertTrue(ordenar("admin@example.com","OFERTA","2","2","1","*","*","true").exito());
+        assertTrue(ordenar("admin@example.com","REPFIN","2").cuerpo().contains("Programación"));
+        assertTrue(ordenar("admin@example.com","AREA","2","Programación","100","true","Única área").exito());
+        postularCategoria();habilitarCategoria();notasCategoria("80","90");
+        assertTrue(ordenar("luis@example.com","INSPOST","2","2","https://example.com/otro.pdf").exito());
+        assertTrue(ordenar("admin@example.com","ASIEVA","3","2","MERITOS").exito());
+        assertTrue(ordenar("eva@example.com","EVAREQ","3","Otros","true","Revisión").exito()==false,"Un requisito libre no sustituye al catálogo");
+        // No configured mandatory requirement exists in this category; one review is not required.
+        assertTrue(ordenar("admin@example.com","HABPOS","3","HABILITADO","Sin requisitos obligatorios").exito());
+        assertTrue(ordenar("admin@example.com","ASIAREA","3","2","3").exito());
+        assertTrue(ordenar("eva@example.com","MER40","3","Méritos","20","Ensayo").exito());
+        assertTrue(ordenar("eva@example.com","NOTAREA","3","3","50","Ensayo").exito());
+        assertEquals(50,numero("select puntaje_final::int from p1_postulacion where id=3"));
+        assertTrue(ordenar("admin@example.com","ASIPLA","2","true").exito());
+        assertTrue(ordenar("admin@example.com","ASIPLA","3","true").exito());
+        assertEquals(2,numero("select count(*) from p1_postulacion where convocatoria_id=2 and plaza_asignada"));
+    }
+    @Test void correccionDeNotaConservaMotivoYValoresEnAuditoria()throws Exception{
+        prepararCategoria();postularCategoria();habilitarCategoria();notasCategoria("80","90");
+        assertTrue(ordenar("eva@example.com","NOTAREA","2","1","85","Corrección según acta 09").exito());
+        try(var c=ds.getConnection();var s=c.createStatement();var r=s.executeQuery("select detalle from p1_auditoria where accion='NOTAREA' order by id desc limit 1")){
+            r.next();var json=new com.fasterxml.jackson.databind.ObjectMapper().readTree(r.getString(1));
+            assertEquals(80,json.path("anterior").path("notas_area").get(0).path("puntaje").asInt());
+            assertEquals(85,json.path("posterior").path("notas_area").get(0).path("puntaje").asInt());
+            assertEquals("Corrección según acta 09",json.path("parametros").get(3).asText());
+        }
+        assertEquals(2,numero("select count(*) from p1_nota_area where postulacion_id=2"));
+    }
     Resultado ordenar(String correo,String comando,String... argumentos){
         String id="flujo-"+(++secuencia);Resultado r=procesador.procesar(id,correo,new Orden(comando,List.of(argumentos)));
         return r.asunto().startsWith("CONFIRMACIÓN REQUERIDA")?confirmar(id+"-confirmado",correo,codigo(r)):r;

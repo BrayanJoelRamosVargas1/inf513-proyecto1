@@ -96,3 +96,66 @@ alter table p1_convocatoria validate constraint p1_convocatoria_estado_ck;
 alter table p1_postulacion validate constraint p1_postulacion_estado_ck;
 alter table p1_postulacion validate constraint p1_postulacion_plaza_ck;
 
+-- Detailed requirements published by Grupo 09 in its course forum.
+alter table p1_usuario add column if not exists facultad varchar(120);
+alter table p1_usuario add column if not exists carrera varchar(120);
+alter table p1_convocatoria add column if not exists gestion varchar(20);
+alter table p1_convocatoria add column if not exists numero varchar(30);
+create table if not exists p1_oferta(
+ id bigserial primary key,
+ convocatoria_id bigint not null references p1_convocatoria,
+ cargo_id bigint not null references p1_cargo,
+ plazas integer not null check(plazas>=0),
+ facultades varchar(500) not null default '*',
+ carreras varchar(500) not null default '*',
+ multiple boolean not null default true,
+ unique(convocatoria_id,cargo_id)
+);
+create table if not exists p1_requisito_config(
+ id bigserial primary key,
+ oferta_id bigint not null references p1_oferta,
+ codigo varchar(60) not null,
+ descripcion varchar(200) not null,
+ obligatorio boolean not null,
+ documental boolean not null,
+ activo boolean not null default true,
+ unique(oferta_id,codigo)
+);
+alter table p1_expediente add column if not exists requisito_id bigint references p1_requisito_config;
+create unique index if not exists uq_expediente_requisito on p1_expediente(postulacion_id,requisito_id) where requisito_id is not null;
+create table if not exists p1_area_examen(
+ id bigserial primary key,
+ oferta_id bigint not null references p1_oferta,
+ nombre varchar(120) not null,
+ porcentaje numeric(5,2) not null check(porcentaje>0 and porcentaje<=100),
+ activo boolean not null default true,
+ unique(oferta_id,nombre)
+);
+create table if not exists p1_asignacion_area(
+ postulacion_id bigint not null references p1_postulacion,
+ evaluador_id bigint not null references p1_usuario,
+ area_id bigint not null references p1_area_examen,
+ primary key(postulacion_id,evaluador_id,area_id)
+);
+create table if not exists p1_nota_area(
+ postulacion_id bigint not null references p1_postulacion,
+ evaluador_id bigint not null references p1_usuario,
+ area_id bigint not null references p1_area_examen,
+ puntaje numeric(5,2) not null check(puntaje between 0 and 100),
+ observacion varchar(500) not null,
+ actualizado_en timestamptz not null default now(),
+ primary key(postulacion_id,evaluador_id,area_id),
+ foreign key(postulacion_id,evaluador_id,area_id) references p1_asignacion_area
+);
+create table if not exists p1_resolucion_empate(
+ postulacion_id bigint primary key references p1_postulacion,
+ autorizado boolean not null,
+ motivo varchar(500) not null,
+ actor varchar(160) not null,
+ fecha timestamptz not null default now()
+);
+alter table p1_correo_control add column if not exists respuesta_archivo_nombre varchar(180);
+alter table p1_correo_control add column if not exists respuesta_archivo bytea;
+alter table p1_resultado_orden add column if not exists archivo_nombre varchar(180);
+alter table p1_resultado_orden add column if not exists archivo_contenido bytea;
+
