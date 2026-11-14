@@ -20,7 +20,7 @@ El iniciador privado configura `PDF_ANTIVIRUS=defender`. Se localiza MpCmdRun en
 
 Microsoft Defender debe estar activo y con firmas actualizadas. Se comprobó el motor real con un PDF ficticio benigno; las pruebas de detección, error y espera agotada utilizan un proceso de prueba, no malware real. La evidencia identifica qué parte corresponde al antivirus instalado y qué parte al simulador.
 
-Se puede fijar `PDF_ANTIVIRUS_EXECUTABLE` a la ruta absoluta de MpCmdRun.exe. Es configuración del operador, nunca un parámetro recibido por correo. El servicio no desactiva el antivirus ni modifica exclusiones del equipo.
+Se puede fijar `PDF_ANTIVIRUS_EXECUTABLE` a la ruta absoluta de MpCmdRun.exe. Es configuración del operador, nunca un parámetro recibido por correo. El proceso de análisis recibe solo variables técnicas mínimas: no hereda credenciales del correo, de PostgreSQL ni otras claves de la aplicación. La prueba del proceso hijo verifica que esas variables no estén presentes. El servicio no desactiva el antivirus ni modifica exclusiones del equipo.
 
 ## Antivirus y privilegios en Fedora
 

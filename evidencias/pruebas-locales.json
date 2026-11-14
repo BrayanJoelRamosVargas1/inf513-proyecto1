@@ -72,5 +72,6 @@
   ],
   "institucional_actualizado": true,
   "revision_adversarial": true,
-  "revision_owasp": true
+  "revision_owasp": true,
+  "antivirus_entorno_sin_claves": true
 }

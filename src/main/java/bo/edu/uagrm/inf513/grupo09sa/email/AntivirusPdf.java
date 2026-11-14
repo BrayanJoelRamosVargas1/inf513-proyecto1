@@ -63,7 +63,13 @@ public final class AntivirusPdf implements InspectorPdf {
         try {
             Files.write(pdf,archivo.contenido());
             var argumentos=new ArrayList<>(comando);argumentos.add(pdf.toString());
-            proceso=new ProcessBuilder(argumentos).redirectErrorStream(true).redirectOutput(ProcessBuilder.Redirect.DISCARD).start();
+            ProcessBuilder builder=new ProcessBuilder(argumentos).redirectErrorStream(true).redirectOutput(ProcessBuilder.Redirect.DISCARD);
+            // Do not hand mail/database credentials (or unrelated application secrets) to a child.
+            var heredado=new java.util.HashMap<>(builder.environment());builder.environment().clear();
+            var permitidas=java.util.Set.of("systemroot","windir","programdata","programfiles","programfiles(x86)","temp","tmp","lang","lc_all","tz","userprofile","localappdata","appdata","systemdrive","username","userdomain");
+            for(var variable:heredado.entrySet())
+                if(permitidas.contains(variable.getKey().toLowerCase(Locale.ROOT)))builder.environment().put(variable.getKey(),variable.getValue());
+            proceso=builder.start();
             if(!proceso.waitFor(segundos,TimeUnit.SECONDS))throw new IOException("El antivirus superó el tiempo de análisis");
             // Nonzero includes detections and scanner errors. Neither is a clean result.
             return proceso.exitValue()==0&&Files.isRegularFile(pdf);
