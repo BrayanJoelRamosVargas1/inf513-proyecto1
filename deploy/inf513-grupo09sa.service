@@ -5,8 +5,12 @@ Wants=network-online.target
 
 [Service]
 Type=simple
+User=inf513
+Group=inf513
+UMask=0077
 WorkingDirectory=/opt/inf513-proyecto1
 EnvironmentFile=/etc/inf513-grupo09sa.env
+Environment=PDF_ANTIVIRUS=clamav
 ExecStart=/usr/bin/java -jar /opt/inf513-proyecto1/dist/inf513-proyecto1-1.0.0.jar
 Restart=always
 RestartSec=5
@@ -15,7 +19,11 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/inf513-proyecto1
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ReadWritePaths=/opt/inf513-proyecto1/logs
 
 [Install]
 WantedBy=multi-user.target

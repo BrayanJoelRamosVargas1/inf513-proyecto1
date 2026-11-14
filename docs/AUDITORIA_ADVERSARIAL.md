@@ -20,12 +20,12 @@ La primera ejecución de las seis regresiones nuevas de persistencia produjo sei
 
 - ASIPLA respeta los primeros N candidatos elegibles por puntaje final e ID, siendo N el cupo de la convocatoria. No permite elegir al segundo lugar con una sola plaza si el primero sigue siendo elegible. GENRAN puede consultarse durante la evaluación; ese listado es provisional hasta completar las notas y requisitos.
 - Las mutaciones toman primero el bloqueo de convocatoria y luego el de postulación. La decisión de plaza y la corrección de notas no pueden intercalarse entre esas verificaciones. La prueba de calificaciones concurrentes utiliza dos evaluadores distintos, ambos con el mismo peso.
-- El almacenamiento temporal de PDF admite hasta 8 MiB por remitente y 64 MiB globales, con bloqueo transaccional al reservar espacio. Al saturarse no se confirma la recepción: el correo permanece disponible para reintentar. Se eliminan únicamente copias temporales de órdenes respondidas sin confirmación pendiente; los expedientes definitivos y las confirmaciones pendientes se conservan. Las confirmaciones vencidas sin consumir requieren revisión de retención por el operador: no se purgan automáticamente porque una respuesta recibida a tiempo podría estar diferida en cola.
+- El almacenamiento temporal de PDF admite hasta 8 MiB por remitente y 64 MiB globales, con bloqueo transaccional al reservar espacio. La revisión OWASP posterior cambió el exceso de PDF a rechazo durable sin binario para evitar que retenga la primera página de la bandeja. Se eliminan únicamente copias temporales de órdenes respondidas sin confirmación pendiente; los expedientes definitivos y las confirmaciones pendientes se conservan. Las confirmaciones vencidas sin consumir requieren revisión de retención por el operador: no se purgan automáticamente porque una respuesta recibida a tiempo podría estar diferida en cola.
 - Las pruebas previas siguen cubriendo inyección SQL, permisos, revocación de roles, confirmaciones ajenas o repetidas, transacciones, duplicados, límites del analizador, adjuntos, transporte y recuperación.
 
 Estas son reglas implementadas para los ocho CU, no nuevos casos de uso. Se mantiene la ponderación 40/60 y el desempate por ID. No se recibió una rúbrica académica oficial de criterios ni pesos por evaluador: los criterios siguen siendo texto libre y no se presenta esta política como reglamento de la Facultad.
 
-## Resultado de la versión final
+## Resultado de la revisión adversarial anterior
 
 90 pruebas aprobadas, sin fallos, errores ni omisiones. OSV consultó 23 dependencias sin coincidencias conocidas. Se conservaron 63 alertas estáticas clasificadas; Gitleaks no detectó secretos en archivos e historial. El JAR se desplegó con respaldo y se verificaron respuestas reales, rechazo de PDF sin rol sin guardar el binario, instancia única y cola sin pendientes. Véase `evidencias/despliegue-adversarial.txt`.
 
@@ -38,6 +38,10 @@ La revisión combinó búsquedas generales, conversaciones de foros y repositori
 - [OWASP File Upload](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html): autorización antes de almacenar y límites de recursos. La comprobación de cabecera PDF no sustituye un antivirus ni una revisión estructural.
 - [Discusión de r/AskNetsec sobre abuso de lógica](https://www.reddit.com/r/AskNetsec/comments/1qyv0kv/are_we_lowkey_underestimating_business_logic/): se utilizó para generar ideas de ataques con órdenes válidas, no como certificación ni evidencia de que un defecto exista aquí.
 
+## Actualización posterior OWASP
+
+La suite posterior tiene 100 pruebas e incorpora antivirus y ensayo completo de cuatro roles. Véase [CONTROLES_OWASP.md](CONTROLES_OWASP.md). Las cifras de 90 pruebas y 63 alertas anteriores describen la revisión previa.
+
 ## Límites de la conclusión
 
-Una suite aprobada y los escáneres no demuestran ausencia de fallos desconocidos. Siguen pendientes el ensayo coordinado desde las cuentas de cada rol, la aprobación académica de la rúbrica y la impresión y entrega en Presencial. PostgreSQL institucional no admite TLS y requiere intervención de su administrador. El servicio no ejecuta los PDF, pero tampoco incorpora antivirus. Los límites de cola y almacenamiento reducen consumo; no garantizan disponibilidad ante un ataque sostenido o una caída de la infraestructura. Véanse `AUDITORIA_SEGURIDAD.md` y `ESTADO_DESPLIEGUE.md` para el alcance de cada evidencia.
+Una suite aprobada y los escáneres no demuestran ausencia de fallos desconocidos. Siguen pendientes el ensayo coordinado desde las cuentas de cada rol, la aprobación académica de la rúbrica y la impresión y entrega en Presencial. PostgreSQL institucional no admite TLS y requiere intervención de su administrador. El servicio no ejecuta los PDF. La revisión posterior incorpora antivirus y se detalla en CONTROLES_OWASP.md. Los límites de cola y almacenamiento reducen consumo; no garantizan disponibilidad ante un ataque sostenido o una caída de la infraestructura. Véanse `AUDITORIA_SEGURIDAD.md` y `ESTADO_DESPLIEGUE.md` para el alcance de cada evidencia.

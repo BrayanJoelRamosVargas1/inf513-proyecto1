@@ -7,6 +7,7 @@ $env:DB_PASSWORD=([pscredential]::new('db',$taskSecrets.Database)).GetNetworkCre
 $taskLogs=Join-Path $taskRepo 'logs'
 New-Item -ItemType Directory -Path $taskLogs -Force | Out-Null
 $env:LOG_DIR=$taskLogs
+$env:PDF_ANTIVIRUS='defender'
 $taskJar=Join-Path $taskRepo 'dist/inf513-proyecto1-1.0.0.jar'
 $taskJava=(Get-Command java.exe -ErrorAction Stop).Source
 try {

@@ -1,3 +1,7 @@
+# Revisión actual con controles OWASP
+
+100 pruebas aprobadas, sin fallos, errores ni omisiones. Incluye recorrido completo de los ocho CU con cuatro roles ficticios, aprobación y fallo de antivirus, tiempo excedido, limpieza de temporales y cupo sin bloqueo de bandeja. Evidencia actual en `evidencias/pruebas-locales.json`; detalles en `docs/CONTROLES_OWASP.md`. Las revisiones anteriores se conservan a continuación.
+
 # Pruebas realizadas
 
 Auditoría posterior de esta misma primera parte: **90 pruebas aprobadas**. Véase [el informe de seguridad](docs/AUDITORIA_SEGURIDAD.md), con las correcciones y límites actuales. Las cifras de 70 o 50 que siguen corresponden a revisiones anteriores.

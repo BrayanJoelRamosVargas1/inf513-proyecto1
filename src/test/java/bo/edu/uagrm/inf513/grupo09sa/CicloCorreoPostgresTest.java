@@ -25,6 +25,78 @@ class CicloCorreoPostgresTest {
     void sql(String sql)throws Exception{try(var c=ds.getConnection();var s=c.createStatement()){s.execute(sql);}}
     int cantidad(String tabla)throws Exception{try(var c=ds.getConnection();var s=c.createStatement();var rs=s.executeQuery("select count(*) from "+tabla)){rs.next();return rs.getInt(1);}}
     void ciclo(CorreoFalso mail)throws Exception{Main.ejecutarCiclo(cfg,mail,repo,processor,new AnalizadorOrden());}
+    void ciclo(CorreoFalso mail,InspectorPdf inspector)throws Exception{Main.ejecutarCiclo(cfg,mail,repo,processor,new AnalizadorOrden(),inspector);}
+    AdjuntoPdf pdf(){return new AdjuntoPdf("expediente.pdf","%PDF-1.4\n%%EOF".getBytes(java.nio.charset.StandardCharsets.US_ASCII));}
+    void postulante()throws Exception{sql("insert into p1_usuario(registro,nombres,apellidos,rol,telefono,correo,activo) values('3','Luis','Prueba','POSTULANTE','70000002','luis@example.com',true)");}
+    CorreoFalso correoPdf(){var mail=new CorreoFalso();mail.entrada.add(new MensajeEntrada("pdf-av","luis@example.com","INSPOST[\"1\",\"1\",\"ADJUNTO\"]",List.of(pdf())));return mail;}
+    @Test void pdfAprobadoSeConservaAntesDePedirConfirmacion()throws Exception{
+        postulante();var mail=correoPdf();var inspecciones=new java.util.concurrent.atomic.AtomicInteger();
+        ciclo(mail,a->{inspecciones.incrementAndGet();return true;});ciclo(mail,a->{fail("Un correo conocido no se vuelve a analizar");return false;});
+        assertEquals(1,inspecciones.get());assertEquals(1,cantidad("p1_adjunto_correo"));assertEquals(1,cantidad("p1_confirmacion"));assertEquals(0,cantidad("p1_postulacion"));
+    }
+    @Test void pdfNoAprobadoSeRespondeSinAlmacenarNiConfirmar()throws Exception{
+        postulante();var mail=correoPdf();ciclo(mail,a->false);ciclo(mail,a->false);
+        assertEquals(0,cantidad("p1_adjunto_correo"));assertEquals(0,cantidad("p1_confirmacion"));
+        assertTrue(mail.detalle.get("pdf-av").cuerpo().contains("antivirus no aprobó"));assertTrue(repo.correoProcesado("pdf-av"));
+    }
+    @Test void motorAntivirusInaccesibleNoApruebaNiBloqueaOtrosCorreos()throws Exception{
+        postulante();var mail=correoPdf();mail.entrada.add(new MensajeEntrada("siguiente-av","otro@example.com","AYUDA[]"));
+        InspectorPdf caido=a->{throw new java.io.IOException("Fallo de motor simulado");};ciclo(mail,caido);ciclo(mail,caido);
+        assertEquals(0,cantidad("p1_adjunto_correo"));assertEquals(0,cantidad("p1_confirmacion"));
+        assertTrue(mail.detalle.get("pdf-av").cuerpo().contains("no estuvo disponible"));assertTrue(repo.correoProcesado("siguiente-av"));
+    }
+    @Test void remitenteSinRolNoConsumeElProcesoAntivirus()throws Exception{
+        var mail=correoPdf();ciclo(mail,a->{fail("No debe analizar un PDF sin rol");return false;});ciclo(mail,a->true);
+        assertEquals(0,cantidad("p1_adjunto_correo"));assertTrue(mail.detalle.get("pdf-av").cuerpo().contains("rol requerido"));
+    }
+    @Test void cupoPdfAgotadoNoRetieneLaPrimeraPaginaDeLaBandeja()throws Exception{
+        postulante();byte[] bytes=new byte[2*1024*1024];System.arraycopy("%PDF-".getBytes(java.nio.charset.StandardCharsets.US_ASCII),0,bytes,0,5);
+        var grande=new AdjuntoPdf("grande.pdf",bytes);
+        for(int i=0;i<4;i++)repo.registrarEntrada("almacenado-"+i,"luis@example.com","INSPOST[]",List.of(grande));
+        var mail=new CorreoFalso();mail.limite=2;
+        mail.entrada.add(new MensajeEntrada("exceso-a","luis@example.com","INSPOST[]",List.of(grande)));
+        mail.entrada.add(new MensajeEntrada("exceso-b","luis@example.com","INSPOST[]",List.of(grande)));
+        mail.entrada.add(new MensajeEntrada("legitimo-detras","otro@example.com","AYUDA[]"));
+        for(int i=0;i<4;i++)ciclo(mail,a->true);
+        assertTrue(repo.correoProcesado("legitimo-detras"));assertTrue(mail.detalle.get("exceso-a").cuerpo().contains("cupo temporal"));
+        assertEquals(4,cantidad("p1_adjunto_correo"));
+    }
+    Respuesta enviar(CorreoFalso mail,String remitente,String asunto,List<AdjuntoPdf> adjuntos)throws Exception{
+        String id="ensayo-"+UUID.randomUUID();mail.entrada.add(new MensajeEntrada(id,remitente,asunto,adjuntos));
+        ciclo(mail,a->true);ciclo(mail,a->true);assertTrue(mail.detalle.containsKey(id),asunto);return mail.detalle.get(id);
+    }
+    Respuesta orden(CorreoFalso mail,String remitente,String comando,String... parametros)throws Exception{
+        String asunto=comando+new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(List.of(parametros));
+        Respuesta r=enviar(mail,remitente,asunto,comando.equals("INSPOST")?List.of(pdf()):List.of());
+        if(r.asunto().startsWith("CONFIRMACIÓN REQUERIDA")){
+            var token=java.util.regex.Pattern.compile("CONFIRMAR\\[\"([A-Za-z0-9_-]{43})\"\\]").matcher(r.cuerpo());assertTrue(token.find(),r.cuerpo());
+            r=enviar(mail,remitente,"CONFIRMAR[\""+token.group(1)+"\"]",List.of());
+        }
+        assertEquals("ÉXITO - Orden procesada",r.asunto(),r.cuerpo());return r;
+    }
+    @Test void ochoCasosPorCicloCompletoConCuatroRolesYConfirmaciones()throws Exception{
+        var mail=new CorreoFalso();
+        orden(mail,"admin@example.com","INSUSU","1","Ana","Prueba","DECANO","70000000","admin@example.com","true");
+        orden(mail,"admin@example.com","INSUSU","2","Eva","Prueba","EVALUADOR","70000001","eva@example.com","true");
+        orden(mail,"admin@example.com","INSUSU","3","Luis","Prueba","POSTULANTE","70000002","luis@example.com","true");
+        orden(mail,"admin@example.com","INSUSU","4","Vice","Prueba","VICEDECANO","70000003","vice@example.com","true");
+        var hoy=java.time.LocalDate.now();
+        orden(mail,"admin@example.com","INSCON","ENSAYO","Auxiliaturas",hoy.minusDays(1).toString(),hoy.plusDays(1).toString(),"ABIERTA","1");
+        orden(mail,"vice@example.com","INSCAR","Auxiliar","Facultad","true");
+        orden(mail,"luis@example.com","INSPOST","1","1","ADJUNTO");
+        orden(mail,"admin@example.com","ASIEVA","1","2","MERITOS_Y_EXAMEN");
+        orden(mail,"eva@example.com","EVAREQ","1","Identidad","true","Verificado");
+        orden(mail,"vice@example.com","HABPOS","1","HABILITADO","Cumple");
+        orden(mail,"eva@example.com","REGMER","1","Experiencia","80","Verificado");
+        orden(mail,"eva@example.com","REGEXA","1","85","Verificado");
+        assertTrue(orden(mail,"admin@example.com","GENRAN","1").cuerpo().contains("83.00"));
+        orden(mail,"admin@example.com","ASIPLA","1","true");
+        assertTrue(orden(mail,"vice@example.com","AUDCAL","ASIPLA","1").cuerpo().contains("admin@example.com"));
+        assertTrue(orden(mail,"vice@example.com","REPEST","1").cuerpo().contains("GANADOR"));
+        assertTrue(orden(mail,"luis@example.com","LISPOST","*").cuerpo().contains("GANADOR"));
+        assertTrue(enviar(mail,"intruso@example.com","AUDCAL[\"ASIPLA\",\"1\"]",List.of()).cuerpo().contains("rol requerido"));
+        assertEquals(1,cantidad("p1_expediente"));assertEquals(0,repo.correosPendientes(100).size());
+    }
     @Test void noRespondeASusRespuestasNiReenviaLasQueYaEstabanEnCola()throws Exception{
         var mail=new CorreoFalso();
         mail.entrada.add(new MensajeEntrada("eco-error",cfg.mailAddress(),Resultado.error("Prueba").asunto()));
@@ -62,11 +134,13 @@ class CicloCorreoPostgresTest {
         var mail=new CorreoFalso();mail.fallaMarca=true;mail.entrada.add(new MensajeEntrada("persistido","a@example.com","AYUDA[]"));
         ciclo(mail);assertEquals(1,cantidad("p1_correo_control"));mail.fallaMarca=false;ciclo(mail);assertTrue(repo.correoProcesado("persistido"));assertEquals(1,mail.respuestas.size());
     }
+    record Respuesta(String asunto,String cuerpo){}
     static class CorreoFalso implements PasarelaCorreo {
+        Map<String,Respuesta> detalle=new HashMap<>();int limite=Integer.MAX_VALUE;
         List<MensajeEntrada> entrada=new ArrayList<>();List<String> respuestas=new ArrayList<>();Set<String> marcados=new HashSet<>();int liberaciones;boolean fallaEnvio,fallaLectura,fallaMarca;
         public List<String> identificadores(){return entrada.stream().map(MensajeEntrada::id).toList();}
-        public List<MensajeEntrada> noProcesados(ConsultaProcesados consulta)throws Exception{if(fallaLectura)throw new java.io.IOException("Lectura simulada fallida");var conocidos=consulta.conocidos(identificadores());return entrada.stream().filter(m->!conocidos.contains(m.id())).toList();}
-        public void responder(MensajeEntrada original,String asunto,String cuerpo)throws Exception{if(fallaEnvio)throw new java.io.IOException("Envío simulado fallido");respuestas.add(original.id());}
+        public List<MensajeEntrada> noProcesados(ConsultaProcesados consulta)throws Exception{if(fallaLectura)throw new java.io.IOException("Lectura simulada fallida");var conocidos=consulta.conocidos(identificadores());return entrada.stream().filter(m->!conocidos.contains(m.id())).limit(limite).toList();}
+        public void responder(MensajeEntrada original,String asunto,String cuerpo)throws Exception{if(fallaEnvio)throw new java.io.IOException("Envío simulado fallido");respuestas.add(original.id());detalle.put(original.id(),new Respuesta(asunto,cuerpo));}
         public void marcarProcesado(MensajeEntrada mensaje)throws Exception{if(fallaMarca)throw new java.io.IOException("Marcado simulado fallido");marcados.add(mensaje.id());}
         public void liberarReferencias(){liberaciones++;}
         public void close(){}

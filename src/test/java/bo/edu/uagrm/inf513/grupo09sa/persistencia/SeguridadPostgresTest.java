@@ -162,14 +162,15 @@ class SeguridadPostgresTest {
         System.arraycopy("%PDF-1.4".getBytes(java.nio.charset.StandardCharsets.US_ASCII),0,contenido,0,8);
         var pdf=new bo.edu.uagrm.inf513.grupo09sa.email.AdjuntoPdf("expediente.pdf",contenido);
         for(int i=0;i<4;i++)assertEquals(RepositorioPostgres.Admision.DIFERIDO,repo.registrarEntrada("cupo-"+i,"luis@example.com","INSPOST[]",List.of(pdf)));
-        assertEquals(RepositorioPostgres.Admision.SATURADO,repo.registrarEntrada("exceso","luis@example.com","INSPOST[]",List.of(pdf)));
+        assertEquals(RepositorioPostgres.Admision.DIFERIDO,repo.registrarEntrada("exceso","luis@example.com","INSPOST[]",List.of(pdf)));
         assertEquals(4,numero("select count(*) from p1_adjunto_correo"));
-        assertEquals(0,numero("select count(*) from p1_correo_control where mensaje_id='exceso'"),"La orden permanece en el correo, sin pérdida por saturación");
+        assertEquals(1,numero("select count(*) from p1_correo_control where mensaje_id='exceso' and asunto like 'ADJUNTO_RECHAZADO:%'"),"El rechazo es durable y no bloquea la bandeja");
+        assertEquals(0,numero("select count(*) from p1_adjunto_correo where mensaje_id='exceso'"));
         procesador.procesar("cupo-0","luis@example.com",new Orden("INSPOST",List.of("1","2","ADJUNTO")));
         repo.confirmarRespuesta("cupo-0");
-        assertEquals(RepositorioPostgres.Admision.SATURADO,repo.registrarEntrada("exceso","luis@example.com","INSPOST[]",List.of(pdf)),"La confirmación pendiente conserva su PDF");
+        assertEquals(RepositorioPostgres.Admision.DIFERIDO,repo.registrarEntrada("exceso-2","luis@example.com","INSPOST[]",List.of(pdf)),"La confirmación pendiente conserva su PDF y el exceso recibe rechazo");
         repo.confirmarRespuesta("cupo-1");
-        assertEquals(RepositorioPostgres.Admision.DIFERIDO,repo.registrarEntrada("exceso","luis@example.com","INSPOST[]",List.of(pdf)));
+        assertEquals(RepositorioPostgres.Admision.DIFERIDO,repo.registrarEntrada("reintento","luis@example.com","INSPOST[]",List.of(pdf)));
         assertEquals(1,numero("select count(*) from p1_adjunto_correo where mensaje_id='cupo-0'"));
         assertEquals(4,numero("select count(*) from p1_adjunto_correo"));
     }

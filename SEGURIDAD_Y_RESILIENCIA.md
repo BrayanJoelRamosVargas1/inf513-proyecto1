@@ -62,3 +62,7 @@ Aunque el servidor institucional solo expone POP3 110 sin `STLS`, el sistema lee
 ## Revisión adversarial del 14 de noviembre
 
 La versión final supera 90 pruebas. Las correcciones de notas repetidas, requisitos revocados, plazas sin evaluación, cambios posteriores a asignación, carga no autorizada y MIME roto se documentan en `docs/AUDITORIA_ADVERSARIAL.md`. El almacenamiento temporal de PDF tiene cupos por remitente y globales; se conservan expedientes y confirmaciones pendientes. No se garantiza disponibilidad ante ataques sostenidos.
+
+## Controles OWASP posteriores
+
+La suite actual tiene 100 pruebas. Se exige antivirus antes de guardar PDF, se rechaza expresamente si el motor falla y se limita el proceso a 15 segundos. El exceso de cupo de archivos se responde sin bloquear la primera página de la bandeja. El ensayo del ciclo completo cubre los cuatro roles. La unidad Linux usa un usuario dedicado y escritura limitada a logs y temporales. Véase `docs/CONTROLES_OWASP.md`.
