@@ -1,6 +1,6 @@
 # Revisión del código contra la consigna y la referencia
 
-Auditoría posterior de esta misma primera parte: **79 pruebas aprobadas**. Véase [el informe de seguridad](AUDITORIA_SEGURIDAD.md), con las correcciones y límites actuales. Las cifras de 70 o 50 que siguen corresponden a revisiones anteriores.
+Auditoría posterior de esta misma primera parte: **90 pruebas aprobadas**. Véase [el informe de seguridad](AUDITORIA_SEGURIDAD.md), con las correcciones y límites actuales. Las cifras de 70 o 50 que siguen corresponden a revisiones anteriores.
 
 Revisión del 14 de noviembre de 2026. Se contrastaron el texto de observaciones recibido, la actividad de Presencial identificada en `CONSIGNA_Y_TRAZABILIDAD.md`, los ocho casos aprobados y el código de BarberSeven del Grupo 05. La referencia orienta la separación de correo, analizador, validación de negocio y persistencia; sus reglas de citas y ventas no corresponden a auxiliaturas y no se trasladan al dominio del Grupo 09.
 
@@ -12,7 +12,7 @@ Revisión del 14 de noviembre de 2026. Se contrastaron el texto de observaciones
 | CU2 Convocatorias | INSCON/LISCON e INSCAR/LISCAR; estados, fechas, cupos y cargo activo. |
 | CU3 Postulación múltiple | Unicidad por convocatoria, postulante y cargo; segunda postulación a otro cargo; PDF durable antes de confirmar y asociación al correo original; reversión si falta el adjunto. |
 | CU4 Requisitos y examen | Evaluador asignado, revisión de requisitos y HABPOS; REGEXA rechaza postulaciones no habilitadas. |
-| CU5 Méritos y competencia | Puntajes entre 0 y 100, suma de méritos limitada a 100, promedio de exámenes y ponderación fija 40/60. Notas simultáneas no pierden aportes. |
+| CU5 Méritos y competencia | Puntajes entre 0 y 100, última nota por evaluador, promedio por criterio de mérito con suma limitada a 100, promedio de exámenes vigentes y ponderación fija 40/60. Notas simultáneas no pierden aportes. |
 | CU6 Ranking y plazas | Orden descendente por puntaje, desempate por ID, bloqueo y límite de plazas; retirada sin habilitar accidentalmente a un rechazado. |
 | CU7 Auditoría | Actor, fecha, operación, referencia y, para cambios de postulación, parámetros de negocio y estado anterior/posterior en JSON. Fallo de auditoría revierte el cambio. |
 | CU8 Reportes | Cantidad y promedio por estado de una convocatoria, con autorización y consulta preparada. |
@@ -30,7 +30,7 @@ INSPER y LISPER se implementan sobre persona, sin sustituir a los usuarios del d
 3. El bloqueo de la postulación serializa los cambios de notas y su recálculo. La prueba concurrente con exámenes 85 y 95 y méritos 80 termina en examen 90 y final 86.
 4. Un bloqueo por ID de mensaje antecede a la consulta del resultado idempotente: dos reintentos concurrentes devuelven el mismo éxito y generan una sola persona y auditoría.
 
-La compilación completa finaliza con 79 pruebas, sin fallos, errores ni omisiones, con PostgreSQL 15 aislado. Los resultados se conservan en `evidencias/`. Los ensayos de correo usan pasarela simulada o servidores locales de prueba.
+La compilación completa finaliza con 90 pruebas, sin fallos, errores ni omisiones, con PostgreSQL 15 aislado. Los resultados se conservan en `evidencias/`. Los ensayos de correo usan pasarela simulada o servidores locales de prueba.
 
 ## Límites que requieren comprobación institucional
 

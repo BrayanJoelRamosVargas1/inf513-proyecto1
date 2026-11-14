@@ -1,6 +1,6 @@
 # Pruebas realizadas
 
-Auditoría posterior de esta misma primera parte: **79 pruebas aprobadas**. Véase [el informe de seguridad](docs/AUDITORIA_SEGURIDAD.md), con las correcciones y límites actuales. Las cifras de 70 o 50 que siguen corresponden a revisiones anteriores.
+Auditoría posterior de esta misma primera parte: **90 pruebas aprobadas**. Véase [el informe de seguridad](docs/AUDITORIA_SEGURIDAD.md), con las correcciones y límites actuales. Las cifras de 70 o 50 que siguen corresponden a revisiones anteriores.
 
 ## Revisión del 14 de noviembre de 2026
 

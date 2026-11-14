@@ -2,7 +2,7 @@
   "herramienta": "SpotBugs 4.10.5.0 + Find Security Bugs 1.14.0",
   "esfuerzo": "Max",
   "umbral": "Low",
-  "alertas": 61,
+  "alertas": 63,
   "por_tipo": {
     "SQL_INJECTION_JDBC": 5,
     "SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE": 1,
@@ -16,7 +16,7 @@
     "DM_CONVERT_CASE": 1,
     "SIC_INNER_SHOULD_BE_STATIC_ANON": 1,
     "EI_EXPOSE_REP2": 1,
-    "SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING": 1
+    "SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING": 3
   },
   "errores_analisis": 0,
   "clases_faltantes": 0,

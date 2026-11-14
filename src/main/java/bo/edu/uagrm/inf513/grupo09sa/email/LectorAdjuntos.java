@@ -17,7 +17,7 @@ final class LectorAdjuntos {
             List<AdjuntoPdf> archivos = new ArrayList<>();
             recorrer(mime, archivos, 0, new int[]{0});
             return new MensajeEntrada(entrada.id(), entrada.remitente(), entrada.asunto(), archivos);
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException | jakarta.mail.internet.ParseException ex) {
             // Queue an ordinary syntax error for the sender rather than retrying poison mail forever.
             return new MensajeEntrada(entrada.id(), entrada.remitente(), "ADJUNTO_RECHAZADO: " + ex.getMessage());
         }

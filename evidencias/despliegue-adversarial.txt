@@ -1,0 +1,14 @@
+Revisión adversarial del 14 de noviembre de 2026. JAR desplegado después de respaldo exclusivo de 16 tablas p1. Sin cambios de esquema.
+Suite final: 90 pruebas, 0 fallos, 0 errores, 0 omitidas.
+RESPALDO_OK tablas=16 secuencias=11
+DATOS_EVALUACION_PREVIOS meritos=0 examenes=0 plazas=0
+CORREO_RECIENTE RESPONDIDO=3
+CORREO_RECIENTE RESPUESTA_PENDIENTE=1
+ENSAYO_REAL_OK exitos=1 duplicados_rechazados=1 comandos_invalidos_rechazados=1 respuestas_enviadas=3
+LIMPIEZA_OK persona_ficticia_retirada historial_de_correo_conservado=true
+PDF_SIN_ROL_REAL_OK binario_no_almacenado=true bytes_enviados=1488 sha256=62b8953cd0e8327037b2822f9bf17c22f9f5bb68569ed99c410d4a291ceffe2a respuesta_enviada=true postulacion_no_confirmada=true
+INSTANCIA_UNICA_OK
+CORREOS_PENDIENTES=0
+TABLAS_PROYECTO=16
+CONEXION_DB_SSL=false
+JAR_SHA256=c20c985d1193d651b022b199535aa124c87df86821c219238acc16a23b79f3e8

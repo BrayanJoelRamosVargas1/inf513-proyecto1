@@ -1,0 +1,136 @@
+[INFO] Scanning for projects...
+[INFO]
+[INFO] ----------------< bo.edu.uagrm.inf513:inf513-proyecto1 >----------------
+[INFO] Building INF513 Proyecto 1 Grupo 09 SA 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO]
+[INFO] --- resources:3.4.0:resources (default-resources) @ inf513-proyecto1 ---
+[INFO] skip non existing resourceDirectory C:\Users\ElCremosasWee\Documents\ChatGPT\fedora_linux_tecno_web\revision-email-2026-2\proyecto-mejorado\src\main\resources
+[INFO]
+[INFO] --- compiler:3.15.0:compile (default-compile) @ inf513-proyecto1 ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO]
+[INFO] --- resources:3.4.0:testResources (default-testResources) @ inf513-proyecto1 ---
+[INFO] skip non existing resourceDirectory C:\Users\ElCremosasWee\Documents\ChatGPT\fedora_linux_tecno_web\revision-email-2026-2\proyecto-mejorado\src\test\resources
+[INFO]
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ inf513-proyecto1 ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 14 source files with javac [debug release 17] to target\test-classes
+[INFO]
+[INFO] --- surefire:3.5.2:test (default-test) @ inf513-proyecto1 ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO]
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest
+[ERROR] Tests run: 7, Failures: 6, Errors: 0, Skipped: 0, Time elapsed: 19.64 s <<< FAILURE! -- in bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest
+[ERROR] bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest.auditoriaNoAsignaPlazaSinMeritosYExamenRegistrados -- Time elapsed: 3.971 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <false> but was: <true>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertFalse.failNotFalse(AssertFalse.java:63)
+	at org.junit.jupiter.api.AssertFalse.assertFalse(AssertFalse.java:36)
+	at org.junit.jupiter.api.AssertFalse.assertFalse(AssertFalse.java:31)
+	at org.junit.jupiter.api.Assertions.assertFalse(Assertions.java:231)
+	at bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest.auditoriaNoAsignaPlazaSinMeritosYExamenRegistrados(SeguridadPostgresTest.java:137)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest.auditoriaExamenNoAceptaRequisitoRevocadoDespuesDeHabilitar -- Time elapsed: 3.093 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <false> but was: <true>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertFalse.failNotFalse(AssertFalse.java:63)
+	at org.junit.jupiter.api.AssertFalse.assertFalse(AssertFalse.java:36)
+	at org.junit.jupiter.api.AssertFalse.assertFalse(AssertFalse.java:31)
+	at org.junit.jupiter.api.Assertions.assertFalse(Assertions.java:231)
+	at bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest.auditoriaExamenNoAceptaRequisitoRevocadoDespuesDeHabilitar(SeguridadPostgresTest.java:132)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest.auditoriaNotasNoCambianDespuesDeAsignarUnaPlaza -- Time elapsed: 3.750 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <false> but was: <true>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertFalse.failNotFalse(AssertFalse.java:63)
+	at org.junit.jupiter.api.AssertFalse.assertFalse(AssertFalse.java:36)
+	at org.junit.jupiter.api.AssertFalse.assertFalse(AssertFalse.java:31)
+	at org.junit.jupiter.api.Assertions.assertFalse(Assertions.java:231)
+	at bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest.auditoriaNotasNoCambianDespuesDeAsignarUnaPlaza(SeguridadPostgresTest.java:145)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest.auditoriaUnaCorreccionDeExamenNoDaDosVotosAlEvaluador -- Time elapsed: 3.006 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <80> but was: <50>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:150)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:145)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:531)
+	at bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest.auditoriaUnaCorreccionDeExamenNoDaDosVotosAlEvaluador(SeguridadPostgresTest.java:126)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest.auditoriaNoPermiteInflarMeritosRepitiendoElMismoCriterio -- Time elapsed: 2.635 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <30> but was: <60>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:150)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:145)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:531)
+	at bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest.auditoriaNoPermiteInflarMeritosRepitiendoElMismoCriterio(SeguridadPostgresTest.java:119)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest.auditoriaUnDesconocidoNoPuedeOcuparAlmacenamientoPdf -- Time elapsed: 0.504 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <0> but was: <1>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:150)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:145)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:531)
+	at bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest.auditoriaUnDesconocidoNoPuedeOcuparAlmacenamientoPdf(SeguridadPostgresTest.java:154)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[INFO]
+[INFO] Results:
+[INFO]
+[ERROR] Failures:
+[ERROR]   SeguridadPostgresTest.auditoriaExamenNoAceptaRequisitoRevocadoDespuesDeHabilitar:132 expected: <false> but was: <true>
+[ERROR]   SeguridadPostgresTest.auditoriaNoAsignaPlazaSinMeritosYExamenRegistrados:137 expected: <false> but was: <true>
+[ERROR]   SeguridadPostgresTest.auditoriaNoPermiteInflarMeritosRepitiendoElMismoCriterio:119 expected: <30> but was: <60>
+[ERROR]   SeguridadPostgresTest.auditoriaNotasNoCambianDespuesDeAsignarUnaPlaza:145 expected: <false> but was: <true>
+[ERROR]   SeguridadPostgresTest.auditoriaUnDesconocidoNoPuedeOcuparAlmacenamientoPdf:154 expected: <0> but was: <1>
+[ERROR]   SeguridadPostgresTest.auditoriaUnaCorreccionDeExamenNoDaDosVotosAlEvaluador:126 expected: <80> but was: <50>
+[INFO]
+[ERROR] Tests run: 7, Failures: 6, Errors: 0, Skipped: 0
+[INFO]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  26.710 s
+[INFO] Finished at: 2026-11-14T15:05:14-04:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.2:test (default-test) on project inf513-proyecto1: There are test failures.
+[ERROR]
+[ERROR] See C:\Users\ElCremosasWee\Documents\ChatGPT\fedora_linux_tecno_web\revision-email-2026-2\proyecto-mejorado\target\surefire-reports for the individual test results.
+[ERROR] See dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR]
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR]
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
