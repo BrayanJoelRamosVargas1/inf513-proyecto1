@@ -13,7 +13,7 @@
 [INFO]
 [INFO] --- compiler:3.15.0:compile (default-compile) @ inf513-proyecto1 ---
 [INFO] Recompiling the module because of changed source code.
-[INFO] Compiling 30 source files with javac [debug release 17] to target\classes
+[INFO] Compiling 29 source files with javac [debug release 17] to target\classes
 [INFO] /C:/Users/ElCremosasWee/Documents/ChatGPT/fedora_linux_tecno_web/revision-email-2026-2/proyecto-mejorado/src/main/java/bo/edu/uagrm/inf513/grupo09sa/email/ClienteRoundcube.java: C:\Users\ElCremosasWee\Documents\ChatGPT\fedora_linux_tecno_web\revision-email-2026-2\proyecto-mejorado\src\main\java\bo\edu\uagrm\inf513\grupo09sa\email\ClienteRoundcube.java uses or overrides a deprecated API.
 [INFO] /C:/Users/ElCremosasWee/Documents/ChatGPT/fedora_linux_tecno_web/revision-email-2026-2/proyecto-mejorado/src/main/java/bo/edu/uagrm/inf513/grupo09sa/email/ClienteRoundcube.java: Recompile with -Xlint:deprecation for details.
 [INFO]
@@ -31,7 +31,7 @@
 [INFO]  T E S T S
 [INFO] -------------------------------------------------------
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivosTest
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.474 s -- in bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivosTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.483 s -- in bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivosTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.CicloCorreoPostgresTest
 Correo uno pendiente de reintento: Env�o simulado fallido
 Respondido correo uno de a@example.com. �xito: true
@@ -39,33 +39,33 @@ Respondido correo malo de a@example.com. �xito: false
 Respondido correo bueno de a@example.com. �xito: true
 No se pudo registrar un correo; los dem�s continuar�n: Marcado simulado fallido
 Respondido correo persistido de a@example.com. �xito: true
-[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.447 s -- in bo.edu.uagrm.inf513.grupo09sa.CicloCorreoPostgresTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.340 s -- in bo.edu.uagrm.inf513.grupo09sa.CicloCorreoPostgresTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.comandos.AnalizadorOrdenTest
-[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.023 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.AnalizadorOrdenTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.020 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.AnalizadorOrdenTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.comandos.ConcurrenciaAnalizadorTest
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.303 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.ConcurrenciaAnalizadorTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.335 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.ConcurrenciaAnalizadorTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.comandos.FuzzAnalizadorTest
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.032 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.FuzzAnalizadorTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.070 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.FuzzAnalizadorTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.comandos.ProcesadorOrdenTest
-[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.031 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.ProcesadorOrdenTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.027 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.ProcesadorOrdenTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.config.AppConfigTest
-[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s -- in bo.edu.uagrm.inf513.grupo09sa.config.AppConfigTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in bo.edu.uagrm.inf513.grupo09sa.config.AppConfigTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.email.ClientePop3LimiteTest
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.079 s -- in bo.edu.uagrm.inf513.grupo09sa.email.ClientePop3LimiteTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.070 s -- in bo.edu.uagrm.inf513.grupo09sa.email.ClientePop3LimiteTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.email.DecodificacionRoundcubeTest
-[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.032 s -- in bo.edu.uagrm.inf513.grupo09sa.email.DecodificacionRoundcubeTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.028 s -- in bo.edu.uagrm.inf513.grupo09sa.email.DecodificacionRoundcubeTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.email.LectorAdjuntosTest
-[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.197 s -- in bo.edu.uagrm.inf513.grupo09sa.email.LectorAdjuntosTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.196 s -- in bo.edu.uagrm.inf513.grupo09sa.email.LectorAdjuntosTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.email.PasarelaJakartaMailTest
-[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 9.157 s -- in bo.edu.uagrm.inf513.grupo09sa.email.PasarelaJakartaMailTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 9.242 s -- in bo.edu.uagrm.inf513.grupo09sa.email.PasarelaJakartaMailTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.MainTest
-[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s -- in bo.edu.uagrm.inf513.grupo09sa.MainTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in bo.edu.uagrm.inf513.grupo09sa.MainTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest
-[INFO] Tests run: 28, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 94.16 s -- in bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest
+[INFO] Tests run: 20, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 34.25 s -- in bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest
 [INFO]
 [INFO] Results:
 [INFO]
-[INFO] Tests run: 79, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 70, Failures: 0, Errors: 0, Skipped: 0
 [INFO]
 [INFO]
 [INFO] --- jar:3.5.0:jar (default-jar) @ inf513-proyecto1 ---
@@ -119,6 +119,6 @@ Respondido correo persistido de a@example.com. �xito: true
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time:  02:03 min
-[INFO] Finished at: 2026-11-14T09:52:53-04:00
+[INFO] Total time:  01:03 min
+[INFO] Finished at: 2026-11-14T09:12:44-04:00
 [INFO] ------------------------------------------------------------------------

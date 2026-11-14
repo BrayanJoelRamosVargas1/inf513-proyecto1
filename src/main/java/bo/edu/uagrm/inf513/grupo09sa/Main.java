@@ -73,7 +73,7 @@ public final class Main {
                     repo.guardarRespuesta(pendiente.id(),resultado);continue;
                 }
                 MensajeEntrada original=new MensajeEntrada(pendiente.id(),pendiente.remitente(),pendiente.asunto());
-                mail.responder(original,repo.respuestaPendiente(pendiente));repo.confirmarRespuesta(pendiente.id());mail.marcarProcesado(original);
+                mail.responder(original,pendiente.respuestaAsunto(),pendiente.respuestaCuerpo());repo.confirmarRespuesta(pendiente.id());mail.marcarProcesado(original);
                 System.out.println("Respondido correo "+pendiente.id()+" de "+pendiente.remitente()+". Éxito: "+pendiente.exito());
                 BitacoraArchivos.sistema().acceso("RESPONDIDO",pendiente.id(),pendiente.remitente(),comandoSeguro(pendiente.asunto()),Boolean.TRUE.equals(pendiente.exito()));
             }catch(Exception ex){

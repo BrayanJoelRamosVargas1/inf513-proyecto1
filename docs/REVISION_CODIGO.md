@@ -1,7 +1,3 @@
-# Ampliación posterior de esta revisión
-
-El foro propio contiene 30 requisitos detallados, incorporados después de la revisión base que sigue. La matriz vigente es REQUISITOS_FORO_GRUPO09.md y la ruta de operación es COMANDOS_CATEGORIAS.md. Los pesos de área son configurables y los empates en el corte requieren resolución motivada; el recorrido básico que sigue solo explica la compatibilidad con datos anteriores.
-
 # Revisión del código contra la consigna y la referencia
 
 Revisión del 14 de noviembre de 2026. Se contrastaron el texto de observaciones recibido, la actividad de Presencial identificada en `CONSIGNA_Y_TRAZABILIDAD.md`, los ocho casos aprobados y el código de BarberSeven del Grupo 05. La referencia orienta la separación de correo, analizador, validación de negocio y persistencia; sus reglas de citas y ventas no corresponden a auxiliaturas y no se trasladan al dominio del Grupo 09.

@@ -84,12 +84,6 @@ p1 confirmacion
 p1 resultado orden
 p1 servicio estado
 p1 adjunto correo
-p1 oferta
-p1 requisito config
-p1 area examen
-p1 asignacion area
-p1 nota area
-p1 resolucion empate
 9 4 Integridad transacciones y migración
 10 Catálogo de comandos
 10 1 Ejemplos de la actividad oficial
@@ -111,42 +105,3 @@ p1 resolucion empate
 15 Conclusiones
 16 Referencias
 17 Anexos de entrega
-18 Configuración y evaluación por categorías
-18 1 Modelo ampliado de categorías
-18 2 Matriz de los treinta requisitos del foro
-RF-01 Administración de usuarios y roles
-RF-02 Convocatorias y gestión
-RF-03 Tipos de auxiliatura por convocatoria
-RF-04 Plazas por categoría y unidad
-RF-05 Alcance académico
-RF-06 Requisitos configurables
-RF-07 Registro de postulación
-RF-08 Postulación múltiple
-RF-09 Expediente con varios documentos
-RF-10 Documentación obligatoria
-RF-11 Revisión digital
-RF-12 Cumplimiento de requisitos
-RF-13 Habilitación motivada
-RF-14 Acceso al examen
-RF-15 Formulario CPD de méritos
-RF-16 Máximo 40 de méritos
-RF-17 Áreas activables
-RF-18 Ponderaciones por categoría
-RF-19 Docentes por área y tipo
-RF-20 Notas por cuenta asignada
-RF-21 Examen hasta 60
-RF-22 Dos decimales
-RF-23 Suma final sobre 100
-RF-24 Cálculo independiente
-RF-25 Ranking por categoría
-RF-26 Selección por cupos y posición
-RF-27 Empates en el corte
-RF-28 Resultados consolidados
-RF-29 Reportes del proceso
-RF-30 Auditoría sensible
-18 3 Manual de comandos del proceso configurado
-Administración
-Expediente y habilitación
-Evaluación y cálculo
-Ranking plazas y reportes
-18 4 Evidencia institucional y límite de despliegue

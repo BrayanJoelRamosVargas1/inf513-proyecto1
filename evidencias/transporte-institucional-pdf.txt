@@ -1,5 +1,0 @@
-14 de noviembre de 2026
-Autenticación institucional de correo y PostgreSQL comprobada.
-ENVIO_PDF_CONFIRMADO destino=casilla_del_grupo
-RECEPCION_PDF_VERIFICADA bytes=1488 sha256=62b8953cd0e8327037b2822f9bf17c22f9f5bb68569ed99c410d4a291ceffe2a
-La prueba envió un PDF ficticio a la misma casilla del grupo y verificó sus bytes. No se ejecutó migración ni negocio sobre la base institucional.
