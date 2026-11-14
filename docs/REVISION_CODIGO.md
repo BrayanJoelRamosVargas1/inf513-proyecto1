@@ -1,6 +1,6 @@
 # Revisión del código contra la consigna y la referencia
 
-Auditoría posterior de esta misma primera parte: **90 pruebas aprobadas**. Véase [el informe de seguridad](AUDITORIA_SEGURIDAD.md), con las correcciones y límites actuales. Las cifras de 70 o 50 que siguen corresponden a revisiones anteriores.
+Auditoría posterior de esta misma primera parte: **100 pruebas aprobadas**. Véase [el informe de seguridad](AUDITORIA_SEGURIDAD.md), con las correcciones y límites actuales. Las cifras de 70 o 50 que siguen corresponden a revisiones anteriores.
 
 Revisión del 14 de noviembre de 2026. Se contrastaron el texto de observaciones recibido, la actividad de Presencial identificada en `CONSIGNA_Y_TRAZABILIDAD.md`, los ocho casos aprobados y el código de BarberSeven del Grupo 05. La referencia orienta la separación de correo, analizador, validación de negocio y persistencia; sus reglas de citas y ventas no corresponden a auxiliaturas y no se trasladan al dominio del Grupo 09.
 
@@ -30,7 +30,7 @@ INSPER y LISPER se implementan sobre persona, sin sustituir a los usuarios del d
 3. El bloqueo de la postulación serializa los cambios de notas y su recálculo. La prueba concurrente con exámenes 85 y 95 y méritos 80 termina en examen 90 y final 86.
 4. Un bloqueo por ID de mensaje antecede a la consulta del resultado idempotente: dos reintentos concurrentes devuelven el mismo éxito y generan una sola persona y auditoría.
 
-La compilación completa finaliza con 90 pruebas, sin fallos, errores ni omisiones, con PostgreSQL 15 aislado. Los resultados se conservan en `evidencias/`. Los ensayos de correo usan pasarela simulada o servidores locales de prueba.
+La compilación completa finaliza con 100 pruebas, sin fallos, errores ni omisiones, con PostgreSQL 15 aislado. Los resultados se conservan en `evidencias/`. Los ensayos de correo usan pasarela simulada o servidores locales de prueba.
 
 ## Límites que requieren comprobación institucional
 

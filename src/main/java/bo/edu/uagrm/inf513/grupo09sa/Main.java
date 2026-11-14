@@ -31,11 +31,12 @@ public final class Main {
 
         try(HikariDataSource ds=new HikariDataSource(hc);PasarelaCorreo mail=new PasarelaJakartaMail(cfg)){
             AnalizadorOrden parser=new AnalizadorOrden();RepositorioPostgres repo=new RepositorioPostgres(ds);ProcesadorOrden processor=new ProcesadorOrden(new CatalogoComandos(),repo,cfg.bootstrapAdminEmail());
+            InspectorPdf inspector=AntivirusPdf.desdeEntorno();
             int fallosConsecutivos=0;
             Connection bloqueoInstancia=null;
             System.out.println("INF513 Grupo 09 SA - servicio resiliente iniciado. Ctrl+C para detener.");
             while(activo.get()){
-                try{bloqueoInstancia=asegurarInstanciaUnica(ds,bloqueoInstancia);ejecutarCiclo(cfg,mail,repo,processor,parser);fallosConsecutivos=0;dormir(activo,cfg.pollSeconds());}
+                try{bloqueoInstancia=asegurarInstanciaUnica(ds,bloqueoInstancia);ejecutarCiclo(cfg,mail,repo,processor,parser,inspector);fallosConsecutivos=0;dormir(activo,cfg.pollSeconds());}
                 catch(InterruptedException ex){Thread.currentThread().interrupt();break;}
                 catch(Exception ex){BitacoraArchivos.sistema().error("REINTENTO_SERVICIO","-",ex);if(bloqueoInstancia!=null&&!valida(bloqueoInstancia)){try{bloqueoInstancia.close();}catch(SQLException cierre){ex.addSuppressed(cierre);}bloqueoInstancia=null;}fallosConsecutivos++;long espera=esperaReintento(fallosConsecutivos,cfg.pollSeconds(),cfg.retryMaxSeconds());System.err.println("Servicio temporalmente no disponible. Reintento "+fallosConsecutivos+" en "+espera+" s: "+seguro(ex));dormir(activo,espera);}
             }
@@ -46,12 +47,16 @@ public final class Main {
     }
 
     static void ejecutarCiclo(AppConfig cfg,PasarelaCorreo mail,RepositorioPostgres repo,ProcesadorOrden processor,AnalizadorOrden parser)throws Exception{
+        ejecutarCiclo(cfg,mail,repo,processor,parser,AntivirusPdf.desdeEntorno());
+    }
+    static void ejecutarCiclo(AppConfig cfg,PasarelaCorreo mail,RepositorioPostgres repo,ProcesadorOrden processor,AnalizadorOrden parser,InspectorPdf inspector)throws Exception{
         if(!repo.servicioInicializado(cfg.inboundProtocol())){
             var ids=mail.identificadores();for(String id:ids)repo.registrarCorreoProcesado(id,"historico@local","BASELINE",true);repo.marcarServicioInicializado();
             repo.marcarServicioInicializado(cfg.inboundProtocol());
             System.out.println("Bandeja inicializada: "+ids.size()+" mensajes históricos omitidos.");return;
         }
-        try{for(MensajeEntrada msg:mail.noProcesados(repo::correosConocidos)){
+        try{for(MensajeEntrada recibido:mail.noProcesados(repo::correosConocidos)){
+            MensajeEntrada msg=recibido;
             if(!idSeguro(msg.id())){
                 BitacoraArchivos.sistema().error("ID_INVALIDO","-",null);
                 System.err.println("Correo descartado por identificador inválido.");continue;
@@ -62,7 +67,19 @@ public final class Main {
                 repo.registrarCorreoProcesado(msg.id(),msg.remitente(),asunto,false);
                 mail.marcarProcesado(msg);continue;
             }
-            try{if(repo.registrarEntrada(msg.id(),msg.remitente(),asunto,msg.adjuntos())!=RepositorioPostgres.Admision.SATURADO){BitacoraArchivos.sistema().acceso("RECIBIDO",msg.id(),msg.remitente(),comandoSeguro(asunto),true);mail.marcarProcesado(msg);}}
+            try{
+                if(!msg.adjuntos().isEmpty()){
+                    if(!repo.autorizado(msg.remitente(),"POSTULANTE"))msg=new MensajeEntrada(msg.id(),msg.remitente(),asunto);
+                    else {
+                        String rechazo=null;
+                        try {for(var pdf:msg.adjuntos())if(!inspector.aprobado(pdf)){rechazo="El antivirus no aprobó el PDF. No se almacenó; revise el archivo y envíe una nueva orden.";break;}}
+                        catch(java.io.IOException falloAnalisis){rechazo="El análisis antivirus no estuvo disponible. No se almacenó el PDF; consulte al operador y envíe una nueva orden.";}
+                        if(rechazo!=null){asunto="ADJUNTO_RECHAZADO: "+rechazo;msg=new MensajeEntrada(msg.id(),msg.remitente(),asunto);}
+                    }
+                }
+                if(repo.registrarEntrada(msg.id(),msg.remitente(),asunto,msg.adjuntos())!=RepositorioPostgres.Admision.SATURADO){BitacoraArchivos.sistema().acceso("RECIBIDO",msg.id(),msg.remitente(),comandoSeguro(asunto),true);mail.marcarProcesado(msg);}
+            }
+            catch(InterruptedException interrumpido){throw interrumpido;}
             catch(Exception ex){BitacoraArchivos.sistema().error("RECEPCION",msg.id(),ex);System.err.println("No se pudo registrar un correo; los demás continuarán: "+seguro(ex));}
         }}finally{mail.liberarReferencias();}
         repo.promoverDiferidos(cfg.maxMessagesPerCycle());

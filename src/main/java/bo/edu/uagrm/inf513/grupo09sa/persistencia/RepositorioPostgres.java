@@ -54,7 +54,13 @@ public final class RepositorioPostgres implements RepositorioProyecto {
                     rol.setString(1,remitente);try(ResultSet r=rol.executeQuery()){autorizado=r.next();}
                 }
                 if(autorizado&&!adjuntos.isEmpty()&&!reservarEspacioPdf(c,remitente,adjuntos.get(0).contenido().length)){
-                    c.rollback();return Admision.SATURADO;
+                    // A permanent per-sender quota must not pin the first inbox page forever.
+                    // Retain a durable rejection, never the binary that exceeded the budget.
+                    try(PreparedStatement rechazo=c.prepareStatement("update p1_correo_control set asunto=? where mensaje_id=?")){
+                        rechazo.setString(1,"ADJUNTO_RECHAZADO: Se agotó el cupo temporal de PDF. No se almacenó el archivo; complete las confirmaciones pendientes y envíe una nueva orden.");
+                        rechazo.setString(2,id);rechazo.executeUpdate();
+                    }
+                    c.commit();return Admision.DIFERIDO;
                 }
                 for(var a:autorizado?adjuntos:List.<bo.edu.uagrm.inf513.grupo09sa.email.AdjuntoPdf>of())try(PreparedStatement insert=c.prepareStatement("insert into p1_adjunto_correo(mensaje_id,nombre,contenido,sha256) values(?,?,?,?)")){
                     insert.setString(1,id);insert.setString(2,a.nombre());insert.setBytes(3,a.contenido());insert.setString(4,a.sha256());insert.executeUpdate();

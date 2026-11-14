@@ -1,5 +1,5 @@
 {
-  "fecha_utc": "2026-11-14T19:19:10.568680+00:00",
+  "fecha_utc": "2026-11-14T19:43:18.288162+00:00",
   "fuente": "https://api.osv.dev/v1/querybatch",
   "alcance": "Dependencias Maven resueltas de aplicación y pruebas; excluye plugins de compilación",
   "paquetes": [

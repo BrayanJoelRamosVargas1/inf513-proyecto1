@@ -3,7 +3,7 @@
   "entorno": "Windows Java 17 PostgreSQL 15 aislado",
   "correo": "Suite aislada; ensayo institucional separado en despliegue-institucional.txt",
   "resultado": {
-    "tests": 90,
+    "tests": 100,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -15,7 +15,11 @@
     },
     {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.CicloCorreoPostgresTest",
-      "pruebas": 6
+      "pruebas": 12
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.MainTest",
+      "pruebas": 5
     },
     {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.comandos.AnalizadorOrdenTest",
@@ -35,6 +39,10 @@
     },
     {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.config.AppConfigTest",
+      "pruebas": 4
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.AntivirusPdfTest",
       "pruebas": 4
     },
     {
@@ -58,14 +66,11 @@
       "pruebas": 6
     },
     {
-      "nombre": "bo.edu.uagrm.inf513.grupo09sa.MainTest",
-      "pruebas": 5
-    },
-    {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest",
       "pruebas": 32
     }
   ],
   "institucional_actualizado": true,
-  "revision_adversarial": true
+  "revision_adversarial": true,
+  "revision_owasp": true
 }
