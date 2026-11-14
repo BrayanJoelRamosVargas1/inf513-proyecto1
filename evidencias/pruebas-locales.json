@@ -3,7 +3,7 @@
   "entorno": "Windows Java 17 PostgreSQL 15 aislado",
   "correo": "pasarela simulada y servidores locales de prueba; sin despliegue institucional",
   "resultado": {
-    "tests": 78,
+    "tests": 79,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -15,7 +15,7 @@
     },
     {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.CicloCorreoPostgresTest",
-      "pruebas": 5
+      "pruebas": 6
     },
     {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.comandos.AnalizadorOrdenTest",
@@ -66,5 +66,5 @@
       "pruebas": 22
     }
   ],
-  "institucional_actualizado": false
+  "institucional_actualizado": true
 }

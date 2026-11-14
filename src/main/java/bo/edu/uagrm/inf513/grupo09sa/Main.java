@@ -58,12 +58,17 @@ public final class Main {
             }
             String asunto=normalizarAsunto(msg.asunto());
             if(!correoSeguro(msg.remitente())){repo.registrarCorreoProcesado(msg.id(),"invalido@local",asunto,false);BitacoraArchivos.sistema().error("REMITENTE_INVALIDO",msg.id(),null);System.err.println("Correo descartado por remitente inválido.");continue;}
+            if(esRespuestaDelServicio(asunto)){
+                repo.registrarCorreoProcesado(msg.id(),msg.remitente(),asunto,false);
+                mail.marcarProcesado(msg);continue;
+            }
             try{if(repo.registrarEntrada(msg.id(),msg.remitente(),asunto,msg.adjuntos())!=RepositorioPostgres.Admision.SATURADO){BitacoraArchivos.sistema().acceso("RECIBIDO",msg.id(),msg.remitente(),comandoSeguro(asunto),true);mail.marcarProcesado(msg);}}
             catch(Exception ex){BitacoraArchivos.sistema().error("RECEPCION",msg.id(),ex);System.err.println("No se pudo registrar un correo; los demás continuarán: "+seguro(ex));}
         }}finally{mail.liberarReferencias();}
         repo.promoverDiferidos(cfg.maxMessagesPerCycle());
         for(var pendiente:repo.correosPendientes(cfg.maxMessagesPerCycle())){
             try{
+                if(esRespuestaDelServicio(pendiente.asunto())){repo.confirmarRespuesta(pendiente.id());continue;}
                 if("RECIBIDO".equals(pendiente.estado())){
                     Resultado resultado;
                     if(pendiente.asunto()!=null&&pendiente.asunto().startsWith("ADJUNTO_RECHAZADO: "))resultado=Resultado.error(pendiente.asunto().substring("ADJUNTO_RECHAZADO: ".length()));
@@ -94,6 +99,7 @@ public final class Main {
     }
     private static boolean valida(Connection c){try{return c!=null&&!c.isClosed()&&c.isValid(3);}catch(SQLException ex){return false;}}
     static boolean idSeguro(String id){return id!=null&&!id.isBlank()&&id.length()<=255&&id.chars().noneMatch(Character::isISOControl);}
+    static boolean esRespuestaDelServicio(String asunto){return "ÉXITO - Orden procesada".equals(asunto)||"ERROR - Orden no procesada".equals(asunto)||(asunto!=null&&asunto.startsWith("CONFIRMACIÓN REQUERIDA - "));}
     static String normalizarAsunto(String asunto){if(asunto==null)return "";return asunto.length()>998?"RECHAZADO: ASUNTO DEMASIADO LARGO":asunto;}
     static boolean correoSeguro(String correo){return correo!=null&&correo.length()<=160&&!correo.contains("..")&&CORREO_SEGURO.matcher(correo).matches();}
     private static void dormir(AtomicBoolean activo,long segundos)throws InterruptedException{if(activo.get())Thread.sleep(Math.max(1,segundos)*1000L);}

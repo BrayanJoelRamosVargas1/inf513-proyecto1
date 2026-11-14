@@ -25,6 +25,18 @@ class CicloCorreoPostgresTest {
     void sql(String sql)throws Exception{try(var c=ds.getConnection();var s=c.createStatement()){s.execute(sql);}}
     int cantidad(String tabla)throws Exception{try(var c=ds.getConnection();var s=c.createStatement();var rs=s.executeQuery("select count(*) from "+tabla)){rs.next();return rs.getInt(1);}}
     void ciclo(CorreoFalso mail)throws Exception{Main.ejecutarCiclo(cfg,mail,repo,processor,new AnalizadorOrden());}
+    @Test void noRespondeASusRespuestasNiReenviaLasQueYaEstabanEnCola()throws Exception{
+        var mail=new CorreoFalso();
+        mail.entrada.add(new MensajeEntrada("eco-error",cfg.mailAddress(),Resultado.error("Prueba").asunto()));
+        mail.entrada.add(new MensajeEntrada("eco-exito",cfg.mailAddress(),Resultado.ok("Prueba").asunto()));
+        mail.entrada.add(new MensajeEntrada("eco-confirmacion",cfg.mailAddress(),"CONFIRMACIÓN REQUERIDA - INSUSU"));
+        mail.entrada.add(new MensajeEntrada("orden-propia",cfg.mailAddress(),"AYUDA[]"));
+        repo.registrarEntrada("eco-encolado",cfg.mailAddress(),Resultado.error("Prueba").asunto());
+        repo.promoverDiferidos(25);repo.guardarRespuesta("eco-encolado",Resultado.error("No reenviar"));
+        ciclo(mail);ciclo(mail);ciclo(mail);
+        assertEquals(List.of("orden-propia"),mail.respuestas);
+        for(String id:List.of("eco-error","eco-exito","eco-confirmacion","eco-encolado","orden-propia"))assertTrue(repo.correoProcesado(id));
+    }
     @Test void respondeConLaCausaDelRechazoDelPdf()throws Exception {
         var mail=new CorreoFalso();mail.entrada.add(new MensajeEntrada("pdf-malo","a@example.com","ADJUNTO_RECHAZADO: Nombre de PDF inválido"));
         ciclo(mail);

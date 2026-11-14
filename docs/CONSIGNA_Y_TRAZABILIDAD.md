@@ -24,6 +24,6 @@ La tabla `persona` es independiente de `p1_usuario`. El orden de campos adoptado
 | PUDS con carátula, arquitectura, MER y casos de uso | Word editable y PDF en `entrega/` |
 | ZIP o TAR.GZ con nomenclatura exacta | Paquete `2026-2_INF513-P1_grupo09sa` |
 | GitHub personal público | Repositorio público verificado; cambios de esta revisión en rama y solicitud de incorporación |
-| Ejecución actualizada en infraestructura institucional | Pendiente de migración y prueba con credenciales reales; la suite local no equivale a este despliegue |
+| Ejecución actualizada en infraestructura institucional | Migración aplicada y servicio activo; éxito/error/duplicado/PDF por correo real documentados en ESTADO_DESPLIEGUE.md |
 
 La actividad menciona IMAP/POP3/SMTP según configuración de cátedra. El proyecto conserva esos adaptadores y usa Roundcube HTTPS por defecto debido a las restricciones documentadas previamente en el servidor. Debe demostrarse el transporte aceptado por el docente en el despliegue institucional; esta revisión no lo presenta como vuelto a probar.

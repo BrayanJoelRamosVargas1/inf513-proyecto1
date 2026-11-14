@@ -19,8 +19,8 @@
 7. Mostrar un asunto inválido, un permiso insuficiente y la conservación de una respuesta cuando se simula una caída del envío en el entorno de prueba.
 8. Abrir `access.log` y `error.log`, sin mostrar contraseñas ni códigos activos.
 
-## Pendiente de entorno institucional
+## Estado institucional actual
 
-Aplicar la migración con respaldo previo y el servicio detenido; reiniciar una única instancia; comprobar recepción y respuesta de esta versión desde cuentas reales de ensayo; confirmar el transporte aceptado. Conservar evidencias de inserción, consulta, sintaxis inválida, duplicado y carga del PDF. Las pruebas locales usan correo simulado y PostgreSQL aislado.
+La migración se aplicó después de restaurar el respaldo. El servicio está activo en Windows con inicio automático al entrar a la sesión. Se comprobaron inserción, duplicado, comando inválido y recepción real de PDF; véase `ESTADO_DESPLIEGUE.md`. El servidor PostgreSQL no admite SSL. Practiquen el recorrido de defensa desde las cuentas de cada rol y confirmen el transporte aceptado.
 
 El PDF del PUDS debe imprimirse para la defensa. El Word queda editable para completar evidencias institucionales y ajustes de portada. No se inventaron capturas de Gmail, notas otorgadas por el docente ni una publicación final en la plataforma.
