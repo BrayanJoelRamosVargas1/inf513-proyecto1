@@ -2,6 +2,8 @@
 
 ## Revisión para la entrega de noviembre de 2026
 
+El alcance de esta primera parte comprende únicamente los ocho casos de uso aprobados: usuarios; convocatorias; postulación múltiple y expediente; requisitos y habilitación; méritos, examen y evaluadores; ranking y plazas; auditoría; reportes. Los 30 requisitos del foro no son 30 casos de uso ni amplían el alcance de esta entrega. Las operaciones y límites implementados están detallados en [la revisión del código](docs/REVISION_CODIGO.md).
+
 La [consigna oficial y su trazabilidad](docs/CONSIGNA_Y_TRAZABILIDAD.md) se verificaron en Presencial UAGRM. El [guion de cambios y defensa](docs/CAMBIOS_Y_DEFENSA.md) distingue pruebas locales, evidencia histórica y el despliegue institucional aún pendiente de esta revisión.
 
 ### Ejemplos exactos del docente

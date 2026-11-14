@@ -1,37 +1,37 @@
 [INFO] Scanning for projects...
-[INFO]
+[INFO] 
 [INFO] ----------------< bo.edu.uagrm.inf513:inf513-proyecto1 >----------------
 [INFO] Building INF513 Proyecto 1 Grupo 09 SA 1.0.0
 [INFO]   from pom.xml
 [INFO] --------------------------------[ jar ]---------------------------------
-[INFO]
+[INFO] 
 [INFO] --- clean:3.2.0:clean (default-clean) @ inf513-proyecto1 ---
 [INFO] Deleting C:\Users\ElCremosasWee\Documents\ChatGPT\fedora_linux_tecno_web\revision-email-2026-2\proyecto-mejorado\target
-[INFO]
+[INFO] 
 [INFO] --- resources:3.4.0:resources (default-resources) @ inf513-proyecto1 ---
 [INFO] skip non existing resourceDirectory C:\Users\ElCremosasWee\Documents\ChatGPT\fedora_linux_tecno_web\revision-email-2026-2\proyecto-mejorado\src\main\resources
-[INFO]
+[INFO] 
 [INFO] --- compiler:3.15.0:compile (default-compile) @ inf513-proyecto1 ---
 [INFO] Recompiling the module because of changed source code.
 [INFO] Compiling 29 source files with javac [debug release 17] to target\classes
 [INFO] /C:/Users/ElCremosasWee/Documents/ChatGPT/fedora_linux_tecno_web/revision-email-2026-2/proyecto-mejorado/src/main/java/bo/edu/uagrm/inf513/grupo09sa/email/ClienteRoundcube.java: C:\Users\ElCremosasWee\Documents\ChatGPT\fedora_linux_tecno_web\revision-email-2026-2\proyecto-mejorado\src\main\java\bo\edu\uagrm\inf513\grupo09sa\email\ClienteRoundcube.java uses or overrides a deprecated API.
 [INFO] /C:/Users/ElCremosasWee/Documents/ChatGPT/fedora_linux_tecno_web/revision-email-2026-2/proyecto-mejorado/src/main/java/bo/edu/uagrm/inf513/grupo09sa/email/ClienteRoundcube.java: Recompile with -Xlint:deprecation for details.
-[INFO]
+[INFO] 
 [INFO] --- resources:3.4.0:testResources (default-testResources) @ inf513-proyecto1 ---
 [INFO] skip non existing resourceDirectory C:\Users\ElCremosasWee\Documents\ChatGPT\fedora_linux_tecno_web\revision-email-2026-2\proyecto-mejorado\src\test\resources
-[INFO]
+[INFO] 
 [INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ inf513-proyecto1 ---
 [INFO] Recompiling the module because of changed dependency.
 [INFO] Compiling 13 source files with javac [debug release 17] to target\test-classes
-[INFO]
+[INFO] 
 [INFO] --- surefire:3.5.2:test (default-test) @ inf513-proyecto1 ---
 [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
-[INFO]
+[INFO] 
 [INFO] -------------------------------------------------------
 [INFO]  T E S T S
 [INFO] -------------------------------------------------------
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivosTest
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.483 s -- in bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivosTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.480 s -- in bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivosTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.CicloCorreoPostgresTest
 Correo uno pendiente de reintento: Env�o simulado fallido
 Respondido correo uno de a@example.com. �xito: true
@@ -39,38 +39,38 @@ Respondido correo malo de a@example.com. �xito: false
 Respondido correo bueno de a@example.com. �xito: true
 No se pudo registrar un correo; los dem�s continuar�n: Marcado simulado fallido
 Respondido correo persistido de a@example.com. �xito: true
-[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.340 s -- in bo.edu.uagrm.inf513.grupo09sa.CicloCorreoPostgresTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.282 s -- in bo.edu.uagrm.inf513.grupo09sa.CicloCorreoPostgresTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.comandos.AnalizadorOrdenTest
-[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.020 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.AnalizadorOrdenTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.021 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.AnalizadorOrdenTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.comandos.ConcurrenciaAnalizadorTest
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.335 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.ConcurrenciaAnalizadorTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.334 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.ConcurrenciaAnalizadorTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.comandos.FuzzAnalizadorTest
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.070 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.FuzzAnalizadorTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.065 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.FuzzAnalizadorTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.comandos.ProcesadorOrdenTest
-[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.027 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.ProcesadorOrdenTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.021 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.ProcesadorOrdenTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.config.AppConfigTest
-[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in bo.edu.uagrm.inf513.grupo09sa.config.AppConfigTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in bo.edu.uagrm.inf513.grupo09sa.config.AppConfigTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.email.ClientePop3LimiteTest
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.070 s -- in bo.edu.uagrm.inf513.grupo09sa.email.ClientePop3LimiteTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.068 s -- in bo.edu.uagrm.inf513.grupo09sa.email.ClientePop3LimiteTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.email.DecodificacionRoundcubeTest
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.028 s -- in bo.edu.uagrm.inf513.grupo09sa.email.DecodificacionRoundcubeTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.027 s -- in bo.edu.uagrm.inf513.grupo09sa.email.DecodificacionRoundcubeTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.email.LectorAdjuntosTest
-[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.196 s -- in bo.edu.uagrm.inf513.grupo09sa.email.LectorAdjuntosTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.207 s -- in bo.edu.uagrm.inf513.grupo09sa.email.LectorAdjuntosTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.email.PasarelaJakartaMailTest
-[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 9.242 s -- in bo.edu.uagrm.inf513.grupo09sa.email.PasarelaJakartaMailTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 9.553 s -- in bo.edu.uagrm.inf513.grupo09sa.email.PasarelaJakartaMailTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.MainTest
-[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in bo.edu.uagrm.inf513.grupo09sa.MainTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in bo.edu.uagrm.inf513.grupo09sa.MainTest
 [INFO] Running bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest
-[INFO] Tests run: 20, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 34.25 s -- in bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest
-[INFO]
+[INFO] Tests run: 20, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 33.57 s -- in bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest
+[INFO] 
 [INFO] Results:
-[INFO]
+[INFO] 
 [INFO] Tests run: 70, Failures: 0, Errors: 0, Skipped: 0
-[INFO]
-[INFO]
+[INFO] 
+[INFO] 
 [INFO] --- jar:3.5.0:jar (default-jar) @ inf513-proyecto1 ---
 [INFO] Building jar: C:\Users\ElCremosasWee\Documents\ChatGPT\fedora_linux_tecno_web\revision-email-2026-2\proyecto-mejorado\target\inf513-proyecto1-1.0.0.jar
-[INFO]
+[INFO] 
 [INFO] --- shade:3.6.0:shade (default) @ inf513-proyecto1 ---
 [INFO] Including org.eclipse.angus:angus-mail:jar:2.0.4 in the shaded jar.
 [INFO] Including jakarta.activation:jakarta.activation-api:jar:2.1.3 in the shaded jar.
@@ -94,18 +94,18 @@ Respondido correo persistido de a@example.com. �xito: true
 [WARNING] Discovered module-info.class. Shading will break its strong encapsulation.
 [WARNING] Discovered module-info.class. Shading will break its strong encapsulation.
 [WARNING] Discovered module-info.class. Shading will break its strong encapsulation.
-[WARNING] httpclient5-5.6.1.jar, httpcore5-5.4.jar, httpcore5-h2-5.4.jar, jackson-annotations-2.22.jar, jackson-core-2.22.3.jar, jackson-databind-2.22.3.jar, postgresql-42.7.14.jar define 1 overlapping resource:
+[WARNING] httpclient5-5.6.1.jar, httpcore5-5.4.jar, httpcore5-h2-5.4.jar, jackson-annotations-2.22.jar, jackson-core-2.22.3.jar, jackson-databind-2.22.3.jar, postgresql-42.7.14.jar define 1 overlapping resource: 
 [WARNING]   - META-INF/LICENSE
-[WARNING] httpclient5-5.6.1.jar, httpcore5-5.4.jar, httpcore5-h2-5.4.jar, jackson-annotations-2.22.jar, jackson-core-2.22.3.jar, jackson-databind-2.22.3.jar define 1 overlapping resource:
+[WARNING] httpclient5-5.6.1.jar, httpcore5-5.4.jar, httpcore5-h2-5.4.jar, jackson-annotations-2.22.jar, jackson-core-2.22.3.jar, jackson-databind-2.22.3.jar define 1 overlapping resource: 
 [WARNING]   - META-INF/NOTICE
-[WARNING] httpclient5-5.6.1.jar, httpcore5-5.4.jar, httpcore5-h2-5.4.jar define 1 overlapping resource:
+[WARNING] httpclient5-5.6.1.jar, httpcore5-5.4.jar, httpcore5-h2-5.4.jar define 1 overlapping resource: 
 [WARNING]   - META-INF/DEPENDENCIES
-[WARNING] HikariCP-6.2.1.jar, angus-activation-2.0.2.jar, angus-mail-2.0.4.jar, checker-qual-3.55.1.jar, httpclient5-5.6.1.jar, httpcore5-5.4.jar, httpcore5-h2-5.4.jar, inf513-proyecto1-1.0.0.jar, jackson-annotations-2.22.jar, jackson-core-2.22.3.jar, jackson-databind-2.22.3.jar, jakarta.activation-api-2.1.3.jar, jakarta.mail-api-2.1.3.jar, postgresql-42.7.14.jar, slf4j-api-1.7.36.jar, slf4j-simple-1.7.36.jar define 1 overlapping resource:
+[WARNING] HikariCP-6.2.1.jar, angus-activation-2.0.2.jar, angus-mail-2.0.4.jar, checker-qual-3.55.1.jar, httpclient5-5.6.1.jar, httpcore5-5.4.jar, httpcore5-h2-5.4.jar, inf513-proyecto1-1.0.0.jar, jackson-annotations-2.22.jar, jackson-core-2.22.3.jar, jackson-databind-2.22.3.jar, jakarta.activation-api-2.1.3.jar, jakarta.mail-api-2.1.3.jar, postgresql-42.7.14.jar, slf4j-api-1.7.36.jar, slf4j-simple-1.7.36.jar define 1 overlapping resource: 
 [WARNING]   - META-INF/MANIFEST.MF
-[WARNING] angus-activation-2.0.2.jar, angus-mail-2.0.4.jar, jakarta.activation-api-2.1.3.jar, jakarta.mail-api-2.1.3.jar define 2 overlapping resources:
+[WARNING] angus-activation-2.0.2.jar, angus-mail-2.0.4.jar, jakarta.activation-api-2.1.3.jar, jakarta.mail-api-2.1.3.jar define 2 overlapping resources: 
 [WARNING]   - META-INF/LICENSE.md
 [WARNING]   - META-INF/NOTICE.md
-[WARNING] jackson-core-2.22.3.jar, jackson-databind-2.22.3.jar define 1 overlapping classes:
+[WARNING] jackson-core-2.22.3.jar, jackson-databind-2.22.3.jar define 1 overlapping classes: 
 [WARNING]   - META-INF.versions.9.module-info
 [WARNING] maven-shade-plugin has detected that some files are
 [WARNING] present in two or more JARs. When this happens, only one
@@ -120,5 +120,5 @@ Respondido correo persistido de a@example.com. �xito: true
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
 [INFO] Total time:  01:03 min
-[INFO] Finished at: 2026-11-14T09:12:44-04:00
+[INFO] Finished at: 2026-11-14T10:13:29-04:00
 [INFO] ------------------------------------------------------------------------
