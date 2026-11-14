@@ -1,0 +1,11 @@
+digraph G { graph [bgcolor="white",pad="0.2",nodesep="0.35",ranksep="0.6",fontname="Arial",fontsize=13];node [shape=box,fontname="Arial",fontsize=12,margin="0.14,0.10",color="#34465d",style="filled",fillcolor="#f3f6fa"];edge [fontname="Arial",fontsize=10,color="#34465d",arrowsize=0.7]; inicio[shape=ellipse,label="Asunto recibido"]; limite[shape=diamond,label="¿Existe y tiene
+hasta 998 caracteres?"]; cab[shape=diamond,label="¿COMANDO [ ... ]?"]; param[label="Leer comillas y escapes
+Separar parámetros por coma"]; coma[shape=diamond,label="¿Otro parámetro
+después de cada coma?"]; catalogo[shape=diamond,label="¿Comando conocido
+y cantidad correcta?"]; tipos[shape=diamond,label="¿Tipos, longitudes
+y rangos válidos?"]; permisos[shape=diamond,label="¿Público o rol
+autorizado?"]; sensible[shape=diamond,label="¿Requiere demostrar
+acceso al correo?"]; confirmar[label="Persistir orden y desafío
+Esperar CONFIRMAR y verificar rol"]; sql[label="SQL preparado
+Negocio, auditoría e idempotencia"]; salida[shape=ellipse,label="Persistir y enviar respuesta"]; error[label="Respuesta de error
+Sin ejecutar el negocio"]; inicio->limite;limite->cab[label="Sí"];limite->error[label="No"];cab->param[label="Sí"];cab->error[label="No"];param->coma;coma->catalogo[label="Sí"];coma->error[label="No"];catalogo->tipos[label="Sí"];catalogo->error[label="No"];tipos->permisos[label="Sí"];tipos->error[label="No"];permisos->sensible[label="Sí"];permisos->error[label="No"];sensible->confirmar[label="Sí"];sensible->sql[label="No"];confirmar->sql[label="Confirmación válida"];confirmar->error[label="Inválida"];sql->salida;error->salida; }

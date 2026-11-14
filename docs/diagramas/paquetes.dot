@@ -1,0 +1,10 @@
+digraph G { graph [bgcolor="white",pad="0.2",nodesep="0.35",ranksep="0.6",fontname="Arial",fontsize=13];node [shape=box,fontname="Arial",fontsize=12,margin="0.14,0.10",color="#34465d",style="filled",fillcolor="#f3f6fa"];edge [fontname="Arial",fontsize=10,color="#34465d",arrowsize=0.7]; rankdir=LR;main[label="grupo09sa
+Main y BitacoraArchivos"];config[label="config
+AppConfig"];email[label="email
+PasarelaCorreo y adaptadores
+LectorAdjuntos y AdjuntoPdf"];comandos[label="comandos
+AnalizadorOrden y Orden
+CatalogoComandos
+ProcesadorOrden y Resultado"];datos[label="persistencia
+RepositorioProyecto
+RepositorioPostgres"];main->config;main->email;main->comandos;main->datos;comandos->datos;datos->email[label="DTO de PDF"];email->config; }

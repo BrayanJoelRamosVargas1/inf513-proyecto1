@@ -22,13 +22,17 @@ public record AppConfig(
         outboundMode=outboundMode.toLowerCase(Locale.ROOT);
         if(!java.util.Set.of("roundcube","pop3","imap","imaps").contains(inboundProtocol.toLowerCase(Locale.ROOT)))throw new IllegalArgumentException("MAIL_INBOUND_PROTOCOL no permitido");
         if(!java.util.Set.of("roundcube","smtp").contains(outboundMode.toLowerCase(Locale.ROOT)))throw new IllegalArgumentException("MAIL_OUTBOUND_MODE no permitido");
-        if(outboundMode.equalsIgnoreCase("roundcube")&&!roundcubeUrl.toLowerCase(Locale.ROOT).startsWith("https://"))throw new IllegalArgumentException("MAIL_ROUNDCUBE_URL debe usar HTTPS");
+        if((inboundProtocol.equals("roundcube")||outboundMode.equals("roundcube"))&&!roundcubeUrl.toLowerCase(Locale.ROOT).startsWith("https://"))throw new IllegalArgumentException("MAIL_ROUNDCUBE_URL debe usar HTTPS");
+        if(mailUser==null||mailPassword==null||mailUser.chars().anyMatch(Character::isISOControl)||mailPassword.chars().anyMatch(Character::isISOControl))throw new IllegalArgumentException("Credenciales de correo inválidas");
+        if(inboundProtocol.equals("pop3")&&!imapSsl&&!java.util.Set.of("127.0.0.1","::1","localhost").contains(imapHost))throw new IllegalArgumentException("POP3 remoto requiere MAIL_INBOUND_SSL=true; use Roundcube HTTPS si no hay TLS");
         if(imapPort<1||imapPort>65535||smtpPort<1||smtpPort>65535)throw new IllegalArgumentException("Puerto fuera de rango");
         if(pollSeconds<1||pollSeconds>3600)throw new IllegalArgumentException("POLL_SECONDS debe estar entre 1 y 3600");
         if(connectSeconds<1||connectSeconds>120||readSeconds<1||readSeconds>300)throw new IllegalArgumentException("Tiempo de red fuera de rango");
         if(maxMessagesPerCycle<1||maxMessagesPerCycle>500)throw new IllegalArgumentException("MAIL_MAX_MESSAGES_PER_CYCLE debe estar entre 1 y 500");
         if(retryMaxSeconds<2||retryMaxSeconds>86400)throw new IllegalArgumentException("RETRY_MAX_SECONDS debe estar entre 2 y 86400");
     }
+
+    @Override public String toString(){return "AppConfig[inboundProtocol="+inboundProtocol+", outboundMode="+outboundMode+", credenciales=[OCULTAS]]";}
 
     public static AppConfig load() throws IOException {
         Properties p = new Properties();

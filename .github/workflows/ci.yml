@@ -46,6 +46,12 @@ jobs:
         run: mvn --batch-mode --no-transfer-progress clean verify
       - name: Comprobar JAR ejecutable
         run: test -s target/inf513-proyecto1-1.0.0.jar
+      - name: Auditar dependencias contra OSV
+        run: |
+          mvn --batch-mode --no-transfer-progress org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree -DoutputType=json -DoutputFile=target/dependencias-auditoria.json
+          python3 scripts/auditar-dependencias.py
+      - name: Analizar código con SpotBugs y Find Security Bugs
+        run: mvn --batch-mode --no-transfer-progress -Pauditoria spotbugs:spotbugs
       - name: Comprobar que dist corresponde al código
         shell: bash
         run: |

@@ -1,0 +1,11 @@
+Respaldo restaurado en entorno aislado: 15 tablas.
+Migración institucional: SCHEMA_OK.
+Restricciones institucionales: AUDITORIA_DB_OK rechazos=3 rollback=true.
+ENSAYO_REAL_OK exitos=1 duplicados_rechazados=1 comandos_invalidos_rechazados=1 respuestas_enviadas=3
+LIMPIEZA_OK persona_ficticia_retirada historial_de_correo_conservado=true
+PDF_REAL_OK recibido_y_persistido=true bytes=1488 sha256=62b8953cd0e8327037b2822f9bf17c22f9f5bb68569ed99c410d4a291ceffe2a respuesta_enviada=true postulacion_no_confirmada=true
+INSTANCIA_UNICA_OK
+CORREOS_PENDIENTES=0
+TABLAS_PROYECTO=16
+CONEXION_DB_SSL=false
+DB_TLS_NO_DISPONIBLE estado=08004 razon=Este servidor no soporta SSL.
