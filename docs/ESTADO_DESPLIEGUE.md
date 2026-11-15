@@ -1,3 +1,9 @@
+# Comprobación adicional del 15 de noviembre
+
+DNS institucional pendiente y restauración aislada del respaldo del 14 de
+noviembre comprobada: [diagnóstico y límites](DIAGNOSTICO_DNS_Y_RECUPERACION.md).
+No equivale a una prueba de conexión institucional exitosa.
+
 # Estado del servicio del Grupo 09 SA
 
 ## Estado posterior del 15 de noviembre de 2026

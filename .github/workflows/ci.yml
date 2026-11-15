@@ -42,6 +42,8 @@ jobs:
           cache: maven
       - name: Validar script Linux
         run: sh -n scripts/run-service.sh
+      - name: Validar diagnóstico sin ejecutar consultas de red
+        run: python3 -m py_compile scripts/diagnosticar-servicios.py
       - name: Validar unidad systemd
         run: systemd-analyze verify deploy/inf513-grupo09sa.service
       - name: Compilar y ejecutar pruebas
