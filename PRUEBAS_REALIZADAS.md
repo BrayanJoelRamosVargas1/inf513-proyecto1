@@ -1,5 +1,7 @@
 # Revisión actual con controles OWASP
 
+Revisión vigente: **111 pruebas aprobadas**, incluidas categorías, ponderación por áreas y desempates. Véase [el cierre de los ocho CU](docs/CIERRE_OCHO_CU.md); las cifras inferiores que siguen pertenecen a revisiones anteriores.
+
 100 pruebas aprobadas, sin fallos, errores ni omisiones. Incluye recorrido completo de los ocho CU con cuatro roles ficticios, aprobación y fallo de antivirus, tiempo excedido, limpieza de temporales y cupo sin bloqueo de bandeja. Evidencia actual en `evidencias/pruebas-locales.json`; detalles en `docs/CONTROLES_OWASP.md`. Las revisiones anteriores se conservan a continuación.
 
 # Pruebas realizadas

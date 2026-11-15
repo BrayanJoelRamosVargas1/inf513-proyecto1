@@ -23,6 +23,7 @@ public final class RepositorioPostgres implements RepositorioProyecto {
     private final ThreadLocal<String> mensajeActual=new ThreadLocal<>();
     private static final ObjectMapper JSON=new ObjectMapper();
     private static final SecureRandom ALEATORIO=new SecureRandom();
+    private final GestionCategorias categorias=new GestionCategorias(this::conexion);
     public RepositorioPostgres(DataSource ds){this.ds=ds;}
     public record CorreoControl(String id,String remitente,String asunto,String estado,String respuestaAsunto,String respuestaCuerpo,Boolean exito,int intentos){}
 
@@ -218,7 +219,7 @@ public final class RepositorioPostgres implements RepositorioProyecto {
         // Lock the convocatoria before its postulaciones: one consistent order prevents
         // an award racing a grade correction or a late application.
         bloquearConvocatoria(o);
-        if(Set.of("EVAREQ","REGMER","REGEXA","ASIEVA","INSPOST").contains(o.comando()) && convocatoriaConPlazas(o))
+        if(Set.of("EVAREQ","REGMER","REGEXA","REGAREA","ASIEVA","INSPOST").contains(o.comando()) && convocatoriaConPlazas(o))
             return Resultado.error("Retire primero las plazas asignadas de la convocatoria antes de modificar su evaluación o sus postulaciones.");
         if(o.comando().equals("HABPOS")&&convocatoriaConPlazas(o)){
             try(Connection c=conexion();PreparedStatement q=c.prepareStatement("select plaza_asignada from p1_postulacion where id=?::bigint")){
@@ -233,6 +234,10 @@ public final class RepositorioPostgres implements RepositorioProyecto {
             case "LISPER"->consultar("select ci,nombres,apellidos,ocupacion,telefono,celular,correo from persona where ?='*' or concat_ws(' ',ci,nombres,apellidos,ocupacion,correo) ilike ? escape '\\' order by apellidos,nombres,ci",List.of(o.parametros().get(0),patron(o.parametros().get(0))));
             case "INSUSU"->insertarUsuario(o.parametros()); case "LISUSU"->listarUsuarios(o.parametros().get(0));
             case "INSCON"->insertarConvocatoria(o.parametros()); case "LISCON"->listarConvocatorias(o.parametros().get(0));
+            case "ASIOFE"->categorias.oferta(o.parametros()); case "CFGARE"->categorias.area(o.parametros());
+            case "LISCFG"->consultar(categorias.sqlConfiguracion(),o.parametros());
+            case "DESEMP"->categorias.resolver(remitente,o.parametros());
+            case "REGAREA"->{Resultado r=categorias.registrarArea(remitente,o.parametros());if(r.exito())recalcularPuntaje(o.parametros().get(0));yield r;}
             case "INSCAR"->insertarCargo(o.parametros()); case "LISCAR"->listarCargos(o.parametros().get(0));
             case "INSPOST"->insertarPostulacion(remitente,o.parametros()); case "LISPOST"->listarPostulaciones(remitente,o.parametros().get(0));
             case "EVAREQ"->evaluarRequisito(remitente,o.parametros()); case "HABPOS"->habilitar(o.parametros());
@@ -240,7 +245,7 @@ public final class RepositorioPostgres implements RepositorioProyecto {
             case "ASIEVA"->asignarEvaluador(o.parametros()); case "GENRAN"->generarRanking(o.parametros().get(0));
             case "ASIPLA"->asignarPlaza(o.parametros()); case "AUDCAL"->auditoriaProyecto(o.parametros());
             case "REPEST"->estadisticas(o.parametros().get(0)); default->Resultado.error("Comando sin implementación.");};
-        if(resultado.exito()&&java.util.Set.of("INSPER","INSUSU","INSCON","INSCAR","INSPOST","EVAREQ","HABPOS","REGMER","REGEXA","ASIEVA","ASIPLA").contains(o.comando()))registrarAuditoria(remitente,o,anterior,estadoAuditable(o,false));
+        if(resultado.exito()&&java.util.Set.of("INSPER","INSUSU","INSCON","INSCAR","INSPOST","EVAREQ","HABPOS","REGMER","REGEXA","REGAREA","ASIEVA","ASIPLA","ASIOFE","CFGARE","DESEMP").contains(o.comando()))registrarAuditoria(remitente,o,anterior,estadoAuditable(o,false));
         return resultado;
     }
     private Resultado insertarUsuario(List<String> p)throws SQLException{return actualizar("insert into p1_usuario(registro,nombres,apellidos,rol,telefono,correo,activo) values(?,?,?,?,?,?,?::boolean)",p,"Usuario creado.");}
@@ -253,6 +258,7 @@ private Resultado listarUsuarios(String filtro)throws SQLException{return consul
         try(Connection c=conexion()) {
             c.setAutoCommit(false);
             try {
+                if(!categorias.cargoOfertado(p.get(0),p.get(1)))return Resultado.error("El cargo no tiene una oferta vigente con plazas en esta convocatoria.");
                 String nombre=null,sha=null;byte[] contenido=null;
                 if(p.get(2).equalsIgnoreCase("ADJUNTO")) {
                     try(PreparedStatement q=c.prepareStatement("select nombre,contenido,sha256 from p1_adjunto_correo where mensaje_id=?")) {
@@ -285,41 +291,34 @@ private Resultado listarUsuarios(String filtro)throws SQLException{return consul
     private Resultado habilitar(List<String> p)throws SQLException{return actualizar("update p1_postulacion p set estado=case when ?='HABILITADO' and plaza_asignada then 'GANADOR' else ? end,plaza_asignada=case when ?='INHABILITADO' then false else plaza_asignada end,observacion=? where p.id=?::bigint and (?<>'HABILITADO' or (exists(select 1 from p1_evaluacion_requisito e where e.postulacion_id=p.id) and not exists(select 1 from (select distinct on (lower(btrim(requisito)),lower(evaluador_correo)) cumple from p1_evaluacion_requisito e where e.postulacion_id=p.id order by lower(btrim(requisito)),lower(evaluador_correo),id desc) vigentes where not cumple)))",List.of(p.get(1),p.get(1),p.get(1),p.get(2),p.get(0),p.get(1)),"Estado de postulación actualizado.");}
     private Resultado registrarMerito(String correo,List<String> p)throws SQLException{Resultado r=actualizar("insert into p1_merito(postulacion_id,criterio,puntaje,observacion,evaluador_correo) select ?::bigint,?,?::numeric,?,? where exists(select 1 from p1_asignacion_evaluador a join p1_usuario u on u.id=a.evaluador_id where a.postulacion_id=?::bigint and lower(u.correo)=lower(?) and u.activo=true)",List.of(p.get(0),p.get(1),p.get(2),p.get(3),correo,p.get(0),correo),"Mérito registrado.");if(r.exito())recalcularPuntaje(p.get(0));return r;}
     private Resultado registrarExamen(String correo,List<String> p)throws SQLException{
+        if(categorias.tieneAreas(p.get(0)))return Resultado.error("Esta categoría utiliza áreas ponderadas. Registre cada nota con REGAREA.");
         if(!requisitosVigentes(p.get(0)))return Resultado.error("Los requisitos vigentes no permiten rendir el examen.");
         Resultado r=actualizar("insert into p1_examen(postulacion_id,puntaje,evaluador_correo,observacion) select ?::bigint,?::numeric,?,? where exists(select 1 from p1_asignacion_evaluador a join p1_usuario u on u.id=a.evaluador_id where a.postulacion_id=?::bigint and lower(u.correo)=lower(?) and u.activo=true and exists(select 1 from p1_postulacion p where p.id=a.postulacion_id and p.estado in('HABILITADO','GANADOR')))",List.of(p.get(0),p.get(1),correo,p.get(2),p.get(0),correo),"Examen registrado.");if(r.exito())recalcularPuntaje(p.get(0));return r;}
     private Resultado asignarEvaluador(List<String> p)throws SQLException{return actualizar("insert into p1_asignacion_evaluador(postulacion_id,evaluador_id,tipo) select ?::bigint,u.id,? from p1_usuario u where u.id=?::bigint and u.rol='EVALUADOR' and u.activo=true",List.of(p.get(0),p.get(2),p.get(1)),"Evaluador asignado.");}
-    private Resultado generarRanking(String convocatoria)throws SQLException{return consultar("select u.registro,u.nombres,u.apellidos,p.puntaje_final,row_number() over(order by p.puntaje_final desc,p.id) posicion from p1_postulacion p join p1_usuario u on u.id=p.postulante_id where p.convocatoria_id=?::bigint and p.estado in('HABILITADO','GANADOR') order by posicion",List.of(convocatoria));}
-    private Resultado asignarPlaza(List<String> p)throws SQLException{
-        try(Connection c=conexion()){c.setAutoCommit(false);try{
-            long post=Long.parseLong(p.get(0));boolean asignar=Boolean.parseBoolean(p.get(1));long convocatoria;int plazas;
-            try(PreparedStatement q=c.prepareStatement("select c.id,c.plazas from p1_postulacion p join p1_convocatoria c on c.id=p.convocatoria_id where p.id=? for update of c")){q.setLong(1,post);try(ResultSet r=q.executeQuery()){if(!r.next()){c.rollback();return Resultado.error("La postulación no existe.");}convocatoria=r.getLong(1);plazas=r.getInt(2);}}
-            if(asignar && (!requisitosVigentes(p.get(0)) || !evaluacionCompleta(p.get(0))))
-                return Resultado.error("Se requieren requisitos vigentes, méritos y examen registrados antes de asignar una plaza.");
-            if(asignar){try(PreparedStatement q=c.prepareStatement("select count(*) from p1_postulacion where convocatoria_id=? and plaza_asignada=true and id<>?")){q.setLong(1,convocatoria);q.setLong(2,post);try(ResultSet r=q.executeQuery()){r.next();if(r.getInt(1)>=plazas){c.rollback();return Resultado.error("No quedan plazas disponibles en la convocatoria.");}}}}
-            if(asignar){
-                try(PreparedStatement q=c.prepareStatement("select id from p1_postulacion p where convocatoria_id=? and estado in('HABILITADO','GANADOR') and exists(select 1 from p1_merito m where m.postulacion_id=p.id) and exists(select 1 from p1_examen e where e.postulacion_id=p.id) and exists(select 1 from p1_evaluacion_requisito e where e.postulacion_id=p.id) and not exists(select 1 from (select distinct on (lower(btrim(requisito)),lower(evaluador_correo)) cumple from p1_evaluacion_requisito e where e.postulacion_id=p.id order by lower(btrim(requisito)),lower(evaluador_correo),id desc) vigentes where not cumple) order by puntaje_final desc,id limit ?")){
-                    q.setLong(1,convocatoria);q.setInt(2,plazas);boolean elegible=false;
-                    try(ResultSet r=q.executeQuery()){while(r.next())if(r.getLong(1)==post)elegible=true;}
-                    if(!elegible)return Resultado.error("La postulación no está dentro de las plazas disponibles según el ranking definitivo.");
-                }
-            }
-            try(PreparedStatement u=c.prepareStatement("update p1_postulacion set plaza_asignada=?,estado=case when ? then 'GANADOR' else case when estado='GANADOR' then 'HABILITADO' else estado end end where id=? and (not ? or estado in('HABILITADO','GANADOR'))")){u.setBoolean(1,asignar);u.setBoolean(2,asignar);u.setLong(3,post);u.setBoolean(4,asignar);if(u.executeUpdate()!=1){c.rollback();return Resultado.error("La postulación debe estar habilitada antes de asignar una plaza.");}}
-            c.commit();return Resultado.ok("Asignación de plaza actualizada. Filas afectadas: 1");
-        }catch(Exception ex){c.rollback();throw ex;}}
-    }
+    private Resultado generarRanking(String convocatoria)throws SQLException{return consultar(categorias.sqlRanking(),List.of(convocatoria));}
+    private Resultado asignarPlaza(List<String> p)throws SQLException{return categorias.asignar(p);}
     private Resultado auditoriaProyecto(List<String> p)throws SQLException{return consultar("select fecha,actor,accion,detalle from p1_auditoria where entidad=? and entidad_id=? order by fecha desc",p);}
-    private Resultado estadisticas(String convocatoria)throws SQLException{return consultar("select estado,count(*) cantidad,round(avg(puntaje_final),2) promedio from p1_postulacion where convocatoria_id=?::bigint group by estado order by estado",List.of(convocatoria));}
+    private Resultado estadisticas(String convocatoria)throws SQLException{
+        var parametros=List.of(convocatoria);
+        String resumen=consultar("select estado,count(*) cantidad,round(avg(puntaje_final),2) promedio from p1_postulacion where convocatoria_id=?::bigint group by estado order by estado",parametros).cuerpo();
+        String detalle=consultar(categorias.sqlConsolidado(),parametros).cuerpo();
+        String areas=consultar(categorias.sqlNotas(),parametros).cuerpo();
+        String ranking=consultar(categorias.sqlRanking(),parametros).cuerpo();
+        String vacantes=consultar(categorias.sqlVacantes(),parametros).cuerpo();
+        return Resultado.ok(limitarDato("RESUMEN POR ESTADO\n"+resumen+"\nCONSOLIDADO POR CATEGORÍA\n"+detalle+"\nÁREAS Y PONDERACIONES\n"+areas+"\nRANKING Y EMPATES\n"+ranking+"\nPLAZAS Y VACANTES\n"+vacantes,50000));
+    }
     private Resultado actualizar(String sql,List<String> p,String ok)throws SQLException{try(Connection c=conexion();PreparedStatement s=c.prepareStatement(sql)){s.setQueryTimeout(30);for(int i=0;i<p.size();i++)s.setString(i+1,p.get(i));int n=s.executeUpdate();return n>0?Resultado.ok(ok+" Filas afectadas: "+n):Resultado.error("La operación no afectó registros.");}}
     private Resultado consultar(String sql,List<String> parametros)throws SQLException{StringBuilder b=new StringBuilder();try(Connection c=conexion();PreparedStatement s=c.prepareStatement(sql)){s.setQueryTimeout(30);s.setMaxRows(201);for(int i=0;i<parametros.size();i++)s.setString(i+1,parametros.get(i));try(ResultSet r=s.executeQuery()){ResultSetMetaData m=r.getMetaData();for(int i=1;i<=m.getColumnCount();i++){if(i>1)b.append(" | ");b.append(m.getColumnLabel(i));}b.append('\n');int n=0;while(r.next()){if(n==200||b.length()>45_000){b.append("... resultado limitado por seguridad\n");break;}for(int i=1;i<=m.getColumnCount();i++){if(i>1)b.append(" | ");b.append(limitarDato(r.getString(i),m.getColumnLabel(i).equals("detalle")?4000:500));}b.append('\n');n++;}if(n==0)return Resultado.ok("Sin resultados.");}}return Resultado.ok(limitarDato(b.toString(),50_000));}
-    private void recalcularPuntaje(String postulacion)throws SQLException{actualizar("update p1_postulacion p set puntaje_meritos=least(100,coalesce((select sum(criterio.promedio) from (select ultimos.criterio,avg(ultimos.puntaje) promedio from (select distinct on (lower(btrim(m.criterio)),lower(m.evaluador_correo)) lower(btrim(m.criterio)) criterio,m.puntaje from p1_merito m where m.postulacion_id=p.id order by lower(btrim(m.criterio)),lower(m.evaluador_correo),m.id desc) ultimos group by ultimos.criterio) criterio),0)),puntaje_examen=coalesce((select avg(e.puntaje) from (select distinct on (lower(evaluador_correo)) puntaje from p1_examen where postulacion_id=p.id order by lower(evaluador_correo),id desc) e),0) where p.id=?::bigint",List.of(postulacion),"Puntaje recalculado");try(Connection c=conexion();PreparedStatement s=c.prepareStatement("update p1_postulacion set puntaje_final=round(least(100,puntaje_meritos*0.4+puntaje_examen*0.6),2) where id=?::bigint")){s.setQueryTimeout(30);s.setString(1,postulacion);s.executeUpdate();}}
+    private void recalcularPuntaje(String postulacion)throws SQLException{actualizar("update p1_postulacion p set puntaje_meritos=least(100,coalesce((select sum(criterio.promedio) from (select ultimos.criterio,avg(ultimos.puntaje) promedio from (select distinct on (lower(btrim(m.criterio)),lower(m.evaluador_correo)) lower(btrim(m.criterio)) criterio,m.puntaje from p1_merito m where m.postulacion_id=p.id order by lower(btrim(m.criterio)),lower(m.evaluador_correo),m.id desc) ultimos group by ultimos.criterio) criterio),0)),puntaje_examen=coalesce((select avg(e.puntaje) from (select distinct on (lower(evaluador_correo)) puntaje from p1_examen where postulacion_id=p.id order by lower(evaluador_correo),id desc) e),0) where p.id=?::bigint",List.of(postulacion),"Puntaje recalculado");try(Connection c=conexion();PreparedStatement s=c.prepareStatement("update p1_postulacion set puntaje_examen=?::numeric,puntaje_final=round(least(100,puntaje_meritos*0.4+?::numeric*0.6),2),evaluacion_version=evaluacion_version+1 where id=?::bigint")){s.setQueryTimeout(30);var nota=categorias.notaExamen(postulacion);s.setBigDecimal(1,nota);s.setBigDecimal(2,nota);s.setString(3,postulacion);s.executeUpdate();}}
     private boolean requisitosVigentes(String post)throws SQLException{
         String sql="select exists(select 1 from p1_evaluacion_requisito where postulacion_id=?::bigint) and not exists(select 1 from (select distinct on (lower(btrim(requisito)),lower(evaluador_correo)) cumple from p1_evaluacion_requisito where postulacion_id=?::bigint order by lower(btrim(requisito)),lower(evaluador_correo),id desc) vigentes where not cumple)";
         try(Connection c=conexion();PreparedStatement q=c.prepareStatement(sql)){q.setString(1,post);q.setString(2,post);try(ResultSet r=q.executeQuery()){r.next();return r.getBoolean(1);}}
     }
-    private boolean evaluacionCompleta(String post)throws SQLException{
-        try(Connection c=conexion();PreparedStatement q=c.prepareStatement("select exists(select 1 from p1_merito where postulacion_id=?::bigint) and exists(select 1 from p1_examen where postulacion_id=?::bigint)")){q.setString(1,post);q.setString(2,post);try(ResultSet r=q.executeQuery()){r.next();return r.getBoolean(1);}}
-    }
     private void bloquearConvocatoria(Orden o)throws SQLException{
+        if(Set.of("ASIOFE","CFGARE","DESEMP").contains(o.comando())){
+            try(Connection c=conexion();PreparedStatement q=c.prepareStatement("select id from p1_convocatoria where id=?::bigint for update")){q.setQueryTimeout(30);q.setString(1,o.parametros().get(0));try(var r=q.executeQuery()){while(r.next()){ /* Shared lock order for configuration and grades. */ }}}
+            return;
+        }
         if(!CAMBIOS_POSTULACION.contains(o.comando())&&!o.comando().equals("INSPOST"))return;
         String sql=o.comando().equals("INSPOST")?"select id from p1_convocatoria where id=?::bigint for update":"select c.id from p1_convocatoria c join p1_postulacion p on p.convocatoria_id=c.id where p.id=?::bigint for update of c";
         try(Connection c=conexion();PreparedStatement q=c.prepareStatement(sql)){q.setQueryTimeout(30);q.setString(1,o.parametros().get(0));try(ResultSet r=q.executeQuery()){while(r.next()){ /* Keep lock until outer transaction finishes. */ }}}
@@ -328,7 +327,7 @@ private Resultado listarUsuarios(String filtro)throws SQLException{return consul
         String sql=o.comando().equals("INSPOST")?"select 1 from p1_postulacion where convocatoria_id=?::bigint and plaza_asignada":"select 1 from p1_postulacion p join p1_postulacion otro on otro.convocatoria_id=p.convocatoria_id where p.id=?::bigint and otro.plaza_asignada";
         try(Connection c=conexion();PreparedStatement q=c.prepareStatement(sql)){q.setString(1,o.parametros().get(0));try(ResultSet r=q.executeQuery()){return r.next();}}
     }
-    private static final Set<String> CAMBIOS_POSTULACION=Set.of("EVAREQ","HABPOS","REGMER","REGEXA","ASIEVA","ASIPLA");
+    private static final Set<String> CAMBIOS_POSTULACION=Set.of("EVAREQ","HABPOS","REGMER","REGEXA","REGAREA","ASIEVA","ASIPLA");
     private String estadoAuditable(Orden o,boolean bloquear)throws SQLException{
         if(!CAMBIOS_POSTULACION.contains(o.comando()))return null;
         // The row lock also serializes recalculation by different evaluators.
@@ -339,7 +338,7 @@ private Resultado listarUsuarios(String filtro)throws SQLException{return consul
     }
     private void registrarAuditoria(String actor,Orden o,String anterior,String posterior)throws Exception{
         String detalle="Orden ejecutada correctamente con "+o.parametros().size()+" parámetros.";
-        if(CAMBIOS_POSTULACION.contains(o.comando())){
+        if(CAMBIOS_POSTULACION.contains(o.comando())||Set.of("ASIOFE","CFGARE","DESEMP").contains(o.comando())){
             var datos=new java.util.LinkedHashMap<String,Object>();
             datos.put("parametros",o.parametros());datos.put("anterior",anterior==null?null:JSON.readTree(anterior));datos.put("posterior",posterior==null?null:JSON.readTree(posterior));
             detalle=JSON.writeValueAsString(datos);

@@ -1,0 +1,77 @@
+{
+  "fecha": "2026-11-14",
+  "entorno": "Windows Java 17 y PostgreSQL 15 desechable",
+  "resultado": {
+    "tests": 111,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "alcance": "Ocho CU aprobados; correo simulado/local, SQL real local, sin ataques al servidor universitario",
+  "suites": [
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivosTest",
+      "pruebas": 2
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.CicloCorreoPostgresTest",
+      "pruebas": 12
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.comandos.AnalizadorOrdenTest",
+      "pruebas": 9
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.comandos.ConcurrenciaAnalizadorTest",
+      "pruebas": 1
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.comandos.FuzzAnalizadorTest",
+      "pruebas": 1
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.comandos.ProcesadorOrdenTest",
+      "pruebas": 11
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.config.AppConfigTest",
+      "pruebas": 4
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.AntivirusPdfTest",
+      "pruebas": 4
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.ClientePop3LimiteTest",
+      "pruebas": 1
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.DecodificacionRoundcubeTest",
+      "pruebas": 2
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.LectorAdjuntosTest",
+      "pruebas": 6
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.PasarelaJakartaMailTest",
+      "pruebas": 4
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.SeguridadTransporteTest",
+      "pruebas": 6
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.MainTest",
+      "pruebas": 5
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.persistencia.InyeccionSqlPostgresTest",
+      "pruebas": 3
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest",
+      "pruebas": 40
+    }
+  ]
+}
