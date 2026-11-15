@@ -23,7 +23,7 @@ La primera ejecución de las seis regresiones nuevas de persistencia produjo sei
 - El almacenamiento temporal de PDF admite hasta 8 MiB por remitente y 64 MiB globales, con bloqueo transaccional al reservar espacio. La revisión OWASP posterior cambió el exceso de PDF a rechazo durable sin binario para evitar que retenga la primera página de la bandeja. Se eliminan únicamente copias temporales de órdenes respondidas sin confirmación pendiente; los expedientes definitivos y las confirmaciones pendientes se conservan. Las confirmaciones vencidas sin consumir requieren revisión de retención por el operador: no se purgan automáticamente porque una respuesta recibida a tiempo podría estar diferida en cola.
 - Las pruebas previas siguen cubriendo inyección SQL, permisos, revocación de roles, confirmaciones ajenas o repetidas, transacciones, duplicados, límites del analizador, adjuntos, transporte y recuperación.
 
-Estas son reglas implementadas para los ocho CU, no nuevos casos de uso. Se mantiene la ponderación 40/60 y el desempate por ID. No se recibió una rúbrica académica oficial de criterios ni pesos por evaluador: los criterios siguen siendo texto libre y no se presenta esta política como reglamento de la Facultad.
+Estas son reglas implementadas para los ocho CU, no nuevos casos de uso. La revisión posterior conserva el 40/60, añade pesos por área y sustituye el desempate por ID por una resolución motivada cuando afecta una plaza. Véase [CIERRE_OCHO_CU.md](CIERRE_OCHO_CU.md). Los criterios de mérito siguen siendo texto libre y no se presenta esta política como reglamento de la Facultad.
 
 ## Resultado de la revisión adversarial anterior
 

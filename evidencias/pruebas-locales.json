@@ -1,13 +1,13 @@
 {
   "fecha": "2026-11-14",
-  "entorno": "Windows Java 17 PostgreSQL 15 aislado",
-  "correo": "Suite aislada; ensayo institucional separado en despliegue-institucional.txt",
+  "entorno": "Windows Java 17 y PostgreSQL 15 desechable",
   "resultado": {
-    "tests": 100,
+    "tests": 111,
     "failures": 0,
     "errors": 0,
     "skipped": 0
   },
+  "alcance": "Ocho CU aprobados; correo simulado/local, SQL real local, sin ataques al servidor universitario",
   "suites": [
     {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivosTest",
@@ -16,10 +16,6 @@
     {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.CicloCorreoPostgresTest",
       "pruebas": 12
-    },
-    {
-      "nombre": "bo.edu.uagrm.inf513.grupo09sa.MainTest",
-      "pruebas": 5
     },
     {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.comandos.AnalizadorOrdenTest",
@@ -66,12 +62,16 @@
       "pruebas": 6
     },
     {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.MainTest",
+      "pruebas": 5
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.persistencia.InyeccionSqlPostgresTest",
+      "pruebas": 3
+    },
+    {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest",
-      "pruebas": 32
+      "pruebas": 40
     }
-  ],
-  "institucional_actualizado": true,
-  "revision_adversarial": true,
-  "revision_owasp": true,
-  "antivirus_entorno_sin_claves": true
+  ]
 }

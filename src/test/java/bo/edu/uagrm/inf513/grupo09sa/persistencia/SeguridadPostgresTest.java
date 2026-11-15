@@ -369,4 +369,112 @@ class SeguridadPostgresTest {
         try(var c=ds.getConnection();var s=c.createStatement()){s.execute(Files.readString(Path.of("database/schema.sql")));}
         assertEquals(1,repo.promoverDiferidos(25));assertEquals("conservar",repo.correosPendientes(25).get(0).id());
     }
+    void habilitarYCalificar(String post,String nota)throws Exception{
+        assertTrue(ordenar("eva@example.com","EVAREQ",post,"Identidad","true","Verificado").exito());
+        assertTrue(ordenar("admin@example.com","HABPOS",post,"HABILITADO","Cumple").exito());
+        assertTrue(ordenar("eva@example.com","REGMER",post,"Experiencia",nota,"Verificado").exito());
+        assertTrue(ordenar("eva@example.com","REGEXA",post,nota,"Verificado").exito());
+    }
+    void segundoPostulante()throws Exception{
+        assertTrue(ordenar("admin@example.com","INSUSU","4","Carla","Perez","POSTULANTE","70000003","carla@example.com","true").exito());
+        assertTrue(ordenar("carla@example.com","INSPOST","1","1","https://example.com/carla.pdf").exito());
+        assertTrue(ordenar("admin@example.com","ASIEVA","2","2","MERITOS_Y_EXAMEN").exito());
+    }
+    @Test void categoriasTienenRankingYCuposIndependientes()throws Exception{
+        iniciarFlujo();ejecutarSql("update p1_convocatoria set plazas=2");
+        assertTrue(ordenar("admin@example.com","INSCAR","Redes","Facultad","true").exito());
+        assertTrue(ordenar("admin@example.com","ASIOFE","1","1","1").exito());
+        assertTrue(ordenar("admin@example.com","ASIOFE","1","2","1").exito());
+        assertTrue(ordenar("luis@example.com","INSPOST","1","2","https://example.com/redes.pdf").exito());
+        assertTrue(ordenar("admin@example.com","ASIEVA","2","2","MERITOS_Y_EXAMEN").exito());
+        habilitarYCalificar("1","80");habilitarYCalificar("2","80");
+        Resultado ranking=ordenar("admin@example.com","GENRAN","1");
+        assertTrue(ranking.exito());assertTrue(ranking.cuerpo().contains("Redes"));assertTrue(ranking.cuerpo().contains("Auxiliar"));
+        assertFalse(ranking.cuerpo().contains("EMPATE_PENDIENTE"));
+        assertTrue(ordenar("admin@example.com","ASIPLA","1","true").exito());
+        assertTrue(ordenar("admin@example.com","ASIPLA","2","true").exito());
+        assertEquals(2,numero("select count(*) from p1_postulacion where plaza_asignada"));
+        Resultado reporte=ordenar("admin@example.com","REPEST","1");
+        assertTrue(reporte.exito());assertTrue(reporte.cuerpo().contains("aporte_meritos_40"));assertTrue(reporte.cuerpo().contains("vacantes"));
+        assertTrue(reporte.cuerpo().contains("GANADOR"));assertTrue(reporte.cuerpo().contains("RANKING Y EMPATES"));
+    }
+    @Test void configuracionDeCuposConcurrenteNoSuperaElTotal()throws Exception{
+        iniciarFlujo();assertTrue(ordenar("admin@example.com","INSCAR","Redes","Facultad","true").exito());
+        var pool=java.util.concurrent.Executors.newFixedThreadPool(2);
+        var inicio=new java.util.concurrent.CountDownLatch(1);
+        try{
+            var a=pool.submit(()->{inicio.await();return repo.ejecutarIdempotente("oferta-a","admin@example.com",new Orden("ASIOFE",List.of("1","1","1")));});
+            var b=pool.submit(()->{inicio.await();return repo.ejecutarIdempotente("oferta-b","admin@example.com",new Orden("ASIOFE",List.of("1","2","1")));});
+            inicio.countDown();var ra=a.get(15,java.util.concurrent.TimeUnit.SECONDS);var rb=b.get(15,java.util.concurrent.TimeUnit.SECONDS);
+            assertNotEquals(ra.exito(),rb.exito());assertEquals(1,numero("select sum(plazas)::int from p1_oferta"));
+        }finally{pool.shutdownNow();}
+    }
+    @Test void empateEnElCorteNoSeResuelvePorIdYExigeDecisionAuditada()throws Exception{
+        iniciarFlujo();segundoPostulante();habilitarYCalificar("1","80");habilitarYCalificar("2","80");
+        assertTrue(ordenar("admin@example.com","GENRAN","1").cuerpo().contains("EMPATE_PENDIENTE"));
+        assertTrue(ordenar("admin@example.com","ASIPLA","1","true").cuerpo().contains("Empate pendiente"));
+        assertEquals(0,numero("select count(*) from p1_postulacion where plaza_asignada"));
+        assertTrue(ordenar("admin@example.com","DESEMP","1","1","2,1","Acta de autoridad ficticia número 1").exito());
+        assertFalse(ordenar("admin@example.com","ASIPLA","1","true").exito());
+        assertTrue(ordenar("admin@example.com","ASIPLA","2","true").exito());
+        assertEquals(1,numero("select count(*) from p1_auditoria where accion='DESEMP' and detalle like '%Acta de autoridad%'"));
+    }
+    @Test void corregirUnaNotaInvalidaLaResolucionDelEmpateAunqueConserveElPuntaje()throws Exception{
+        iniciarFlujo();segundoPostulante();habilitarYCalificar("1","80");habilitarYCalificar("2","80");
+        assertTrue(ordenar("admin@example.com","DESEMP","1","1","2,1","Acta ficticia para prueba de versión").exito());
+        assertTrue(ordenar("eva@example.com","REGEXA","1","80","Corrección documentada").exito());
+        assertFalse(ordenar("admin@example.com","ASIPLA","2","true").exito());
+        assertTrue(ordenar("admin@example.com","DESEMP","1","1","2,1","Nueva acta ficticia después de corregir").exito());
+        assertTrue(ordenar("admin@example.com","ASIPLA","2","true").exito());
+    }
+    @Test void examenPonderadoExigeTodasLasAreasYCienPorCiento()throws Exception{
+        iniciarFlujo();assertTrue(ordenar("admin@example.com","ASIOFE","1","1","1").exito());
+        assertTrue(ordenar("admin@example.com","CFGARE","1","1","Teoría","30").exito());
+        assertTrue(ordenar("eva@example.com","EVAREQ","1","Identidad","true","Vigente").exito());
+        assertTrue(ordenar("admin@example.com","HABPOS","1","HABILITADO","Cumple").exito());
+        assertTrue(ordenar("eva@example.com","REGMER","1","Experiencia","80","Revisado").exito());
+        assertFalse(ordenar("eva@example.com","REGAREA","1","teoría","50","Examen").exito());
+        assertFalse(ordenar("admin@example.com","CFGARE","1","1","Práctica","80").exito());
+        assertTrue(ordenar("admin@example.com","CFGARE","1","1","Práctica","70").exito());
+        assertFalse(ordenar("eva@example.com","REGEXA","1","100","Evitar ponderaciones").exito());
+        assertTrue(ordenar("eva@example.com","REGAREA","1","TEORÍA","50","Examen").exito());
+        assertFalse(ordenar("admin@example.com","ASIPLA","1","true").exito());
+        assertTrue(ordenar("eva@example.com","REGAREA","1","práctica","90","Examen").exito());
+        assertEquals(7880,numero("select (puntaje_final*100)::int from p1_postulacion where id=1"));
+        assertFalse(ordenar("admin@example.com","CFGARE","1","1","Práctica","60").exito());
+        assertTrue(ordenar("admin@example.com","ASIPLA","1","true").exito());
+        assertTrue(ordenar("admin@example.com","REPEST","1").cuerpo().contains("práctica"));
+    }
+    @Test void nuevasOperacionesNoPermitenEscalarRolesNiCambiarElAreaAsignada()throws Exception{
+        iniciarFlujo();
+        assertFalse(ordenar("eva@example.com","ASIOFE","1","1","1").exito());
+        assertFalse(ordenar("luis@example.com","LISCFG","1").exito());
+        assertTrue(ordenar("admin@example.com","ASIOFE","1","1","1").exito());
+        assertTrue(ordenar("admin@example.com","CFGARE","1","1","teoría","50").exito());
+        assertTrue(ordenar("admin@example.com","CFGARE","1","1","práctica","50").exito());
+        assertTrue(ordenar("eva@example.com","EVAREQ","1","Identidad","true","Vigente").exito());
+        assertTrue(ordenar("admin@example.com","HABPOS","1","HABILITADO","Cumple").exito());
+        ejecutarSql("update p1_asignacion_evaluador set tipo='teoría'");
+        assertFalse(ordenar("eva@example.com","REGAREA","1","práctica","99","No asignada").exito());
+        assertTrue(ordenar("eva@example.com","REGAREA","1","teoría","80","Asignada").exito());
+        assertFalse(ordenar("eva@example.com","DESEMP","1","1","1,2","Decisión no autorizada").exito());
+    }
+    @Test void configurarOfertasImpidePostularACargosNoOfertados()throws Exception{
+        iniciarFlujo();assertTrue(ordenar("admin@example.com","ASIOFE","1","1","1").exito());
+        assertTrue(ordenar("admin@example.com","INSCAR","Redes","Facultad","true").exito());
+        assertFalse(ordenar("luis@example.com","INSPOST","1","2","https://example.com/redes.pdf").exito());
+        assertEquals(1,numero("select count(*) from p1_postulacion"));
+        assertFalse(ordenar("admin@example.com","ASIOFE","1","2","1").exito());
+    }
+    @Test void nombresDeAreaConSqlSeConservanComoDatos()throws Exception{
+        iniciarFlujo();assertTrue(ordenar("admin@example.com","ASIOFE","1","1","1").exito());
+        String area="redes'); drop table p1_usuario; --";
+        assertTrue(ordenar("admin@example.com","CFGARE","1","1",area,"100").exito());
+        assertEquals(3,usuarios());
+        try(var c=ds.getConnection();var q=c.prepareStatement("select area from p1_area_examen" );var r=q.executeQuery()){
+            assertTrue(r.next());assertEquals(area,r.getString(1));
+        }
+        assertFalse(ordenar("admin@example.com","ASIOFE","1","1","1;drop table persona").exito());
+        assertFalse(ordenar("admin@example.com","DESEMP","1","1","1,1","Repetición no permitida").exito());
+    }
 }

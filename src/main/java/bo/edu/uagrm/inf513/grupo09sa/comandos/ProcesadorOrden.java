@@ -55,13 +55,17 @@ public final class ProcesadorOrden {
                 case "INSUSU"->{max(o,20,100,120,20,30,160,5);soloDigitos(o.parametros().get(0),"registro");if(!ROLES.contains(o.parametros().get(3)))return "Rol inválido. Use exactamente DECANO, VICEDECANO, EVALUADOR o POSTULANTE.";if(!CORREO.matcher(o.parametros().get(5)).matches())return "Correo electrónico inválido.";booleanActivo(o.parametros().get(6));}
                 case "INSCON"->{max(o,30,200,10,10,20,9);LocalDate inicio=LocalDate.parse(o.parametros().get(2));LocalDate fin=LocalDate.parse(o.parametros().get(3));if(fin.isBefore(inicio))return "La fecha final no puede ser anterior a la fecha inicial.";if(!ESTADOS_CONVOCATORIA.contains(o.parametros().get(4)))return "Estado de convocatoria inválido. Use mayúsculas.";enteroNoNegativo(o.parametros().get(5));}
                 case "INSCAR"->{max(o,160,160,5);booleanActivo(o.parametros().get(2));}
+                case "ASIOFE"->{max(o,19,19,9);enteroPositivo(o.parametros().get(0));enteroPositivo(o.parametros().get(1));enteroNoNegativo(o.parametros().get(2));}
+                case "CFGARE"->{max(o,19,19,80,6);enteroPositivo(o.parametros().get(0));enteroPositivo(o.parametros().get(1));puntaje(o.parametros().get(3));if(new BigDecimal(o.parametros().get(3)).signum()==0)return "El porcentaje debe ser mayor que cero.";if(o.parametros().get(2).equalsIgnoreCase("general"))return "El área general está reservada al modo anterior sin áreas.";}
+                case "DESEMP"->{max(o,19,19,2000,500);enteroPositivo(o.parametros().get(0));enteroPositivo(o.parametros().get(1));String[] ids=o.parametros().get(2).split(",",-1);if(ids.length<2||ids.length>100)return "Indique entre 2 y 100 postulaciones empatadas.";var unicos=new java.util.HashSet<String>();for(String id:ids){enteroPositivo(id);if(!unicos.add(Long.toString(Long.parseLong(id))))return "Las postulaciones no pueden repetirse.";}if(o.parametros().get(3).length()<10)return "Justifique la resolución del empate con al menos 10 caracteres.";}
                 case "INSPOST"->{max(o,19,19,500);enteroPositivo(o.parametros().get(0));enteroPositivo(o.parametros().get(1));}
                 case "ASIEVA"->{max(o,19,19,40);enteroPositivo(o.parametros().get(0));enteroPositivo(o.parametros().get(1));}
                 case "EVAREQ"->{max(o,19,200,5,500);enteroPositivo(o.parametros().get(0));booleanActivo(o.parametros().get(2));}
                 case "HABPOS","ASIPLA"->{max(o,o.comando().equals("ASIPLA")?new int[]{19,5}:new int[]{19,30,500});enteroPositivo(o.parametros().get(0));if(o.comando().equals("ASIPLA"))booleanActivo(o.parametros().get(1));else if(!Set.of("HABILITADO","INHABILITADO").contains(o.parametros().get(1)))return "Estado inválido. Use exactamente HABILITADO o INHABILITADO.";}
                 case "REGMER"->{max(o,19,200,8,500);enteroPositivo(o.parametros().get(0));puntaje(o.parametros().get(2));}
                 case "REGEXA"->{max(o,19,8,500);enteroPositivo(o.parametros().get(0));puntaje(o.parametros().get(1));}
-                case "GENRAN","REPEST"->enteroPositivo(o.parametros().get(0));
+                case "REGAREA"->{max(o,19,80,8,500);enteroPositivo(o.parametros().get(0));puntaje(o.parametros().get(2));}
+                case "GENRAN","REPEST","LISCFG"->enteroPositivo(o.parametros().get(0));
                 case "AUDCAL"->{max(o,80,80);enteroPositivo(o.parametros().get(1));}
                 case "LISPER","LISUSU","LISCON","LISCAR","LISPOST"->max(o,100);
                 case "AYUDA" -> { }

@@ -1,1 +1,18 @@
-digraph G { graph [bgcolor="white",pad="0.2",nodesep="0.35",ranksep="0.6",fontname="Arial",fontsize=13];node [shape=box,fontname="Arial",fontsize=12,margin="0.14,0.10",color="#34465d",style="filled",fillcolor="#f3f6fa"];edge [fontname="Arial",fontsize=10,color="#34465d",arrowsize=0.7]; rankdir=LR;node[shape=record];usuario[label="p1_usuario|PK id|UQ registro y correo|rol y activo"];conv[label="p1_convocatoria|PK id|UQ codigo|fechas, estado, plazas"];cargo[label="p1_cargo|PK id|nombre y activo"];post[label="p1_postulacion|PK id|FK convocatoria_id|FK postulante_id|FK cargo_id|UQ convocatoria y postulante y cargo|estado y puntajes"];exp[label="p1_expediente|PK id|FK postulacion_id|ruta o PDF bytea|nombre y SHA256"];req[label="p1_evaluacion_requisito|PK id|FK postulacion_id|requisito y cumple"];mer[label="p1_merito|PK id|FK postulacion_id|criterio y puntaje"];exa[label="p1_examen|PK id|FK postulacion_id|puntaje y evaluador_correo"];asig[label="p1_asignacion_evaluador|PK id|FK postulacion_id|FK evaluador_id|tipo"];usuario->post[label="1 a N postulante"];conv->post[label="1 a N"];cargo->post[label="1 a N"];post->exp[label="1 a N"];post->req[label="1 a N"];post->mer[label="1 a N"];post->exa[label="1 a N"];post->asig[label="1 a N"];usuario->asig[label="1 a N evaluador"]; }
+digraph G { graph[rankdir=LR,bgcolor="white",nodesep=.25,ranksep=.5];node[shape=box,fontname="Arial",fontsize=12];edge[fontname="Arial",fontsize=10];
+conv[label="p1_convocatoria\nPK id\nfechas, estado, plazas totales"];
+cargo[label="p1_cargo\nPK id\nnombre, activo"];
+oferta[label="p1_oferta\nPK FK convocatoria_id, cargo_id\nplazas por categoría"];
+area[label="p1_area_examen\nPK FK convocatoria_id, cargo_id\nPK area\npeso porcentual"];
+usuario[label="p1_usuario\nPK id\nUQ registro, correo\nrol, activo"];
+post[label="p1_postulacion\nPK id\nFK convocatoria_id, cargo_id\nFK postulante_id\nUQ convocatoria, postulante, cargo\nestado, puntajes, evaluacion_version"];
+exp[label="p1_expediente\nPK id\nFK postulacion_id\nreferencia o PDF, SHA256"];
+req[label="p1_evaluacion_requisito\nPK id\nFK postulacion_id\nrequisito, cumple, evaluador"];
+mer[label="p1_merito\nPK id\nFK postulacion_id\ncriterio, puntaje, evaluador"];
+exa[label="p1_examen\nPK id\nFK postulacion_id\narea, puntaje, evaluador"];
+asig[label="p1_asignacion_evaluador\nPK id\nFK postulacion_id, evaluador_id\ntipo o área"];
+des[label="p1_desempate\nPK FK postulacion_id\nevaluacion_version, puntaje\nprioridad, justificacion, actor"];
+conv->oferta;cargo->oferta;oferta->area[label="1 a N, FK compuesta"];
+conv->post;cargo->post;usuario->post[label="postulante"];
+post->exp;post->req;post->mer;post->exa;post->asig;post->des[label="1 a 0..1"];
+usuario->asig[label="evaluador"];
+}

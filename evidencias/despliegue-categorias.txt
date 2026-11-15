@@ -1,0 +1,17 @@
+Revisión: 2026-11-14
+Alcance: servicio propio del Grupo 09; sin prueba destructiva contra infraestructura universitaria.
+Suite local: 111 pruebas, 0 fallos, 0 errores, 0 omitidas.
+Respaldo previo: 16 tablas p1_ y 11 secuencias; archivo privado fuera del repositorio.
+Restauración: COMMIT correcto en PostgreSQL 15 local aislado.
+Migración sobre respaldo restaurado: SCHEMA_OK.
+Migración institucional transaccional: SCHEMA_OK.
+JAR desplegado SHA256: 4ee65f4d06a1f8427352d064dd6cf4d3caa3a18da2debd84992756d6b7ddf130
+Comprobación posterior:
+INSTANCIA_UNICA_OK
+CORREOS_PENDIENTES=0
+TABLAS_PROYECTO=19
+CONEXION_DB_SSL=false
+Sonda posterior de lectura: POSTGRESQL_OK tls=false; CORREO_HTTPS_OK autenticacion_y_listado=true sin_enviar_ni_marcar=true.
+Antivirus real en Windows: ANTIVIRUS_OK archivo_inocuo=true.
+Entorno de servicio comprobado: Windows. Fedora nativo requiere verificación independiente.
+No se presenta como prueba funcional por correo real de cada operación nueva; estas operaciones están cubiertas en PostgreSQL aislado.

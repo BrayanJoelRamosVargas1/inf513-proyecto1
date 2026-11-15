@@ -1,5 +1,7 @@
 # INF513 Proyecto 1 Grupo 09 SA
 
+Revisión vigente: **111 pruebas aprobadas**, incluidas categorías, ponderación por áreas y desempates. Véase [el cierre de los ocho CU](docs/CIERRE_OCHO_CU.md); las cifras inferiores que siguen pertenecen a revisiones anteriores.
+
 ## Revisión para la entrega de noviembre de 2026
 
 El alcance de esta primera parte comprende únicamente los ocho casos de uso aprobados: usuarios; convocatorias; postulación múltiple y expediente; requisitos y habilitación; méritos, examen y evaluadores; ranking y plazas; auditoría; reportes. Los 30 requisitos del foro no son 30 casos de uso ni amplían el alcance de esta entrega. Las operaciones y límites implementados están detallados en [la revisión del código](docs/REVISION_CODIGO.md).

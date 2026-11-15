@@ -1,16 +1,14 @@
 {
   "herramienta": "SpotBugs 4.10.5.0 + Find Security Bugs 1.14.0",
-  "esfuerzo": "Max",
-  "umbral": "Low",
-  "alertas": 68,
+  "alertas": 73,
   "por_tipo": {
-    "SQL_INJECTION_JDBC": 5,
+    "SQL_INJECTION_JDBC": 6,
     "SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE": 1,
     "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION": 27,
     "RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE": 2,
     "PREDICTABLE_RANDOM": 1,
     "REC_CATCH_EXCEPTION": 5,
-    "IMPROPER_UNICODE": 16,
+    "IMPROPER_UNICODE": 17,
     "COMMAND_INJECTION": 1,
     "DMI_HARDCODED_ABSOLUTE_FILENAME": 1,
     "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE": 1,
@@ -19,9 +17,9 @@
     "DM_CONVERT_CASE": 1,
     "SIC_INNER_SHOULD_BE_STATIC_ANON": 1,
     "EI_EXPOSE_REP2": 1,
-    "SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING": 3
+    "SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING": 6
   },
   "errores_analisis": 0,
   "clases_faltantes": 0,
-  "interpretacion": "Alertas conservadas sin supresión; revisión y límites en docs/AUDITORIA_SEGURIDAD.md"
+  "interpretacion": "Alertas conservadas; clasificación de nuevas consultas en docs/CIERRE_OCHO_CU.md"
 }

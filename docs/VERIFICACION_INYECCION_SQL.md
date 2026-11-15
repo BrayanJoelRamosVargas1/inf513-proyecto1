@@ -1,5 +1,7 @@
 # Verificación adicional de inyección SQL
 
+Actualización posterior: [CIERRE_OCHO_CU.md](CIERRE_OCHO_CU.md) registra 111 pruebas, implementación de categorías, áreas, empates y reportes, y la clasificación estática vigente. Este documento conserva la evidencia histórica de la revisión de 103 pruebas.
+
 Fecha: 14 de noviembre de 2026. Alcance: servicio Java del Proyecto 1 y PostgreSQL 15 local desechable; no se atacaron los servidores institucionales.
 
 ## Resultado funcional observado

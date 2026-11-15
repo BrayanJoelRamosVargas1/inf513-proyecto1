@@ -2,6 +2,12 @@
 
 Comprobado el 14 de noviembre de 2026. Alcance: ocho casos de uso aprobados para la primera parte.
 
+## Actualización vigente de categorías áreas y empates
+
+Se desplegó el JAR SHA-256 `4ee65f4d06a1f8427352d064dd6cf4d3caa3a18da2debd84992756d6b7ddf130`, correspondiente a las **111 pruebas aprobadas**. Antes de migrar se detuvo el servicio, se respaldaron las 16 tablas p1_ y sus 11 secuencias y se restauró ese respaldo en una base PostgreSQL 15 de ensayo. La migración sobre el respaldo restaurado terminó correctamente antes de aplicarse transaccionalmente en la base institucional. Se conservaron los respaldos y el JAR anterior fuera del repositorio.
+
+La comprobación posterior encontró **19 tablas p1_, una única instancia y cero correos pendientes**. El esquema añade ofertas, áreas y resoluciones de empate, sin borrar datos previos ni recalificarlos. El informe funcional vigente es [CIERRE_OCHO_CU.md](CIERRE_OCHO_CU.md). Las secciones siguientes conservan la historia de despliegues anteriores. El servicio comprobado aquí se ejecuta en Windows; Fedora nativo todavía requiere ensayo. La conexión institucional de PostgreSQL continúa sin TLS.
+
 ## Servicio activo
 
 El JAR auditado se ejecuta en este equipo Windows, conectado a la casilla `grupo09sa@tecnoweb.org.bo` mediante Roundcube HTTPS y a `db_grupo09sa` en PostgreSQL institucional. La comprobación encontró exactamente una instancia con el bloqueo del servicio y cero correos pendientes.
