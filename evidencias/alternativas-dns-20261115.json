@@ -1,0 +1,149 @@
+{
+  "fecha_utc": "2026-11-15T15:02:55.781291+00:00",
+  "resultados": [
+    {
+      "metodo": "Google DoH",
+      "host": "db.tecnoweb.org.bo",
+      "tipo": "A",
+      "cd": 0,
+      "Status": 2,
+      "Comment": "Name servers did not respond [139.99.68.169]."
+    },
+    {
+      "metodo": "Google DoH",
+      "host": "db.tecnoweb.org.bo",
+      "tipo": "A",
+      "cd": 1,
+      "Status": 2,
+      "Comment": "Name servers did not respond [139.99.68.169]."
+    },
+    {
+      "metodo": "Google DoH",
+      "host": "db.tecnoweb.org.bo",
+      "tipo": "AAAA",
+      "cd": 0,
+      "Status": 2,
+      "Comment": "Name servers did not respond [139.99.68.169]."
+    },
+    {
+      "metodo": "Google DoH",
+      "host": "db.tecnoweb.org.bo",
+      "tipo": "AAAA",
+      "cd": 1,
+      "Status": 2,
+      "Comment": "Name servers did not respond [139.99.68.169]."
+    },
+    {
+      "metodo": "Google DoH",
+      "host": "mail.tecnoweb.org.bo",
+      "tipo": "A",
+      "cd": 0,
+      "Status": 2,
+      "Comment": "Name servers did not respond [139.99.68.169]."
+    },
+    {
+      "metodo": "Google DoH",
+      "host": "mail.tecnoweb.org.bo",
+      "tipo": "A",
+      "cd": 1,
+      "Status": 2,
+      "Comment": "Name servers did not respond [139.99.68.169]."
+    },
+    {
+      "metodo": "Google DoH",
+      "host": "mail.tecnoweb.org.bo",
+      "tipo": "AAAA",
+      "cd": 0,
+      "Status": 2,
+      "Comment": "Name servers did not respond [139.99.68.169]."
+    },
+    {
+      "metodo": "Google DoH",
+      "host": "mail.tecnoweb.org.bo",
+      "tipo": "AAAA",
+      "cd": 1,
+      "Status": 2,
+      "Comment": "Name servers did not respond [139.99.68.169]."
+    },
+    {
+      "metodo": "UDP DNS",
+      "servidor": "8.8.8.8",
+      "host": "db.tecnoweb.org.bo",
+      "rcode": 2,
+      "respuestas": 0,
+      "direcciones": []
+    },
+    {
+      "metodo": "UDP DNS",
+      "servidor": "8.8.8.8",
+      "host": "mail.tecnoweb.org.bo",
+      "rcode": 2,
+      "respuestas": 0,
+      "direcciones": []
+    },
+    {
+      "metodo": "UDP DNS",
+      "servidor": "1.1.1.1",
+      "host": "db.tecnoweb.org.bo",
+      "rcode": 2,
+      "respuestas": 0,
+      "direcciones": []
+    },
+    {
+      "metodo": "UDP DNS",
+      "servidor": "1.1.1.1",
+      "host": "mail.tecnoweb.org.bo",
+      "rcode": 2,
+      "respuestas": 0,
+      "direcciones": []
+    },
+    {
+      "metodo": "UDP DNS",
+      "servidor": "9.9.9.9",
+      "host": "db.tecnoweb.org.bo",
+      "error": "timed out"
+    },
+    {
+      "metodo": "UDP DNS",
+      "servidor": "9.9.9.9",
+      "host": "mail.tecnoweb.org.bo",
+      "error": "timed out"
+    },
+    {
+      "metodo": "UDP DNS",
+      "servidor": "208.67.222.222",
+      "host": "db.tecnoweb.org.bo",
+      "error": "timed out"
+    },
+    {
+      "metodo": "UDP DNS",
+      "servidor": "208.67.222.222",
+      "host": "mail.tecnoweb.org.bo",
+      "error": "timed out"
+    },
+    {
+      "metodo": "UDP DNS",
+      "servidor": "190.104.12.43",
+      "host": "db.tecnoweb.org.bo",
+      "error": "timed out"
+    },
+    {
+      "metodo": "UDP DNS",
+      "servidor": "190.104.12.43",
+      "host": "mail.tecnoweb.org.bo",
+      "error": "timed out"
+    },
+    {
+      "metodo": "UDP DNS",
+      "servidor": "200.73.96.167",
+      "host": "db.tecnoweb.org.bo",
+      "error": "timed out"
+    },
+    {
+      "metodo": "UDP DNS",
+      "servidor": "200.73.96.167",
+      "host": "mail.tecnoweb.org.bo",
+      "error": "timed out"
+    }
+  ]
+}
