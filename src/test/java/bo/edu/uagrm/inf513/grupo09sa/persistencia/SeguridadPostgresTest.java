@@ -174,6 +174,62 @@ class SeguridadPostgresTest {
         assertEquals(1,numero("select count(*) from p1_adjunto_correo where mensaje_id='cupo-0'"));
         assertEquals(4,numero("select count(*) from p1_adjunto_correo"));
     }
+    bo.edu.uagrm.inf513.grupo09sa.email.AdjuntoPdf pdfDeDosMiB(){
+        byte[] contenido=new byte[2*1024*1024];
+        System.arraycopy("%PDF-1.4".getBytes(java.nio.charset.StandardCharsets.US_ASCII),0,contenido,0,8);
+        return new bo.edu.uagrm.inf513.grupo09sa.email.AdjuntoPdf("expediente.pdf",contenido);
+    }
+    List<String> llenarCupoConConfirmacionesPdf()throws Exception{
+        iniciarFlujo();
+        assertTrue(ordenar("admin@example.com","INSCAR","Segundo cargo","Facultad","true").exito());
+        var tokens=new java.util.ArrayList<String>();var pdf=pdfDeDosMiB();
+        for(int i=0;i<4;i++){
+            String id="pdf-expira-"+i;
+            repo.registrarEntrada(id,"luis@example.com","INSPOST[\"1\",\"2\",\"ADJUNTO\"]",List.of(pdf));
+            tokens.add(codigo(procesador.procesar(id,"luis@example.com",new Orden("INSPOST",List.of("1","2","ADJUNTO")))));
+            repo.confirmarRespuesta(id);
+        }
+        assertEquals(4,numero("select count(*) from p1_adjunto_correo"));
+        return tokens;
+    }
+    @Test void pdfVencidosLiberanCupoSinBorrarExpedientesConfirmados()throws Exception{
+        var tokens=llenarCupoConConfirmacionesPdf();
+        ejecutarSql("update p1_confirmacion set vence_en=now()-interval '1 minute' where mensaje_id like 'pdf-expira-%'");
+        repo.registrarEntrada("nuevo-tras-vencer","luis@example.com","INSPOST[]",List.of(pdfDeDosMiB()));
+        assertEquals(1,numero("select count(*) from p1_adjunto_correo where mensaje_id='nuevo-tras-vencer'"),"Los códigos vencidos no deben bloquear permanentemente el cupo de PDF");
+        assertEquals(0,numero("select count(*) from p1_adjunto_correo where mensaje_id like 'pdf-expira-%'"));
+        assertEquals(4,numero("select count(*) from p1_confirmacion where mensaje_id like 'pdf-expira-%'"),"Se conserva el registro de las confirmaciones");
+        assertEquals(1,numero("select count(*) from p1_expediente"),"La limpieza solo afecta los adjuntos temporales");
+        assertFalse(confirmar("vencida-posterior","luis@example.com",tokens.get(0)).exito());
+        assertEquals(1,numero("select count(*) from p1_postulacion"));
+    }
+    @Test void limpiezaConservaPdfSiLaConfirmacionValidaLlegoATiempoPeroEstaDiferida()throws Exception{
+        var tokens=llenarCupoConConfirmacionesPdf();
+        ejecutarSql("update p1_confirmacion set vence_en=now()-interval '1 minute' where mensaje_id like 'pdf-expira-%'");
+        repo.registrarEntrada("confirmacion-pdf-diferida","LUIS@example.com"," confirmar [ \u2003\""+tokens.get(0)+"\"\u2003 ] ");
+        ejecutarSql("update p1_correo_control set creado_en=now()-interval '2 minutes' where mensaje_id='confirmacion-pdf-diferida'");
+        repo.registrarEntrada("nuevo-con-cola","luis@example.com","INSPOST[]",List.of(pdfDeDosMiB()));
+        assertEquals(1,numero("select count(*) from p1_adjunto_correo where mensaje_id='pdf-expira-0'"));
+        assertEquals(0,numero("select count(*) from p1_adjunto_correo where mensaje_id in('pdf-expira-1','pdf-expira-2','pdf-expira-3')"));
+        assertEquals(1,numero("select count(*) from p1_adjunto_correo where mensaje_id='nuevo-con-cola'"));
+        assertTrue(confirmar("confirmacion-pdf-diferida","luis@example.com",tokens.get(0)).exito());
+        assertEquals(1,numero("select count(*) from p1_expediente where postulacion_id=2 and octet_length(contenido)=2097152"));
+    }
+    @Test void confirmacionesFalsasOAtrasadasNoRetienenPdfVencidos()throws Exception{
+        var tokens=llenarCupoConConfirmacionesPdf();
+        ejecutarSql("update p1_confirmacion set vence_en=now()-interval '1 minute' where mensaje_id like 'pdf-expira-%'");
+        repo.registrarEntrada("falsa-cuenta","intruso@example.com","CONFIRMAR[\""+tokens.get(0)+"\"]");
+        repo.registrarEntrada("llego-tarde","luis@example.com","CONFIRMAR[\""+tokens.get(1)+"\"]");
+        repo.registrarEntrada("codigo-incorrecto","luis@example.com","CONFIRMAR[\""+"X".repeat(43)+"\"]");
+        repo.registrarEntrada("parametro-extra","luis@example.com","CONFIRMAR[\""+tokens.get(2)+"\",\"extra\"]");
+        repo.registrarEntrada("comando-distinto","luis@example.com","LISPER[\""+tokens.get(3)+"\"]");
+        ejecutarSql("update p1_correo_control set creado_en=now()-interval '2 minutes' where mensaje_id in('falsa-cuenta','codigo-incorrecto','parametro-extra','comando-distinto')");
+        repo.registrarEntrada("nuevo-sin-retencion-falsa","luis@example.com","INSPOST[]",List.of(pdfDeDosMiB()));
+        assertEquals(0,numero("select count(*) from p1_adjunto_correo where mensaje_id like 'pdf-expira-%'"));
+        assertEquals(1,numero("select count(*) from p1_adjunto_correo where mensaje_id='nuevo-sin-retencion-falsa'"));
+        assertFalse(confirmar("falsa-cuenta","intruso@example.com",tokens.get(0)).exito());
+        assertFalse(confirmar("llego-tarde","luis@example.com",tokens.get(1)).exito());
+    }
     @Test void auditoriaMeritosPromedianEvaluadoresSinDuplicarElCriterio()throws Exception{
         iniciarFlujo();
         assertTrue(ordenar("admin@example.com","INSUSU","4","Eva Dos","Lopez","EVALUADOR","70000004","eva2@example.com","true").exito());

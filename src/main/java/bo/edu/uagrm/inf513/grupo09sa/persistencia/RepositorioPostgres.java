@@ -72,13 +72,36 @@ public final class RepositorioPostgres implements RepositorioProyecto {
             }catch(SQLException|RuntimeException ex){c.rollback();throw ex;}
         }
     }
-    /** Bounds staging only; confirmed expedientes and pending confirmations are never purged. */
+    /** Reclaims staging after response; preserves usable challenges and timely queued confirmations. */
     private boolean reservarEspacioPdf(Connection c,String remitente,int bytes)throws SQLException{
         try(PreparedStatement q=c.prepareStatement("select pg_advisory_xact_lock(5130910)")){q.execute();}
-        try(PreparedStatement q=c.prepareStatement("delete from p1_adjunto_correo a using p1_correo_control correo where correo.mensaje_id=a.mensaje_id and correo.estado='RESPONDIDO' and not exists(select 1 from p1_confirmacion f where f.mensaje_id=a.mensaje_id and not f.usado)")){q.executeUpdate();}
+        // A challenge that expired cannot pin the PDF budget indefinitely. A valid
+        // confirmation received before its deadline remains usable while deferred.
+        Set<String> protegidos=pdfConConfirmacionRecibidaATiempo(c);
+        String limpieza="delete from p1_adjunto_correo a using p1_correo_control correo where correo.mensaje_id=a.mensaje_id and correo.estado='RESPONDIDO' and not exists(select 1 from p1_confirmacion f where f.mensaje_id=a.mensaje_id and not f.usado and (f.vence_en>now() or f.mensaje_id=any(?)))";
+        java.sql.Array ids=c.createArrayOf("varchar",protegidos.toArray(String[]::new));
+        try(PreparedStatement q=c.prepareStatement(limpieza)){q.setQueryTimeout(30);q.setArray(1,ids);q.executeUpdate();}
+        finally{ids.free();}
         try(PreparedStatement q=c.prepareStatement("select coalesce(sum(octet_length(a.contenido)),0),coalesce(sum(case when lower(correo.remitente)=lower(?) then octet_length(a.contenido) else 0 end),0) from p1_adjunto_correo a join p1_correo_control correo on correo.mensaje_id=a.mensaje_id")){
             q.setString(1,remitente);try(ResultSet r=q.executeQuery()){r.next();return r.getLong(1)+bytes<=64L*1024*1024&&r.getLong(2)+bytes<=8L*1024*1024;}
         }
+    }
+    private Set<String> pdfConConfirmacionRecibidaATiempo(Connection c)throws SQLException{
+        Set<String> protegidos=new HashSet<>();
+        // The token prefilter only reduces candidates. The real parser decides
+        // validity, including all whitespace it accepts, without a second grammar.
+        String sql="select f.mensaje_id,entrada.asunto from p1_confirmacion f join p1_adjunto_correo a on a.mensaje_id=f.mensaje_id join p1_correo_control original on original.mensaje_id=a.mensaje_id join p1_correo_control entrada on lower(entrada.remitente)=lower(f.remitente) and entrada.creado_en<=f.vence_en and entrada.estado<>'RESPONDIDO' and encode(sha256(convert_to(substring(entrada.asunto from ?),'UTF8')),'hex')=f.token_hash where not f.usado and f.vence_en<=now() and original.estado='RESPONDIDO'";
+        var parser=new bo.edu.uagrm.inf513.grupo09sa.comandos.AnalizadorOrden();
+        try(PreparedStatement q=c.prepareStatement(sql)){
+            q.setQueryTimeout(30);q.setFetchSize(100);q.setString(1,"\"([A-Za-z0-9_-]{43})\"");
+            try(ResultSet r=q.executeQuery()){while(r.next()){
+                try{
+                    Orden orden=parser.analizar(r.getString(2));
+                    if(orden.comando().equals("CONFIRMAR")&&orden.parametros().size()==1&&orden.parametros().get(0).matches("[A-Za-z0-9_-]{43}"))protegidos.add(r.getString(1));
+                }catch(bo.edu.uagrm.inf513.grupo09sa.comandos.OrdenInvalidaException invalida){ /* Invalid queued text cannot pin a PDF. */ }
+            }}
+        }
+        return protegidos;
     }
     public int promoverDiferidos(int limite)throws SQLException{
         String sql="with tasas as (select lower(remitente) remitente,count(*) n from p1_correo_control where admitido_en>now()-interval '1 hour' group by lower(remitente)), candidatos as (select c.mensaje_id,c.creado_en,row_number() over(partition by lower(c.remitente) order by c.creado_en,c.mensaje_id) posicion,60-coalesce(t.n,0) cupo from p1_correo_control c left join tasas t on t.remitente=lower(c.remitente) where c.estado='DIFERIDO'), elegidos as (select mensaje_id from candidatos where posicion<=cupo order by posicion,creado_en,mensaje_id limit least(?,greatest(0,1000-(select count(*) from p1_correo_control where admitido_en>now()-interval '1 hour')))) update p1_correo_control set estado='RECIBIDO',admitido_en=now(),actualizado_en=now() where mensaje_id in(select mensaje_id from elegidos)";

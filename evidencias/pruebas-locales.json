@@ -1,28 +1,22 @@
 {
   "fecha": "2026-11-15",
-  "entorno": "Windows Java 17, PostgreSQL 15 local desechable",
+  "entorno": "Windows Java 17 y PostgreSQL 15 local desechable",
   "resultado": {
-    "tests": 119,
+    "tests": 122,
     "failures": 0,
     "errors": 0,
     "skipped": 0
   },
-  "ampliacion": {
-    "pruebas_nuevas": 8,
-    "matriz_inyecciones_numericas": 180,
-    "cargas_sql_distintas": 10,
-    "objetivos": [
-      "inyeccion SQL desde asunto y persistida",
-      "lectura ajena",
-      "evaluacion no asignada",
-      "confirmaciones concurrentes",
-      "segunda orden y controles",
-      "referencia URL interna"
-    ]
+  "regresion_previa": {
+    "prueba": "pdfVencidosLiberanCupoSinBorrarExpedientesConfirmados",
+    "fallos_esperados": 1,
+    "defecto_reproducido": true
   },
-  "sin_ataques_institucionales": true,
-  "codigo_produccion_modificado": false,
-  "jar_sha256": "4ee65f4d06a1f8427352d064dd6cf4d3caa3a18da2debd84992756d6b7ddf130",
+  "pruebas_nuevas": 3,
+  "codigo_produccion_modificado": true,
+  "migracion_requerida": false,
+  "jar_sha256": "d707df9c1c36c6859456d4d8da2d00418efacf85001fd64eaa2e8252b9d194ca",
+  "comprobacion_institucional": "Pendiente: UnknownHostException para db.tecnoweb.org.bo; consulta DNS publica devolvio SERVFAIL (Status 2). Sin ataque ni modificacion SQL institucional en esta revision.",
   "suites": [
     {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivosTest",
@@ -86,7 +80,7 @@
     },
     {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest",
-      "pruebas": 44
+      "pruebas": 47
     }
   ]
 }

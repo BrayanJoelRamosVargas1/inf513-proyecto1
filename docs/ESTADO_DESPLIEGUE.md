@@ -1,5 +1,9 @@
 # Estado del servicio del Grupo 09 SA
 
+## Estado posterior del 15 de noviembre de 2026
+
+Se instaló el JAR `d707df9c1c36c6859456d4d8da2d00418efacf85001fd64eaa2e8252b9d194ca` con la corrección del cupo PDF y 122 pruebas locales aprobadas. Se preservó el JAR anterior y se reinició la tarea Windows sin migrar tablas. La comprobación institucional quedó pendiente: `db.tecnoweb.org.bo` devolvió UnknownHostException en Java y SERVFAIL en una consulta DNS pública. No se obtuvo un respaldo nuevo ni se ejecutaron cambios SQL institucionales durante esta revisión. No se afirma que el servicio esté conectado. Las comprobaciones de conexión, instancia única y cola vacía que siguen pertenecen al 14 de noviembre. Véase [la corrección y sus pruebas](CORRECCION_CUPO_PDF_VENCIDO.md).
+
 Comprobado el 14 de noviembre de 2026. Alcance: ocho casos de uso aprobados para la primera parte.
 
 ## Actualización vigente de categorías áreas y empates
