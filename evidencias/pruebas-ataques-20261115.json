@@ -1,0 +1,92 @@
+{
+  "fecha": "2026-11-15",
+  "entorno": "Windows Java 17, PostgreSQL 15 local desechable",
+  "resultado": {
+    "tests": 119,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "ampliacion": {
+    "pruebas_nuevas": 8,
+    "matriz_inyecciones_numericas": 180,
+    "cargas_sql_distintas": 10,
+    "objetivos": [
+      "inyeccion SQL desde asunto y persistida",
+      "lectura ajena",
+      "evaluacion no asignada",
+      "confirmaciones concurrentes",
+      "segunda orden y controles",
+      "referencia URL interna"
+    ]
+  },
+  "sin_ataques_institucionales": true,
+  "codigo_produccion_modificado": false,
+  "jar_sha256": "4ee65f4d06a1f8427352d064dd6cf4d3caa3a18da2debd84992756d6b7ddf130",
+  "suites": [
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivosTest",
+      "pruebas": 2
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.CicloCorreoPostgresTest",
+      "pruebas": 12
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.comandos.AnalizadorOrdenTest",
+      "pruebas": 9
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.comandos.ConcurrenciaAnalizadorTest",
+      "pruebas": 1
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.comandos.FuzzAnalizadorTest",
+      "pruebas": 1
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.comandos.ProcesadorOrdenTest",
+      "pruebas": 11
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.config.AppConfigTest",
+      "pruebas": 4
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.AntivirusPdfTest",
+      "pruebas": 4
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.ClientePop3LimiteTest",
+      "pruebas": 1
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.DecodificacionRoundcubeTest",
+      "pruebas": 2
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.LectorAdjuntosTest",
+      "pruebas": 6
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.PasarelaJakartaMailTest",
+      "pruebas": 4
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.SeguridadTransporteTest",
+      "pruebas": 6
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.MainTest",
+      "pruebas": 5
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.persistencia.InyeccionSqlPostgresTest",
+      "pruebas": 7
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest",
+      "pruebas": 44
+    }
+  ]
+}

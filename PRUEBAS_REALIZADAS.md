@@ -1,5 +1,7 @@
 # Revisión actual con controles OWASP
 
+Verificación de ataques del 15 de noviembre: **119 pruebas aprobadas**, incluidas 180 cargas en parámetros numéricos, SQL desde el asunto, permisos entre usuarios, confirmaciones concurrentes y URL interna. Véase [el informe de ataques](docs/PRUEBAS_ATAQUES_2026_11_15.md). No se modificó el código de producción; las cifras de 111 o inferiores siguientes corresponden a revisiones anteriores.
+
 Revisión vigente: **111 pruebas aprobadas**, incluidas categorías, ponderación por áreas y desempates. Véase [el cierre de los ocho CU](docs/CIERRE_OCHO_CU.md); las cifras inferiores que siguen pertenecen a revisiones anteriores.
 
 100 pruebas aprobadas, sin fallos, errores ni omisiones. Incluye recorrido completo de los ocho CU con cuatro roles ficticios, aprobación y fallo de antivirus, tiempo excedido, limpieza de temporales y cupo sin bloqueo de bandeja. Evidencia actual en `evidencias/pruebas-locales.json`; detalles en `docs/CONTROLES_OWASP.md`. Las revisiones anteriores se conservan a continuación.

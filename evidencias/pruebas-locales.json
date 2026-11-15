@@ -1,13 +1,28 @@
 {
-  "fecha": "2026-11-14",
-  "entorno": "Windows Java 17 y PostgreSQL 15 desechable",
+  "fecha": "2026-11-15",
+  "entorno": "Windows Java 17, PostgreSQL 15 local desechable",
   "resultado": {
-    "tests": 111,
+    "tests": 119,
     "failures": 0,
     "errors": 0,
     "skipped": 0
   },
-  "alcance": "Ocho CU aprobados; correo simulado/local, SQL real local, sin ataques al servidor universitario",
+  "ampliacion": {
+    "pruebas_nuevas": 8,
+    "matriz_inyecciones_numericas": 180,
+    "cargas_sql_distintas": 10,
+    "objetivos": [
+      "inyeccion SQL desde asunto y persistida",
+      "lectura ajena",
+      "evaluacion no asignada",
+      "confirmaciones concurrentes",
+      "segunda orden y controles",
+      "referencia URL interna"
+    ]
+  },
+  "sin_ataques_institucionales": true,
+  "codigo_produccion_modificado": false,
+  "jar_sha256": "4ee65f4d06a1f8427352d064dd6cf4d3caa3a18da2debd84992756d6b7ddf130",
   "suites": [
     {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivosTest",
@@ -67,11 +82,11 @@
     },
     {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.persistencia.InyeccionSqlPostgresTest",
-      "pruebas": 3
+      "pruebas": 7
     },
     {
       "nombre": "bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest",
-      "pruebas": 40
+      "pruebas": 44
     }
   ]
 }

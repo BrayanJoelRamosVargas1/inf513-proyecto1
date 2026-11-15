@@ -380,6 +380,67 @@ class SeguridadPostgresTest {
         assertTrue(ordenar("carla@example.com","INSPOST","1","1","https://example.com/carla.pdf").exito());
         assertTrue(ordenar("admin@example.com","ASIEVA","2","2","MERITOS_Y_EXAMEN").exito());
     }
+    @Test void postulanteNoConsultaSolicitudesAjenasNiConSqlNiConIdConocido()throws Exception{
+        iniciarFlujo();segundoPostulante();
+        var todas=ordenar("luis@example.com","LISPOST","*");
+        assertTrue(todas.exito());assertTrue(todas.cuerpo().contains("1 | AUX |"));assertFalse(todas.cuerpo().contains("2 | AUX |"));
+        for(String filtro:List.of("2","' OR '1'='1","%","_")) {
+            var r=ordenar("luis@example.com","LISPOST",filtro);
+            assertTrue(r.exito());assertEquals("Sin resultados.",r.cuerpo());
+        }
+        var carla=ordenar("carla@example.com","LISPOST","*");
+        assertTrue(carla.exito());assertTrue(carla.cuerpo().contains("2 | AUX |"));assertFalse(carla.cuerpo().contains("1 | AUX |"));
+        assertFalse(procesador.procesar("leer-roles-ajenos","luis@example.com",new Orden("LISUSU",List.of("*"))).exito());
+        assertEquals(2,numero("select count(*) from p1_postulacion"));
+    }
+    @Test void evaluadorNoCalificaOtraPostulacionAunqueConozcaSuId()throws Exception{
+        iniciarFlujo();segundoPostulante();
+        ejecutarSql("delete from p1_asignacion_evaluador where postulacion_id=2");
+        assertFalse(ordenar("eva@example.com","EVAREQ","2","Identidad","true","Intento sin asignación").exito());
+        assertEquals(0,numero("select count(*) from p1_evaluacion_requisito where postulacion_id=2"));
+        // Estado elegible de ensayo: el rechazo debe depender de la asignación, no solo del estado.
+        ejecutarSql("insert into p1_evaluacion_requisito(postulacion_id,requisito,cumple,evaluador_correo) values(2,'Identidad',true,'otro@example.com')");
+        ejecutarSql("update p1_postulacion set estado='HABILITADO' where id=2");
+        assertFalse(ordenar("eva@example.com","REGMER","2","Experiencia","100","Intento sin asignación").exito());
+        assertFalse(ordenar("eva@example.com","REGEXA","2","100","Intento sin asignación").exito());
+        assertTrue(ordenar("admin@example.com","ASIOFE","1","1","1").exito());
+        assertTrue(ordenar("admin@example.com","CFGARE","1","1","teoria","100").exito());
+        assertFalse(ordenar("eva@example.com","REGAREA","2","teoria","100","Intento sin asignación").exito());
+        assertEquals(0,numero("select count(*) from p1_merito where postulacion_id=2"));
+        assertEquals(0,numero("select count(*) from p1_examen where postulacion_id=2"));
+        assertEquals(0,numero("select puntaje_final::int from p1_postulacion where id=2"));
+        assertTrue(ordenar("eva@example.com","EVAREQ","1","Identidad","true","Asignación válida").exito());
+    }
+    @Test void dosConfirmacionesSimultaneasNoReutilizanUnCodigoNiDuplicanLaEscritura()throws Exception{
+        String token=codigo(procesador.procesar("alta-competida","admin@example.com",alta()));
+        var pool=java.util.concurrent.Executors.newFixedThreadPool(2);
+        var inicio=new java.util.concurrent.CountDownLatch(1);
+        try {
+            var a=pool.submit(()->{inicio.await();return confirmar("confirmacion-a","admin@example.com",token);});
+            var b=pool.submit(()->{inicio.await();return confirmar("confirmacion-b","admin@example.com",token);});
+            inicio.countDown();
+            var ra=a.get(20,java.util.concurrent.TimeUnit.SECONDS);var rb=b.get(20,java.util.concurrent.TimeUnit.SECONDS);
+            assertNotEquals(ra.exito(),rb.exito(),"Solo una confirmación distinta puede consumir el código");
+            assertEquals(1,usuarios());assertEquals(1,numero("select count(*) from p1_auditoria where accion='INSUSU'"));
+            assertFalse(confirmar("repeticion-tercera","admin@example.com",token).exito());
+            assertTrue(confirmar(ra.exito()?"confirmacion-a":"confirmacion-b","admin@example.com",token).exito());
+            assertEquals(1,usuarios());
+        } finally {pool.shutdownNow();}
+    }
+    @Test void referenciaDeExpedienteNoProvocaDescargaDeUnaDireccionInterna()throws Exception{
+        iniciarFlujo();
+        assertTrue(ordenar("admin@example.com","INSCAR","Otro cargo","Facultad","true").exito());
+        try(var servidor=new java.net.ServerSocket(0,1,java.net.InetAddress.getLoopbackAddress())) {
+            servidor.setSoTimeout(250);
+            String referencia="http://127.0.0.1:"+servidor.getLocalPort()+"/dato-interno";
+            var r=ordenar("luis@example.com","INSPOST","1","2",referencia);
+            assertTrue(r.exito(),r.cuerpo());assertTrue(r.cuerpo().contains("referencia externa"));
+            assertThrows(java.net.SocketTimeoutException.class,()->{try(var socket=servidor.accept()){fail("El servicio no debe descargar referencias de expediente");}});
+            try(var c=ds.getConnection();var s=c.prepareStatement("select ruta_archivo,contenido from p1_expediente where postulacion_id=2");var filas=s.executeQuery()) {
+                assertTrue(filas.next());assertEquals(referencia,filas.getString(1));assertNull(filas.getBytes(2));
+            }
+        }
+    }
     @Test void categoriasTienenRankingYCuposIndependientes()throws Exception{
         iniciarFlujo();ejecutarSql("update p1_convocatoria set plazas=2");
         assertTrue(ordenar("admin@example.com","INSCAR","Redes","Facultad","true").exito());
