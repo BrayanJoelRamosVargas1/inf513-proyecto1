@@ -1,0 +1,86 @@
+{
+  "fecha": "2026-11-15",
+  "entorno": "Windows Java 17 y PostgreSQL 15 local desechable",
+  "resultado": {
+    "tests": 122,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "regresion_previa": {
+    "prueba": "pdfVencidosLiberanCupoSinBorrarExpedientesConfirmados",
+    "fallos_esperados": 1,
+    "defecto_reproducido": true
+  },
+  "pruebas_nuevas": 3,
+  "codigo_produccion_modificado": true,
+  "migracion_requerida": false,
+  "jar_sha256": "d707df9c1c36c6859456d4d8da2d00418efacf85001fd64eaa2e8252b9d194ca",
+  "comprobacion_institucional": "Pendiente: UnknownHostException para db.tecnoweb.org.bo; consulta DNS publica devolvio SERVFAIL (Status 2). Sin ataque ni modificacion SQL institucional en esta revision.",
+  "suites": [
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivosTest",
+      "pruebas": 2
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.CicloCorreoPostgresTest",
+      "pruebas": 12
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.comandos.AnalizadorOrdenTest",
+      "pruebas": 9
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.comandos.ConcurrenciaAnalizadorTest",
+      "pruebas": 1
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.comandos.FuzzAnalizadorTest",
+      "pruebas": 1
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.comandos.ProcesadorOrdenTest",
+      "pruebas": 11
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.config.AppConfigTest",
+      "pruebas": 4
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.AntivirusPdfTest",
+      "pruebas": 4
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.ClientePop3LimiteTest",
+      "pruebas": 1
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.DecodificacionRoundcubeTest",
+      "pruebas": 2
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.LectorAdjuntosTest",
+      "pruebas": 6
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.PasarelaJakartaMailTest",
+      "pruebas": 4
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.email.SeguridadTransporteTest",
+      "pruebas": 6
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.MainTest",
+      "pruebas": 5
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.persistencia.InyeccionSqlPostgresTest",
+      "pruebas": 7
+    },
+    {
+      "nombre": "bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest",
+      "pruebas": 47
+    }
+  ]
+}

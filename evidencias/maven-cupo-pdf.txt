@@ -1,0 +1,179 @@
+[INFO] Scanning for projects...
+[INFO]
+[INFO] ----------------< bo.edu.uagrm.inf513:inf513-proyecto1 >----------------
+[INFO] Building INF513 Proyecto 1 Grupo 09 SA 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO]
+[INFO] --- resources:3.4.0:resources (default-resources) @ inf513-proyecto1 ---
+[INFO] skip non existing resourceDirectory C:\Users\ElCremosasWee\Documents\ChatGPT\fedora_linux_tecno_web\revision-email-2026-2\proyecto-mejorado\src\main\resources
+[INFO]
+[INFO] --- compiler:3.15.0:compile (default-compile) @ inf513-proyecto1 ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 32 source files with javac [debug release 17] to target\classes
+[INFO] /C:/Users/ElCremosasWee/Documents/ChatGPT/fedora_linux_tecno_web/revision-email-2026-2/proyecto-mejorado/src/main/java/bo/edu/uagrm/inf513/grupo09sa/email/ClienteRoundcube.java: C:\Users\ElCremosasWee\Documents\ChatGPT\fedora_linux_tecno_web\revision-email-2026-2\proyecto-mejorado\src\main\java\bo\edu\uagrm\inf513\grupo09sa\email\ClienteRoundcube.java uses or overrides a deprecated API.
+[INFO] /C:/Users/ElCremosasWee/Documents/ChatGPT/fedora_linux_tecno_web/revision-email-2026-2/proyecto-mejorado/src/main/java/bo/edu/uagrm/inf513/grupo09sa/email/ClienteRoundcube.java: Recompile with -Xlint:deprecation for details.
+[INFO]
+[INFO] --- resources:3.4.0:testResources (default-testResources) @ inf513-proyecto1 ---
+[INFO] skip non existing resourceDirectory C:\Users\ElCremosasWee\Documents\ChatGPT\fedora_linux_tecno_web\revision-email-2026-2\proyecto-mejorado\src\test\resources
+[INFO]
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ inf513-proyecto1 ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 16 source files with javac [debug release 17] to target\test-classes
+[INFO]
+[INFO] --- surefire:3.5.2:test (default-test) @ inf513-proyecto1 ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO]
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivosTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.550 s -- in bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivosTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.CicloCorreoPostgresTest
+Respondido correo pdf-av de luis@example.com. �xito: false
+Respondido correo siguiente-av de otro@example.com. �xito: true
+Correo uno pendiente de reintento: Env�o simulado fallido
+Respondido correo uno de a@example.com. �xito: true
+Respondido correo pdf-av de luis@example.com. �xito: false
+Respondido correo pdf-av de luis@example.com. �xito: false
+Respondido correo almacenado-0 de luis@example.com. �xito: false
+Respondido correo almacenado-1 de luis@example.com. �xito: false
+Respondido correo almacenado-2 de luis@example.com. �xito: false
+Respondido correo almacenado-3 de luis@example.com. �xito: false
+Respondido correo exceso-a de luis@example.com. �xito: false
+Respondido correo exceso-b de luis@example.com. �xito: false
+Respondido correo legitimo-detras de otro@example.com. �xito: true
+Respondido correo orden-propia de audit@example.com. �xito: true
+Respondido correo malo de a@example.com. �xito: false
+Respondido correo bueno de a@example.com. �xito: true
+No se pudo registrar un correo; los dem�s continuar�n: Marcado simulado fallido
+Respondido correo persistido de a@example.com. �xito: true
+Respondido correo ensayo-2171de04-8e58-417a-a05d-6c2caa0cd79b de admin@example.com. �xito: false
+Respondido correo ensayo-a5be7044-2f96-49c6-ba34-f5861a05a491 de admin@example.com. �xito: true
+Respondido correo ensayo-1a57eefb-d232-4d77-a511-cc42d4477eb6 de admin@example.com. �xito: false
+Respondido correo ensayo-0f263681-d6dd-433a-9bc8-ebc60307d1b5 de admin@example.com. �xito: true
+Respondido correo ensayo-f2e2e024-e85f-446b-8c96-7857ca7baf8c de admin@example.com. �xito: false
+Respondido correo ensayo-0bd20560-d46b-4e7e-b5b5-0e7658c7b2b6 de admin@example.com. �xito: true
+Respondido correo ensayo-cf09d430-9ea0-4139-b515-c9b42c6f1ddc de admin@example.com. �xito: false
+Respondido correo ensayo-50c0a210-9acc-42d6-97a5-fc1819618591 de admin@example.com. �xito: true
+Respondido correo ensayo-07321480-d38c-4a32-8ef7-60cc3fac11bf de admin@example.com. �xito: false
+Respondido correo ensayo-c044d82d-9c47-4c6e-ac4d-d7c58e28081d de admin@example.com. �xito: true
+Respondido correo ensayo-3c9014aa-0c20-4478-9b75-b05f8336046b de vice@example.com. �xito: false
+Respondido correo ensayo-b4c090d8-b677-4ab1-bb72-367a2f2ce842 de vice@example.com. �xito: true
+Respondido correo ensayo-6e74747e-3f89-41b8-b418-284d491d9a5a de luis@example.com. �xito: false
+Respondido correo ensayo-4e5c3690-e45c-4cb9-b618-ac36d12ad5e3 de luis@example.com. �xito: true
+Respondido correo ensayo-fa8a007c-bdba-49c8-9c60-6bd9938d8a74 de admin@example.com. �xito: false
+Respondido correo ensayo-3910f805-3f12-43c9-aca7-74f0198633aa de admin@example.com. �xito: true
+Respondido correo ensayo-9044b2a1-06c4-4d44-ba2b-9e0164c7e1b4 de eva@example.com. �xito: false
+Respondido correo ensayo-f66ce157-358b-46cb-a05c-707fb8c3b687 de eva@example.com. �xito: true
+Respondido correo ensayo-14a1b191-8346-4758-bc7e-280e9ce6aa19 de vice@example.com. �xito: false
+Respondido correo ensayo-9dd2f48d-420c-4a40-bb1c-04e194908e65 de vice@example.com. �xito: true
+Respondido correo ensayo-26e3a927-5e13-4ada-b05b-931ce09402b8 de eva@example.com. �xito: false
+Respondido correo ensayo-64290ec2-a3b4-4158-8a03-cbae12a13746 de eva@example.com. �xito: true
+Respondido correo ensayo-b601298b-9c53-474c-a709-b22fd78b7475 de eva@example.com. �xito: false
+Respondido correo ensayo-b5466b6d-b3db-42c1-bdb2-4c94448d857d de eva@example.com. �xito: true
+Respondido correo ensayo-02d2b4f2-8997-4360-8a3d-44a4267772b5 de admin@example.com. �xito: false
+Respondido correo ensayo-a4d325a8-8f73-4531-9634-601e802d1df4 de admin@example.com. �xito: true
+Respondido correo ensayo-c902871e-0375-4766-94b7-e41b013cc18e de admin@example.com. �xito: false
+Respondido correo ensayo-fe954389-0ceb-41a6-93c1-76a372217d0c de admin@example.com. �xito: true
+Respondido correo ensayo-2f01ee9e-3e23-4ad9-bd5f-9980743828fe de vice@example.com. �xito: false
+Respondido correo ensayo-0b9927be-733e-4239-accf-0dbbd8322750 de vice@example.com. �xito: true
+Respondido correo ensayo-d15f2eec-24fa-4012-bc11-a1f4be31b10e de vice@example.com. �xito: false
+Respondido correo ensayo-5ee766bd-9497-4633-850f-42b12c98e45b de vice@example.com. �xito: true
+Respondido correo ensayo-bd1b72fa-a424-4877-80a7-1fda8a314189 de luis@example.com. �xito: false
+Respondido correo ensayo-c55c4e32-1670-4f7a-8e37-004349292094 de luis@example.com. �xito: true
+Respondido correo ensayo-04de196b-aee4-4f5d-987a-fb5eefb5f86a de intruso@example.com. �xito: false
+Respondido correo pdf-av de luis@example.com. �xito: false
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 46.27 s -- in bo.edu.uagrm.inf513.grupo09sa.CicloCorreoPostgresTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.comandos.AnalizadorOrdenTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.014 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.AnalizadorOrdenTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.comandos.ConcurrenciaAnalizadorTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.348 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.ConcurrenciaAnalizadorTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.comandos.FuzzAnalizadorTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.030 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.FuzzAnalizadorTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.comandos.ProcesadorOrdenTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.020 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.ProcesadorOrdenTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.config.AppConfigTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.011 s -- in bo.edu.uagrm.inf513.grupo09sa.config.AppConfigTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.email.AntivirusPdfTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.682 s -- in bo.edu.uagrm.inf513.grupo09sa.email.AntivirusPdfTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.email.ClientePop3LimiteTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.060 s -- in bo.edu.uagrm.inf513.grupo09sa.email.ClientePop3LimiteTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.email.DecodificacionRoundcubeTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.015 s -- in bo.edu.uagrm.inf513.grupo09sa.email.DecodificacionRoundcubeTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.email.LectorAdjuntosTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.220 s -- in bo.edu.uagrm.inf513.grupo09sa.email.LectorAdjuntosTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.email.PasarelaJakartaMailTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 9.618 s -- in bo.edu.uagrm.inf513.grupo09sa.email.PasarelaJakartaMailTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.email.SeguridadTransporteTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.124 s -- in bo.edu.uagrm.inf513.grupo09sa.email.SeguridadTransporteTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.MainTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in bo.edu.uagrm.inf513.grupo09sa.MainTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.persistencia.InyeccionSqlPostgresTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 9.604 s -- in bo.edu.uagrm.inf513.grupo09sa.persistencia.InyeccionSqlPostgresTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest
+[INFO] Tests run: 47, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 145.8 s -- in bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest
+[INFO]
+[INFO] Results:
+[INFO]
+[INFO] Tests run: 122, Failures: 0, Errors: 0, Skipped: 0
+[INFO]
+[INFO]
+[INFO] --- jar:3.5.0:jar (default-jar) @ inf513-proyecto1 ---
+[INFO] Building jar: C:\Users\ElCremosasWee\Documents\ChatGPT\fedora_linux_tecno_web\revision-email-2026-2\proyecto-mejorado\target\inf513-proyecto1-1.0.0.jar
+[INFO]
+[INFO] --- shade:3.6.0:shade (default) @ inf513-proyecto1 ---
+[INFO] Including org.eclipse.angus:angus-mail:jar:2.0.4 in the shaded jar.
+[INFO] Including jakarta.activation:jakarta.activation-api:jar:2.1.3 in the shaded jar.
+[INFO] Including jakarta.mail:jakarta.mail-api:jar:2.1.3 in the shaded jar.
+[INFO] Including org.eclipse.angus:angus-activation:jar:2.0.2 in the shaded jar.
+[INFO] Including org.postgresql:postgresql:jar:42.7.14 in the shaded jar.
+[INFO] Including org.checkerframework:checker-qual:jar:3.55.1 in the shaded jar.
+[INFO] Including com.zaxxer:HikariCP:jar:6.2.1 in the shaded jar.
+[INFO] Including org.slf4j:slf4j-api:jar:1.7.36 in the shaded jar.
+[INFO] Including org.apache.httpcomponents.client5:httpclient5:jar:5.6.5 in the shaded jar.
+[INFO] Including org.apache.httpcomponents.core5:httpcore5:jar:5.4.4 in the shaded jar.
+[INFO] Including org.apache.httpcomponents.core5:httpcore5-h2:jar:5.4.4 in the shaded jar.
+[INFO] Including com.fasterxml.jackson.core:jackson-databind:jar:2.22.3 in the shaded jar.
+[INFO] Including com.fasterxml.jackson.core:jackson-annotations:jar:2.22 in the shaded jar.
+[INFO] Including com.fasterxml.jackson.core:jackson-core:jar:2.22.3 in the shaded jar.
+[INFO] Including org.slf4j:slf4j-simple:jar:1.7.36 in the shaded jar.
+[WARNING] Discovered module-info.class. Shading will break its strong encapsulation.
+[WARNING] Discovered module-info.class. Shading will break its strong encapsulation.
+[WARNING] Discovered module-info.class. Shading will break its strong encapsulation.
+[WARNING] Discovered module-info.class. Shading will break its strong encapsulation.
+[WARNING] Discovered module-info.class. Shading will break its strong encapsulation.
+[WARNING] Discovered module-info.class. Shading will break its strong encapsulation.
+[WARNING] Discovered module-info.class. Shading will break its strong encapsulation.
+[WARNING] angus-activation-2.0.2.jar, angus-mail-2.0.4.jar, jakarta.activation-api-2.1.3.jar, jakarta.mail-api-2.1.3.jar define 2 overlapping resources:
+[WARNING]   - META-INF/LICENSE.md
+[WARNING]   - META-INF/NOTICE.md
+[WARNING] httpclient5-5.6.5.jar, httpcore5-5.4.4.jar, httpcore5-h2-5.4.4.jar, jackson-annotations-2.22.jar, jackson-core-2.22.3.jar, jackson-databind-2.22.3.jar define 1 overlapping resource:
+[WARNING]   - META-INF/NOTICE
+[WARNING] httpclient5-5.6.5.jar, httpcore5-5.4.4.jar, httpcore5-h2-5.4.4.jar, jackson-annotations-2.22.jar, jackson-core-2.22.3.jar, jackson-databind-2.22.3.jar, postgresql-42.7.14.jar define 1 overlapping resource:
+[WARNING]   - META-INF/LICENSE
+[WARNING] httpclient5-5.6.5.jar, httpcore5-5.4.4.jar, httpcore5-h2-5.4.4.jar define 1 overlapping resource:
+[WARNING]   - META-INF/DEPENDENCIES
+[WARNING] HikariCP-6.2.1.jar, angus-activation-2.0.2.jar, angus-mail-2.0.4.jar, checker-qual-3.55.1.jar, httpclient5-5.6.5.jar, httpcore5-5.4.4.jar, httpcore5-h2-5.4.4.jar, inf513-proyecto1-1.0.0.jar, jackson-annotations-2.22.jar, jackson-core-2.22.3.jar, jackson-databind-2.22.3.jar, jakarta.activation-api-2.1.3.jar, jakarta.mail-api-2.1.3.jar, postgresql-42.7.14.jar, slf4j-api-1.7.36.jar, slf4j-simple-1.7.36.jar define 1 overlapping resource:
+[WARNING]   - META-INF/MANIFEST.MF
+[WARNING] jackson-core-2.22.3.jar, jackson-databind-2.22.3.jar define 1 overlapping classes:
+[WARNING]   - META-INF.versions.9.module-info
+[WARNING] maven-shade-plugin has detected that some files are
+[WARNING] present in two or more JARs. When this happens, only one
+[WARNING] single version of the file is copied to the uber jar.
+[WARNING] Usually this is not harmful and you can skip these warnings,
+[WARNING] otherwise try to manually exclude artifacts based on
+[WARNING] mvn dependency:tree -Ddetail=true and the above output.
+[WARNING] See https://maven.apache.org/plugins/maven-shade-plugin/
+[INFO] Replacing original artifact with shaded artifact.
+[INFO] Replacing C:\Users\ElCremosasWee\Documents\ChatGPT\fedora_linux_tecno_web\revision-email-2026-2\proyecto-mejorado\target\inf513-proyecto1-1.0.0.jar with C:\Users\ElCremosasWee\Documents\ChatGPT\fedora_linux_tecno_web\revision-email-2026-2\proyecto-mejorado\target\inf513-proyecto1-1.0.0-shaded.jar
+[INFO]
+[INFO] --- spotbugs:4.10.5.0:spotbugs (default-cli) @ inf513-proyecto1 ---
+[INFO] Done SpotBugs Analysis....
+[INFO] Skipping com.github.spotbugs:spotbugs-maven-plugin:4.10.5.0:spotbugs report goal
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  04:11 min
+[INFO] Finished at: 2026-11-15T03:00:00-04:00
+[INFO] ------------------------------------------------------------------------
