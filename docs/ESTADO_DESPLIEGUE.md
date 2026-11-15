@@ -69,3 +69,9 @@ Los registros locales se encuentran en `logs/`. No compartir archivos de credenc
 ## Entrega académica
 
 El paquete contiene código, ejecutable, PUDS actualizado, esquema, manuales, pruebas e informes. La impresión y el envío a Presencial corresponden al equipo. No se envió la actividad desde esta sesión.
+# Comprobación adicional del 15 de noviembre
+
+DNS institucional pendiente y restauración aislada del respaldo del 14 de
+noviembre comprobada: [diagnóstico y límites](DIAGNOSTICO_DNS_Y_RECUPERACION.md).
+No equivale a una prueba de conexión institucional exitosa.
+

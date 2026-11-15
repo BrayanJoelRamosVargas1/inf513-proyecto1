@@ -1,0 +1,96 @@
+{
+  "fecha_utc": "2026-11-15T07:27:16.695920+00:00",
+  "consultas": [
+    {
+      "host": "db.tecnoweb.org.bo",
+      "error": "[Errno 11002] getaddrinfo failed"
+    },
+    {
+      "host": "mail.tecnoweb.org.bo",
+      "error": "[Errno 11002] getaddrinfo failed"
+    },
+    {
+      "host": "github.com",
+      "direcciones": [
+        "140.82.114.4"
+      ]
+    },
+    {
+      "proveedor": "Google",
+      "host": "db.tecnoweb.org.bo",
+      "tipo": "A",
+      "Status": 2,
+      "Comment": "Name servers did not respond [139.99.68.169]."
+    },
+    {
+      "proveedor": "Google",
+      "host": "mail.tecnoweb.org.bo",
+      "tipo": "A",
+      "Status": 2,
+      "Comment": "Name servers did not respond [139.99.68.169]."
+    },
+    {
+      "proveedor": "Google",
+      "host": "tecnoweb.org.bo",
+      "tipo": "NS",
+      "Status": 2,
+      "Comment": "Name servers did not respond [139.99.68.169]."
+    },
+    {
+      "proveedor": "Google",
+      "host": "github.com",
+      "tipo": "A",
+      "Status": 0,
+      "Answer": [
+        {
+          "name": "github.com.",
+          "type": 1,
+          "TTL": 60,
+          "data": "140.82.113.3"
+        }
+      ],
+      "Comment": "Response from 198.51.44.72."
+    },
+    {
+      "proveedor": "Cloudflare",
+      "host": "db.tecnoweb.org.bo",
+      "tipo": "A",
+      "Status": 2,
+      "Comment": [
+        "EDE(22): No Reachable Authority at delegation tecnoweb.org.bo."
+      ]
+    },
+    {
+      "proveedor": "Cloudflare",
+      "host": "mail.tecnoweb.org.bo",
+      "tipo": "A",
+      "Status": 2,
+      "Comment": [
+        "EDE(22): No Reachable Authority at delegation tecnoweb.org.bo."
+      ]
+    },
+    {
+      "proveedor": "Cloudflare",
+      "host": "tecnoweb.org.bo",
+      "tipo": "NS",
+      "Status": 2,
+      "Comment": [
+        "EDE(22): No Reachable Authority at delegation tecnoweb.org.bo."
+      ]
+    },
+    {
+      "proveedor": "Cloudflare",
+      "host": "github.com",
+      "tipo": "A",
+      "Status": 0,
+      "Answer": [
+        {
+          "name": "github.com",
+          "type": 1,
+          "TTL": 40,
+          "data": "4.228.31.150"
+        }
+      ]
+    }
+  ]
+}
