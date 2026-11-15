@@ -1,5 +1,7 @@
 # Auditoría del Proyecto 1, Grupo 09 SA
 
+Revalidación posterior: **103 pruebas aprobadas**, incluidas tres nuevas de inyección SQL con PostgreSQL aislado. Véase [VERIFICACION_INYECCION_SQL.md](VERIFICACION_INYECCION_SQL.md). Las cifras de 100 y 90 de las fases siguientes son históricas. Los pendientes de negocio detectados al contrastar la propuesta del grupo y el ensayo en Fedora no se consideran cerrados por estas pruebas.
+
 Fecha: 14 de noviembre de 2026. Alcance: los ocho casos aprobados, sin incorporar la ampliación de 30 requisitos. Se revisaron el servicio Java, el analizador, SQL, autorización, confirmaciones, correo, adjuntos, configuración, dependencias y archivos publicados. Es una auditoría del proyecto y pruebas aisladas; no un examen de penetración de los servidores de la universidad.
 
 ## Estado real de publicación y funcionamiento
@@ -30,7 +32,7 @@ Los avisos de bibliotecas se documentan en `evidencias/auditoria-osv-antes.json`
 
 ## Aplicación posterior de controles OWASP
 
-La suite actual tiene 100 pruebas. Se añadió antivirus con rechazo ante fallos, límite de tiempo, temporales privados, rechazo durable por cupo y un ensayo completo por el ciclo de correo con cuatro roles ficticios. Los detalles, fuentes y límites están en [CONTROLES_OWASP.md](CONTROLES_OWASP.md).
+La fase OWASP elevó la suite a 100 pruebas. Se añadió antivirus con rechazo ante fallos, límite de tiempo, temporales privados, rechazo durable por cupo y un ensayo completo por el ciclo de correo con cuatro roles ficticios. Los detalles, fuentes y límites están en [CONTROLES_OWASP.md](CONTROLES_OWASP.md).
 
 ## Herramientas y evidencia
 

@@ -1,0 +1,10 @@
+{
+  "tests": 103,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "suites": 16,
+  "entorno": "Windows, Java 17, PostgreSQL 15 local; esquemas temporales",
+  "alcance": "Suite completa incluida InyeccionSqlPostgresTest",
+  "produccion_modificada": false
+}

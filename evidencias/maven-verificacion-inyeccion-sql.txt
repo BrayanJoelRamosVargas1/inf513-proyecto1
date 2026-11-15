@@ -1,0 +1,123 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ----------------< bo.edu.uagrm.inf513:inf513-proyecto1 >----------------
+[INFO] Building INF513 Proyecto 1 Grupo 09 SA 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.4.0:resources (default-resources) @ inf513-proyecto1 ---
+[INFO] skip non existing resourceDirectory C:\Users\ElCremosasWee\Documents\ChatGPT\fedora_linux_tecno_web\revision-email-2026-2\proyecto-mejorado\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ inf513-proyecto1 ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.4.0:testResources (default-testResources) @ inf513-proyecto1 ---
+[INFO] skip non existing resourceDirectory C:\Users\ElCremosasWee\Documents\ChatGPT\fedora_linux_tecno_web\revision-email-2026-2\proyecto-mejorado\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ inf513-proyecto1 ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 16 source files with javac [debug release 17] to target\test-classes
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ inf513-proyecto1 ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivosTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.543 s -- in bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivosTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.CicloCorreoPostgresTest
+Respondido correo pdf-av de luis@example.com. �xito: false
+Respondido correo siguiente-av de otro@example.com. �xito: true
+Correo uno pendiente de reintento: Env�o simulado fallido
+Respondido correo uno de a@example.com. �xito: true
+Respondido correo pdf-av de luis@example.com. �xito: false
+Respondido correo pdf-av de luis@example.com. �xito: false
+Respondido correo almacenado-0 de luis@example.com. �xito: false
+Respondido correo almacenado-1 de luis@example.com. �xito: false
+Respondido correo almacenado-2 de luis@example.com. �xito: false
+Respondido correo almacenado-3 de luis@example.com. �xito: false
+Respondido correo exceso-a de luis@example.com. �xito: false
+Respondido correo exceso-b de luis@example.com. �xito: false
+Respondido correo legitimo-detras de otro@example.com. �xito: true
+Respondido correo orden-propia de audit@example.com. �xito: true
+Respondido correo malo de a@example.com. �xito: false
+Respondido correo bueno de a@example.com. �xito: true
+No se pudo registrar un correo; los dem�s continuar�n: Marcado simulado fallido
+Respondido correo persistido de a@example.com. �xito: true
+Respondido correo ensayo-f7690e61-fb1c-4521-a30e-cd13459da914 de admin@example.com. �xito: false
+Respondido correo ensayo-0292ed18-3478-4c07-b01d-0ec819e94030 de admin@example.com. �xito: true
+Respondido correo ensayo-939dbf85-da0d-4cc3-9378-d37efbe86974 de admin@example.com. �xito: false
+Respondido correo ensayo-6e581271-4115-4762-968d-f1da03e325da de admin@example.com. �xito: true
+Respondido correo ensayo-78106575-7084-4e48-8f42-3212b1b757ff de admin@example.com. �xito: false
+Respondido correo ensayo-b6fc505f-4528-4d18-bc42-bc4e64c690b2 de admin@example.com. �xito: true
+Respondido correo ensayo-6f1a1208-83d9-4965-938e-b9e29d5c0abc de admin@example.com. �xito: false
+Respondido correo ensayo-4278f453-51e4-468d-8b41-82cf3c63f423 de admin@example.com. �xito: true
+Respondido correo ensayo-6b5d140f-a1a1-4e4f-9e94-af61760e72f9 de admin@example.com. �xito: false
+Respondido correo ensayo-6e103a33-271f-4418-9f5c-9bd1050105ba de admin@example.com. �xito: true
+Respondido correo ensayo-51429940-86be-4c2a-9b73-40149ec2ea38 de vice@example.com. �xito: false
+Respondido correo ensayo-58269b36-4750-43e8-a3b2-dc2d594376aa de vice@example.com. �xito: true
+Respondido correo ensayo-8c686a21-e72a-45ef-832f-dcb6fe41b355 de luis@example.com. �xito: false
+Respondido correo ensayo-96d8709f-800e-4cbe-bb03-cd945514df55 de luis@example.com. �xito: true
+Respondido correo ensayo-a98de828-1d78-46e5-8614-b7b3866fceeb de admin@example.com. �xito: false
+Respondido correo ensayo-117c74e2-e674-4b41-b825-155272b494c5 de admin@example.com. �xito: true
+Respondido correo ensayo-b6a20759-8e92-4539-bd90-e0d72a292819 de eva@example.com. �xito: false
+Respondido correo ensayo-469dae07-6ad6-4957-925f-49babc45fb83 de eva@example.com. �xito: true
+Respondido correo ensayo-0fd6aca9-5784-4509-ac95-11a2fba1af36 de vice@example.com. �xito: false
+Respondido correo ensayo-0e29d76d-42f9-46fa-b4b2-3ef85d292210 de vice@example.com. �xito: true
+Respondido correo ensayo-06429ce0-2cad-45dd-9af4-b76914684584 de eva@example.com. �xito: false
+Respondido correo ensayo-7d31c46b-1d61-4bd1-a964-246413780542 de eva@example.com. �xito: true
+Respondido correo ensayo-af86b707-29a5-4785-8570-eb22c57043b7 de eva@example.com. �xito: false
+Respondido correo ensayo-ae3a428b-b67d-4724-a6a6-0e9c536ff055 de eva@example.com. �xito: true
+Respondido correo ensayo-171b6e87-3466-45ca-9770-6292ee80a8c3 de admin@example.com. �xito: false
+Respondido correo ensayo-60c581a9-3a9e-4ade-bc41-93ccd1737e09 de admin@example.com. �xito: true
+Respondido correo ensayo-7a05ca9e-95cc-41d8-8b69-ec45d19663d1 de admin@example.com. �xito: false
+Respondido correo ensayo-8fc5dadb-5334-4efd-882c-88113d6e2119 de admin@example.com. �xito: true
+Respondido correo ensayo-a10a7514-69bf-4095-981f-03d329621306 de vice@example.com. �xito: false
+Respondido correo ensayo-5380bde6-0871-4456-a513-8ae64021ea75 de vice@example.com. �xito: true
+Respondido correo ensayo-f60be6fc-e694-42b4-be13-3e8db8bb495d de vice@example.com. �xito: false
+Respondido correo ensayo-6898f18f-cb30-4d66-8c9b-fcc2dbf845ec de vice@example.com. �xito: true
+Respondido correo ensayo-ca27bf66-822a-4b15-8ff7-5075032d6b73 de luis@example.com. �xito: false
+Respondido correo ensayo-bcda35bd-3cce-4d3b-9224-d0348078b4ad de luis@example.com. �xito: true
+Respondido correo ensayo-4f325244-53cc-4201-b43f-9d0ab21e9fa2 de intruso@example.com. �xito: false
+Respondido correo pdf-av de luis@example.com. �xito: false
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 45.61 s -- in bo.edu.uagrm.inf513.grupo09sa.CicloCorreoPostgresTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.comandos.AnalizadorOrdenTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.032 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.AnalizadorOrdenTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.comandos.ConcurrenciaAnalizadorTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.334 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.ConcurrenciaAnalizadorTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.comandos.FuzzAnalizadorTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.022 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.FuzzAnalizadorTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.comandos.ProcesadorOrdenTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.020 s -- in bo.edu.uagrm.inf513.grupo09sa.comandos.ProcesadorOrdenTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.config.AppConfigTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.009 s -- in bo.edu.uagrm.inf513.grupo09sa.config.AppConfigTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.email.AntivirusPdfTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.705 s -- in bo.edu.uagrm.inf513.grupo09sa.email.AntivirusPdfTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.email.ClientePop3LimiteTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.074 s -- in bo.edu.uagrm.inf513.grupo09sa.email.ClientePop3LimiteTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.email.DecodificacionRoundcubeTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.011 s -- in bo.edu.uagrm.inf513.grupo09sa.email.DecodificacionRoundcubeTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.email.LectorAdjuntosTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.231 s -- in bo.edu.uagrm.inf513.grupo09sa.email.LectorAdjuntosTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.email.PasarelaJakartaMailTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 10.12 s -- in bo.edu.uagrm.inf513.grupo09sa.email.PasarelaJakartaMailTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.email.SeguridadTransporteTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.178 s -- in bo.edu.uagrm.inf513.grupo09sa.email.SeguridadTransporteTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.MainTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in bo.edu.uagrm.inf513.grupo09sa.MainTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.persistencia.InyeccionSqlPostgresTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.453 s -- in bo.edu.uagrm.inf513.grupo09sa.persistencia.InyeccionSqlPostgresTest
+[INFO] Running bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest
+[INFO] Tests run: 32, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 78.68 s -- in bo.edu.uagrm.inf513.grupo09sa.persistencia.SeguridadPostgresTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 103, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  02:33 min
+[INFO] Finished at: 2026-11-14T20:06:32-04:00
+[INFO] ------------------------------------------------------------------------
