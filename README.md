@@ -4,7 +4,7 @@
 
 El alcance de esta primera parte comprende únicamente los ocho casos de uso aprobados: usuarios; convocatorias; postulación múltiple y expediente; requisitos y habilitación; méritos, examen y evaluadores; ranking y plazas; auditoría; reportes. Los 30 requisitos del foro no son 30 casos de uso ni amplían el alcance de esta entrega. Las operaciones y límites implementados están detallados en [la revisión del código](docs/REVISION_CODIGO.md).
 
-Los controles OWASP, antivirus y ensayo de cuatro roles se explican en [CONTROLES_OWASP.md](docs/CONTROLES_OWASP.md). La revisión adversarial y sus siete correcciones están en [AUDITORIA_ADVERSARIAL.md](docs/AUDITORIA_ADVERSARIAL.md). La auditoría está documentada en [AUDITORIA_SEGURIDAD.md](docs/AUDITORIA_SEGURIDAD.md): 100 pruebas, OSV, SpotBugs con Find Security Bugs y Gitleaks. El [estado de despliegue](docs/ESTADO_DESPLIEGUE.md) registra respaldo restaurado, migración aplicada y servicio activo con correo real. El servidor PostgreSQL institucional no admite SSL; esta limitación requiere intervención de su administrador.
+Los controles OWASP, antivirus y ensayo de cuatro roles se explican en [CONTROLES_OWASP.md](docs/CONTROLES_OWASP.md). La revisión adversarial y sus siete correcciones están en [AUDITORIA_ADVERSARIAL.md](docs/AUDITORIA_ADVERSARIAL.md). La auditoría está documentada en [AUDITORIA_SEGURIDAD.md](docs/AUDITORIA_SEGURIDAD.md): 103 pruebas, OSV, SpotBugs con Find Security Bugs y Gitleaks. El [estado de despliegue](docs/ESTADO_DESPLIEGUE.md) registra respaldo restaurado, migración aplicada y servicio activo con correo real. El servidor PostgreSQL institucional no admite SSL; esta limitación requiere intervención de su administrador.
 
 La [consigna oficial y su trazabilidad](docs/CONSIGNA_Y_TRAZABILIDAD.md) se verificaron en Presencial UAGRM. El [guion de defensa](docs/CAMBIOS_Y_DEFENSA.md) se complementa con el estado de despliegue actual; las referencias anteriores a migración pendiente corresponden a revisiones previas.
 
@@ -25,7 +25,7 @@ El POSTULANTE envía el asunto siguiente y adjunta **un archivo PDF de hasta 2 M
 INSPOST["1","1","ADJUNTO"]
 ```
 
-Debe sustituir los IDs por los de una convocatoria abierta y vigente y un cargo activo. El PDF se conserva en la cola durable junto al asunto. Después de responder con el `CONFIRMAR` recibido, el servicio crea la postulación y guarda los bytes, nombre y SHA-256 en `p1_expediente`. La cabecera `%PDF-`, el nombre y el tamaño se validan; el programa no ejecuta el PDF ni realiza un análisis antivirus. La extracción está implementada para Roundcube, IMAP y POP3; la suite de esta revisión verifica MIME y persistencia local, sin afirmar una nueva prueba contra el Roundcube institucional.
+Debe sustituir los IDs por los de una convocatoria abierta y vigente y un cargo activo. El PDF se conserva en la cola durable junto al asunto. Después de responder con el `CONFIRMAR` recibido, el servicio crea la postulación y guarda los bytes, nombre y SHA-256 en `p1_expediente`. La cabecera `%PDF-`, el nombre y el tamaño se validan; el programa no ejecuta el PDF y exige análisis antivirus antes de almacenarlo: Defender en Windows o ClamAV en Linux. La extracción está implementada para Roundcube, IMAP y POP3; la suite de esta revisión verifica MIME y persistencia local, sin afirmar una nueva prueba contra el Roundcube institucional.
 
 El tercer parámetro también puede seguir siendo una ruta o URL externa. En ese caso solo se guarda una **referencia**; el servicio no descarga ese enlace y la respuesta lo identifica expresamente.
 
