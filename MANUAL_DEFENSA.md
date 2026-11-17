@@ -31,17 +31,20 @@ Después pueden crearse los demás roles mediante `INSUSU`.
 
 Las operaciones privadas y los cambios requieren confirmar cada orden. El sistema envía a la cuenta solicitante un mensaje con `CONFIRMAR["codigo"]`; copie ese asunto y envíelo desde la misma cuenta. El código vence en 30 minutos, funciona una vez y solo autoriza la orden indicada en el mensaje. La creación del primer DECANO usa este mismo paso. Compruebe también Spam y no publique códigos activos. Las consultas públicas `AYUDA`, `LISCON` y `LISCAR` responden directamente.
 
-Antes de utilizar esta versión en una instalación anterior: detener Java, aplicar `database/schema.sql` y sustituir el JAR por `dist/inf513-proyecto1-1.0.0.jar`. En el paquete descargado puede ejecutar `java -cp dist/inf513-proyecto1-1.0.0.jar bo.edu.uagrm.inf513.grupo09sa.AplicarEsquema` y luego el supervisor correspondiente al sistema operativo.
+Antes de una migración necesaria en una instalación anterior: respaldar la base y comprobar su restauración en ensayo, detener Java, aplicar `database/schema.sql` y sustituir el JAR por `dist/inf513-proyecto1-1.0.0.jar`. En el paquete descargado puede ejecutar `java -cp dist/inf513-proyecto1-1.0.0.jar bo.edu.uagrm.inf513.grupo09sa.AplicarEsquema` y luego el supervisor correspondiente al sistema operativo.
+
+La migración institucional del 14 ya fue aplicada; no repetir cambios de esquema en el servidor compartido para hacer una demostración.
 
 ## Secuencia de demostración
 
 ```text
 AYUDA[]
-INSCON["AUX-2026-2","Convocatoria de auxiliaturas","2026-10-01","2026-10-20","ABIERTA","3"]
+INSCON["AUX-2026-2","Convocatoria de auxiliaturas","2026-11-17","2026-11-21","ABIERTA","3"]
 LISCON["*"]
 INSCAR["Auxiliar de docencia","Facultad","true"]
 LISCAR["*"]
-INSPOST["1","1","https://ejemplo.com/expediente.pdf"]
+ASIOFE["1","1","3"]
+INSPOST["1","1","ADJUNTO"]
 LISPOST["*"]
 ASIEVA["1","2","MERITOS_Y_EXAMEN"]
 EVAREQ["1","Documento de identidad","true","Documento vigente"]
@@ -54,7 +57,7 @@ AUDCAL["ASIPLA","1"]
 REPEST["1"]
 ```
 
-Los identificadores dependen de los registros existentes en PostgreSQL. Consultar primero los listados y reemplazar los valores de ejemplo.
+El correo INSPOST debe llevar el PDF ficticio adjunto; no adjuntarlo otra vez al enviar CONFIRMAR. La alternativa de ruta o URL guarda solo una referencia y no descarga contenido. Los identificadores dependen de los registros existentes en PostgreSQL. Consultar primero los listados y reemplazar los valores de ejemplo.
 
 En el paquete descargado use `dist/inf513-proyecto1-1.0.0.jar` si no ha compilado. Prepare previamente cuentas con roles DECANO, EVALUADOR y POSTULANTE y use el remitente correspondiente a cada orden. Asigne el evaluador con ASIEVA antes de EVAREQ. Después evalúe requisitos, habilite la postulación y registre su examen. No use fechas vencidas: sustituya las fechas de INSCON por el periodo vigente de la demostración. Confirme cada operación privada antes de continuar con la siguiente.
 
