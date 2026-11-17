@@ -80,5 +80,3 @@ assert len(tables)==20 and len(business)==12
 assert len(tables['p1_expediente'])==9 and len(tables['p1_postulacion'])==12
 (OUT/'mapeo.json').write_text(json.dumps(mapping,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 print(f'{len(tables)} tablas; {sum(len(x) for x in tables.values())} columnas; 14 asociaciones físicas')
-
-

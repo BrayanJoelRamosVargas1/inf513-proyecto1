@@ -21,4 +21,3 @@ mensaje, actor o entidad se explica en el texto y no se representa como FK.
 
 Los nombres de las cajas son clases conceptuales de datos. La tabla de mapeo
 del PUDS indica sus nombres físicos; no declara nuevas clases Java ni tablas.
-
