@@ -145,3 +145,10 @@ El proceso no termina cuando PostgreSQL, POP3, Roundcube o Internet dejan de res
 El 12 de octubre de 2026 se comprobó que POP3 solo está disponible en el puerto 110 sin `STLS`, pero también se comprobó que Roundcube permite listar la bandeja mediante su sesión HTTPS. Por eso el modo predeterminado evita POP3 y cifra tanto la autenticación como la lectura. Si se fuerza `MAIL_INBOUND_PROTOCOL=pop3`, debe hacerse únicamente en una red confiable.
 
 La [revisión detallada del código](docs/REVISION_CODIGO.md) contrasta los ocho casos, las observaciones y el proyecto de referencia. La auditoría de calificaciones conserva valores anteriores y posteriores; las notas y los reintentos concurrentes se serializan en PostgreSQL.
+# Revisión documental del 17 de noviembre de 2026
+
+El PUDS incorpora ocho secuencias, ocho colaboraciones, ocho vistas de clases,
+diccionario completo y SQL legible. Véase la
+[actualización y sus verificaciones](docs/ACTUALIZACION_DOCUMENTAL_20261117.md).
+La evidencia de 122 pruebas se conserva con su fecha; la disponibilidad
+institucional y el ensayo nativo en Fedora siguen documentados por separado.
