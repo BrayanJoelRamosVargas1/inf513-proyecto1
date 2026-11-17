@@ -1,0 +1,158 @@
+[
+  {
+    "n": 1,
+    "title": "Gestión de usuarios",
+    "actor": "Decano o Vicedecano",
+    "command": "INSUSU / LISUSU",
+    "example": "INSUSU",
+    "method": "insertarUsuario",
+    "methods": [
+      "insertarUsuario",
+      "listarUsuarios"
+    ],
+    "sql": "INSERT / SELECT p1_usuario",
+    "tables": "p1_usuario; p1_auditoria",
+    "rule": "Correo y registro únicos; roles y estado activo. El alta inicial exige el remitente de arranque configurado.",
+    "exception": "Registro duplicado o remitente sin rol: error sin alta parcial.",
+    "test": "ProcesadorOrdenTest; SeguridadPostgresTest; CicloCorreoPostgresTest"
+  },
+  {
+    "n": 2,
+    "title": "Parametrizar convocatorias",
+    "actor": "Decano o Vicedecano",
+    "command": "INSCON / INSCAR / ASIOFE / CFGARE / LISCFG",
+    "example": "ASIOFE",
+    "method": "oferta",
+    "methods": [
+      "insertarConvocatoria",
+      "insertarCargo"
+    ],
+    "categories": [
+      "oferta",
+      "area",
+      "sqlConfiguracion"
+    ],
+    "sql": "Oferta y cupos por cargo",
+    "tables": "p1_convocatoria; p1_cargo; p1_oferta; p1_area_examen",
+    "rule": "Fechas y estados válidos. La suma de cupos por cargo no excede las plazas de la convocatoria.",
+    "exception": "Cupos concurrentes que exceden el total: rechazar la operación.",
+    "test": "SeguridadPostgresTest; CicloCorreoPostgresTest"
+  },
+  {
+    "n": 3,
+    "title": "Postulación y expediente",
+    "actor": "Postulante",
+    "command": "INSPOST / LISPOST",
+    "example": "INSPOST",
+    "method": "insertarPostulacion",
+    "methods": [
+      "insertarPostulacion",
+      "listarPostulaciones"
+    ],
+    "sql": "Postulación y PDF atómicos",
+    "tables": "p1_postulacion; p1_expediente; p1_adjunto_correo",
+    "rule": "PDF original asociado por mensaje_id; convocatoria vigente, cargo ofertado y postulante autorizado.",
+    "exception": "PDF ausente o rechazado, oferta sin plazas o duplicado: no crear una postulación parcial.",
+    "test": "LectorAdjuntosTest; SeguridadPostgresTest; CicloCorreoPostgresTest"
+  },
+  {
+    "n": 4,
+    "title": "Requisitos y habilitación",
+    "actor": "Decano o Vicedecano",
+    "command": "EVAREQ / HABPOS",
+    "example": "HABPOS",
+    "method": "habilitar",
+    "methods": [
+      "evaluarRequisito",
+      "habilitar"
+    ],
+    "sql": "Requisitos y estado vigente",
+    "tables": "p1_evaluacion_requisito; p1_postulacion; p1_asignacion_evaluador",
+    "rule": "EVAREQ registra revisión; HABPOS expresa la decisión de la autoridad. No son la misma operación.",
+    "exception": "Evaluador no asignado o requisitos no cumplidos: impedir habilitación o examen.",
+    "test": "SeguridadPostgresTest; CicloCorreoPostgresTest"
+  },
+  {
+    "n": 5,
+    "title": "Méritos y examen",
+    "actor": "Evaluador",
+    "command": "ASIEVA / REGMER / REGEXA / REGAREA",
+    "example": "REGAREA",
+    "method": "registrarArea",
+    "methods": [
+      "asignarEvaluador",
+      "registrarMerito",
+      "registrarExamen",
+      "recalcularPuntaje"
+    ],
+    "categories": [
+      "registrarArea",
+      "notaExamen"
+    ],
+    "sql": "Nota por área y recálculo",
+    "tables": "p1_asignacion_evaluador; p1_merito; p1_examen; p1_area_examen",
+    "rule": "Nota entre 0 y 100, evaluador asignado y áreas con pesos completos. Final = 40 % méritos + 60 % examen.",
+    "exception": "REGEXA no elude áreas configuradas; impedir cambios si ya hay plazas asignadas.",
+    "test": "SeguridadPostgresTest; CicloCorreoPostgresTest"
+  },
+  {
+    "n": 6,
+    "title": "Ranking y plazas",
+    "actor": "Decano o Vicedecano",
+    "command": "GENRAN / DESEMP / ASIPLA",
+    "example": "ASIPLA",
+    "method": "asignarPlaza",
+    "methods": [
+      "generarRanking",
+      "asignarPlaza"
+    ],
+    "categories": [
+      "sqlRanking",
+      "resolver",
+      "asignar"
+    ],
+    "sql": "Bloqueo y adjudicación por cargo",
+    "tables": "p1_postulacion; p1_oferta; p1_desempate",
+    "rule": "Orden por cargo, cupo y requisitos completos. Un empate en el corte requiere resolución motivada.",
+    "exception": "El ID no decide ganadores; sin resolución vigente del empate no se adjudica.",
+    "test": "SeguridadPostgresTest; CicloCorreoPostgresTest"
+  },
+  {
+    "n": 7,
+    "title": "Proceso y auditoría",
+    "actor": "Decano o Vicedecano",
+    "command": "AUDCAL y escrituras auditadas",
+    "example": "AUDCAL",
+    "method": "auditoriaProyecto",
+    "methods": [
+      "registrarAuditoria",
+      "estadoAuditable",
+      "auditoriaProyecto"
+    ],
+    "sql": "SELECT historial por entidad e ID",
+    "tables": "p1_auditoria; p1_postulacion",
+    "rule": "Las escrituras exitosas registran actor y acción en su transacción; AUDCAL consulta el historial autorizado.",
+    "exception": "Una consulta AUDCAL no se representa como cambio de calificación. Un fallo revierte negocio y auditoría.",
+    "test": "SeguridadPostgresTest; CicloCorreoPostgresTest"
+  },
+  {
+    "n": 8,
+    "title": "Reportes y estadísticas",
+    "actor": "Decano o Vicedecano",
+    "command": "REPEST",
+    "example": "REPEST",
+    "method": "estadisticas",
+    "methods": [
+      "estadisticas",
+      "consultar"
+    ],
+    "categories": [
+      "sqlRanking"
+    ],
+    "sql": "SELECT agregados y ranking",
+    "tables": "p1_postulacion; p1_convocatoria; p1_oferta; p1_desempate",
+    "rule": "Informe por convocatoria y cargo, estado, notas y vacantes. La consulta no modifica calificaciones.",
+    "exception": "Sin postulaciones: respuesta sin resultados; no fabricar cantidades ni ganadores.",
+    "test": "SeguridadPostgresTest; CicloCorreoPostgresTest"
+  }
+]

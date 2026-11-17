@@ -1,0 +1,29 @@
+{
+  "fecha": "2026-11-17",
+  "paginas_pdf": 100,
+  "figuras": 43,
+  "secuencias": 8,
+  "colaboraciones": 8,
+  "vistas_clases": 8,
+  "tablas_diccionario": 20,
+  "metodos_y_suites_contrastados_con_codigo": true,
+  "sql_tokens_identicos": true,
+  "sql_esquemas_pg_dump_identicos": true,
+  "sql_reaplicacion_aislada_correcta": true,
+  "postgresql_verificacion": "15 local 127.0.0.1:15439; dos bases nuevas; detenido al finalizar",
+  "documento_exportado": "Microsoft Word con indice actualizado",
+  "render_habilidad": "Intentado; LibreOffice no disponible; paginas verificadas mediante PDFium del PDF nativo de Word",
+  "codigo_java_modificado": false,
+  "servidor_institucional_modificado": false,
+  "pruebas_anteriores": {
+    "fecha": "2026-11-15",
+    "tests": 122
+  },
+  "sha256": {
+    "PUDS_INF513_P1_Grupo09SA.docx": "62f6196e6781f302469454e4c4bcb96a735db76d0fc2ee1ba5d6f069fbeb8875",
+    "PUDS_INF513_P1_Grupo09SA.pdf": "b22d31443907106f48a317bf6d4ea1299d169cdde9b2c1ea2c7a7ef615648115",
+    "schema.sql": "a2fbc704a79fb112e395a8df55f202b3461d63158d21091d6931ac167364f547",
+    "inf513-proyecto1-1.0.0.jar": "d707df9c1c36c6859456d4d8da2d00418efacf85001fd64eaa2e8252b9d194ca"
+  },
+  "revision_visual": "100 páginas inspeccionadas en paneles; vistas representativas ampliadas; encabezados de tablas y blancos corregidos"
+}

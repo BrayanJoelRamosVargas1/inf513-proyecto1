@@ -17,11 +17,11 @@ Todas las órdenes se envían en el asunto de un correo nuevo a la cuenta instit
 Los números de ejemplo no son IDs reales: reemplazar los marcadores por los que devuelve la base. No pegar los marcadores como órdenes. Para crear convocatoria y cargo se utilizan estos asuntos completos desde DECANO:
 
 ```text
-INSCON["DEMO-09SA-20261014","Demostración académica de auxiliaturas","2026-10-13","2026-10-20","ABIERTA","1"]
+INSCON["DEMO-09SA-20261117","Demostración académica de auxiliaturas","2026-11-17","2026-11-21","ABIERTA","1"]
 INSCAR["Auxiliar de demostración 09SA","Ensayo académico","true"]
 ```
 
-No repetir esas altas si ya existen. Localizar los IDs con LISCON["DEMO-09SA-20261014"] y LISCAR["demostración 09SA"]. Preparar un PDF de expediente ficticio sin datos personales y usar una ruta o enlace que realmente exista. INSPOST registra la referencia del expediente; no transfiere por sí mismo un archivo adjunto de Gmail.
+No repetir esas altas si ya existen. Localizar los IDs con LISCON["DEMO-09SA-20261117"] y LISCAR["demostración 09SA"]. Preparar un PDF ficticio sin datos personales. Para demostrar la carga real, adjuntarlo al correo INSPOST original y usar ADJUNTO como tercer parámetro; la confirmación se envía después sin volver a adjuntarlo. La modalidad de ruta o enlace conserva solamente una referencia y no descarga el archivo. Ajustar las fechas al día del ensayo si se realiza fuera del periodo del ejemplo.
 
 | Paso | Cuenta remitente | Orden o acción | Evidencia esperada |
 | --- | --- | --- | --- |
@@ -29,7 +29,7 @@ No repetir esas altas si ya existen. Localizar los IDs con LISCON["DEMO-09SA-202
 | 2 | DECANO | LISUSU["*"] y confirmación | Las tres cuentas con sus roles |
 | 3 | DECANO | INSCON e INSCAR anteriores, confirmar cada una | Convocatoria vigente y cargo activo |
 | 4 | Cualquiera | LISCON y LISCAR con los filtros anteriores | IDs de convocatoria y cargo |
-| 5 | POSTULANTE | INSPOST["ID_CONVOCATORIA","ID_CARGO","RUTA_REAL_DEL_PDF"] | Postulación y referencia del expediente |
+| 5 | POSTULANTE | INSPOST["ID_CONVOCATORIA","ID_CARGO","ADJUNTO"] más el PDF | Postulación y PDF persistido con SHA 256 |
 | 6 | POSTULANTE | LISPOST["*"] | ID de postulación |
 | 7 | DECANO | ASIEVA["ID_POSTULACION","ID_USUARIO_EVALUADOR","MERITOS_Y_EXAMEN"] | Evaluador asignado |
 | 8 | EVALUADOR | EVAREQ["ID_POSTULACION","Expediente de ensayo","true","Documentación ficticia revisada"] | Requisito registrado |
