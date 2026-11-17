@@ -1,3 +1,5 @@
+# Estructura del PUDS
+
 Resumen ejecutivo
 Cómo revisar este documento
 Índice
@@ -89,9 +91,10 @@ CU8 Diseño de clases y persistencia
 8 2 Flujo sintáctico
 8 3 Validación semántica y autorización
 9 Modelo de base de datos
-9 1 Modelo del negocio
-9 2 Modelo de soporte del correo
-9 3 Diccionario de datos
+9 1 Diseño conceptual del negocio
+9 2 Auditoría y persistencia del correo
+9 3 Mapeo de clases a tablas
+9 4 Diccionario de datos
 persona
 p1 usuario
 p1 convocatoria
@@ -113,7 +116,7 @@ p1 resultado orden
 p1 servicio estado
 p1 adjunto correo
 Restricciones y cardinalidades del modelo
-9 4 Integridad transacciones y migración
+9 5 Integridad transacciones y migración
 10 Catálogo de comandos
 10 1 Ejemplos de la actividad oficial
 10 2 Ejemplo de postulación con archivo

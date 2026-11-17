@@ -1,0 +1,26 @@
+{
+  "fecha": "2026-11-17",
+  "paginas_pdf": 101,
+  "paginas_diagramas": [
+    66,
+    67
+  ],
+  "pagina_mapeo": 68,
+  "tablas": 20,
+  "columnas": 134,
+  "clases_negocio": 12,
+  "asociaciones_fk": 14,
+  "fuente": "database/schema.sql incluidas migraciones",
+  "formato_laminas_puds": "A3 vertical",
+  "formato_laminas_independientes": "A2 vertical",
+  "codigo_java_modificado": false,
+  "esquema_sql_modificado": false,
+  "alcance_casos_de_uso": 8,
+  "exportacion": "Microsoft Word COM; índice actualizado; PDFium para revisión visual",
+  "sha256": {
+    "entrega/PUDS_INF513_P1_Grupo09SA.docx": "f90731a7d6caeac5357cb6618bc8128a682526e7023f9f44dab0fdb23602a7c4",
+    "entrega/PUDS_INF513_P1_Grupo09SA.pdf": "95ffe32de38b570a93bc49f0ba18d7c2a62162c5db828772ca0a49ed01b6bf94",
+    "database/schema.sql": "a2fbc704a79fb112e395a8df55f202b3461d63158d21091d6931ac167364f547",
+    "dist/inf513-proyecto1-1.0.0.jar": "d707df9c1c36c6859456d4d8da2d00418efacf85001fd64eaa2e8252b9d194ca"
+  }
+}

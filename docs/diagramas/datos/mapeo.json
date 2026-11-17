@@ -1,0 +1,792 @@
+[
+  {
+    "tabla": "persona",
+    "clase": "Persona",
+    "columnas": [
+      {
+        "nombre": "ci",
+        "tipo": "varchar(20)",
+        "clave": "PK"
+      },
+      {
+        "nombre": "nombres",
+        "tipo": "varchar(100)",
+        "clave": ""
+      },
+      {
+        "nombre": "apellidos",
+        "tipo": "varchar(120)",
+        "clave": ""
+      },
+      {
+        "nombre": "ocupacion",
+        "tipo": "varchar(80)",
+        "clave": ""
+      },
+      {
+        "nombre": "telefono",
+        "tipo": "varchar(30)",
+        "clave": ""
+      },
+      {
+        "nombre": "celular",
+        "tipo": "varchar(30)",
+        "clave": ""
+      },
+      {
+        "nombre": "correo",
+        "tipo": "varchar(160)",
+        "clave": "UQ"
+      }
+    ]
+  },
+  {
+    "tabla": "p1_usuario",
+    "clase": "Usuario",
+    "columnas": [
+      {
+        "nombre": "id",
+        "tipo": "bigserial",
+        "clave": "PK"
+      },
+      {
+        "nombre": "registro",
+        "tipo": "varchar(20)",
+        "clave": "UQ"
+      },
+      {
+        "nombre": "nombres",
+        "tipo": "varchar(100)",
+        "clave": ""
+      },
+      {
+        "nombre": "apellidos",
+        "tipo": "varchar(120)",
+        "clave": ""
+      },
+      {
+        "nombre": "rol",
+        "tipo": "varchar(20)",
+        "clave": ""
+      },
+      {
+        "nombre": "telefono",
+        "tipo": "varchar(30)",
+        "clave": ""
+      },
+      {
+        "nombre": "correo",
+        "tipo": "varchar(160)",
+        "clave": "UQ"
+      },
+      {
+        "nombre": "activo",
+        "tipo": "boolean",
+        "clave": ""
+      },
+      {
+        "nombre": "creado_en",
+        "tipo": "timestamptz",
+        "clave": ""
+      }
+    ]
+  },
+  {
+    "tabla": "p1_convocatoria",
+    "clase": "Convocatoria",
+    "columnas": [
+      {
+        "nombre": "id",
+        "tipo": "bigserial",
+        "clave": "PK"
+      },
+      {
+        "nombre": "codigo",
+        "tipo": "varchar(30)",
+        "clave": "UQ"
+      },
+      {
+        "nombre": "titulo",
+        "tipo": "varchar(200)",
+        "clave": ""
+      },
+      {
+        "nombre": "fecha_inicio",
+        "tipo": "date",
+        "clave": ""
+      },
+      {
+        "nombre": "fecha_fin",
+        "tipo": "date",
+        "clave": ""
+      },
+      {
+        "nombre": "estado",
+        "tipo": "varchar(20)",
+        "clave": ""
+      },
+      {
+        "nombre": "plazas",
+        "tipo": "integer",
+        "clave": ""
+      },
+      {
+        "nombre": "creado_en",
+        "tipo": "timestamptz",
+        "clave": ""
+      }
+    ]
+  },
+  {
+    "tabla": "p1_cargo",
+    "clase": "Cargo",
+    "columnas": [
+      {
+        "nombre": "id",
+        "tipo": "bigserial",
+        "clave": "PK"
+      },
+      {
+        "nombre": "nombre",
+        "tipo": "varchar(160)",
+        "clave": ""
+      },
+      {
+        "nombre": "unidad",
+        "tipo": "varchar(160)",
+        "clave": ""
+      },
+      {
+        "nombre": "activo",
+        "tipo": "boolean",
+        "clave": ""
+      }
+    ]
+  },
+  {
+    "tabla": "p1_oferta",
+    "clase": "Oferta",
+    "columnas": [
+      {
+        "nombre": "convocatoria_id",
+        "tipo": "bigint",
+        "clave": "PK / FK"
+      },
+      {
+        "nombre": "cargo_id",
+        "tipo": "bigint",
+        "clave": "PK / FK"
+      },
+      {
+        "nombre": "plazas",
+        "tipo": "integer",
+        "clave": ""
+      }
+    ]
+  },
+  {
+    "tabla": "p1_area_examen",
+    "clase": "AreaExamen",
+    "columnas": [
+      {
+        "nombre": "convocatoria_id",
+        "tipo": "bigint",
+        "clave": "PK / FK"
+      },
+      {
+        "nombre": "cargo_id",
+        "tipo": "bigint",
+        "clave": "PK / FK"
+      },
+      {
+        "nombre": "area",
+        "tipo": "varchar(80)",
+        "clave": "PK"
+      },
+      {
+        "nombre": "peso",
+        "tipo": "numeric(5,2)",
+        "clave": ""
+      }
+    ]
+  },
+  {
+    "tabla": "p1_postulacion",
+    "clase": "Postulacion",
+    "columnas": [
+      {
+        "nombre": "id",
+        "tipo": "bigserial",
+        "clave": "PK"
+      },
+      {
+        "nombre": "convocatoria_id",
+        "tipo": "bigint",
+        "clave": "FK"
+      },
+      {
+        "nombre": "postulante_id",
+        "tipo": "bigint",
+        "clave": "FK"
+      },
+      {
+        "nombre": "cargo_id",
+        "tipo": "bigint",
+        "clave": "FK"
+      },
+      {
+        "nombre": "estado",
+        "tipo": "varchar(30)",
+        "clave": ""
+      },
+      {
+        "nombre": "observacion",
+        "tipo": "text",
+        "clave": ""
+      },
+      {
+        "nombre": "puntaje_meritos",
+        "tipo": "numeric(7,2)",
+        "clave": ""
+      },
+      {
+        "nombre": "puntaje_examen",
+        "tipo": "numeric(7,2)",
+        "clave": ""
+      },
+      {
+        "nombre": "puntaje_final",
+        "tipo": "numeric(7,2)",
+        "clave": ""
+      },
+      {
+        "nombre": "plaza_asignada",
+        "tipo": "boolean",
+        "clave": ""
+      },
+      {
+        "nombre": "creado_en",
+        "tipo": "timestamptz",
+        "clave": ""
+      },
+      {
+        "nombre": "evaluacion_version",
+        "tipo": "bigint",
+        "clave": ""
+      }
+    ]
+  },
+  {
+    "tabla": "p1_expediente",
+    "clase": "Expediente",
+    "columnas": [
+      {
+        "nombre": "id",
+        "tipo": "bigserial",
+        "clave": "PK"
+      },
+      {
+        "nombre": "postulacion_id",
+        "tipo": "bigint",
+        "clave": "FK"
+      },
+      {
+        "nombre": "descripcion",
+        "tipo": "varchar(200)",
+        "clave": ""
+      },
+      {
+        "nombre": "ruta_archivo",
+        "tipo": "text",
+        "clave": ""
+      },
+      {
+        "nombre": "tipo_mime",
+        "tipo": "varchar(120)",
+        "clave": ""
+      },
+      {
+        "nombre": "creado_en",
+        "tipo": "timestamptz",
+        "clave": ""
+      },
+      {
+        "nombre": "nombre_archivo",
+        "tipo": "varchar(180)",
+        "clave": ""
+      },
+      {
+        "nombre": "contenido",
+        "tipo": "bytea",
+        "clave": ""
+      },
+      {
+        "nombre": "sha256",
+        "tipo": "char(64)",
+        "clave": ""
+      }
+    ]
+  },
+  {
+    "tabla": "p1_evaluacion_requisito",
+    "clase": "EvaluacionRequisito",
+    "columnas": [
+      {
+        "nombre": "id",
+        "tipo": "bigserial",
+        "clave": "PK"
+      },
+      {
+        "nombre": "postulacion_id",
+        "tipo": "bigint",
+        "clave": "FK"
+      },
+      {
+        "nombre": "requisito",
+        "tipo": "varchar(200)",
+        "clave": ""
+      },
+      {
+        "nombre": "cumple",
+        "tipo": "boolean",
+        "clave": ""
+      },
+      {
+        "nombre": "observacion",
+        "tipo": "text",
+        "clave": ""
+      },
+      {
+        "nombre": "evaluador_correo",
+        "tipo": "varchar(160)",
+        "clave": ""
+      },
+      {
+        "nombre": "fecha",
+        "tipo": "timestamptz",
+        "clave": ""
+      }
+    ]
+  },
+  {
+    "tabla": "p1_merito",
+    "clase": "Merito",
+    "columnas": [
+      {
+        "nombre": "id",
+        "tipo": "bigserial",
+        "clave": "PK"
+      },
+      {
+        "nombre": "postulacion_id",
+        "tipo": "bigint",
+        "clave": "FK"
+      },
+      {
+        "nombre": "criterio",
+        "tipo": "varchar(200)",
+        "clave": ""
+      },
+      {
+        "nombre": "puntaje",
+        "tipo": "numeric(7,2)",
+        "clave": ""
+      },
+      {
+        "nombre": "observacion",
+        "tipo": "text",
+        "clave": ""
+      },
+      {
+        "nombre": "evaluador_correo",
+        "tipo": "varchar(160)",
+        "clave": ""
+      },
+      {
+        "nombre": "fecha",
+        "tipo": "timestamptz",
+        "clave": ""
+      }
+    ]
+  },
+  {
+    "tabla": "p1_examen",
+    "clase": "Examen",
+    "columnas": [
+      {
+        "nombre": "id",
+        "tipo": "bigserial",
+        "clave": "PK"
+      },
+      {
+        "nombre": "postulacion_id",
+        "tipo": "bigint",
+        "clave": "FK"
+      },
+      {
+        "nombre": "puntaje",
+        "tipo": "numeric(7,2)",
+        "clave": ""
+      },
+      {
+        "nombre": "evaluador_correo",
+        "tipo": "varchar(160)",
+        "clave": ""
+      },
+      {
+        "nombre": "observacion",
+        "tipo": "text",
+        "clave": ""
+      },
+      {
+        "nombre": "fecha",
+        "tipo": "timestamptz",
+        "clave": ""
+      },
+      {
+        "nombre": "area",
+        "tipo": "varchar(80)",
+        "clave": ""
+      }
+    ]
+  },
+  {
+    "tabla": "p1_desempate",
+    "clase": "Desempate",
+    "columnas": [
+      {
+        "nombre": "postulacion_id",
+        "tipo": "bigint",
+        "clave": "PK / FK"
+      },
+      {
+        "nombre": "evaluacion_version",
+        "tipo": "bigint",
+        "clave": ""
+      },
+      {
+        "nombre": "puntaje",
+        "tipo": "numeric(7,2)",
+        "clave": ""
+      },
+      {
+        "nombre": "prioridad",
+        "tipo": "integer",
+        "clave": ""
+      },
+      {
+        "nombre": "justificacion",
+        "tipo": "varchar(500)",
+        "clave": ""
+      },
+      {
+        "nombre": "actor",
+        "tipo": "varchar(160)",
+        "clave": ""
+      },
+      {
+        "nombre": "fecha",
+        "tipo": "timestamptz",
+        "clave": ""
+      }
+    ]
+  },
+  {
+    "tabla": "p1_asignacion_evaluador",
+    "clase": "AsignacionEvaluador",
+    "columnas": [
+      {
+        "nombre": "id",
+        "tipo": "bigserial",
+        "clave": "PK"
+      },
+      {
+        "nombre": "postulacion_id",
+        "tipo": "bigint",
+        "clave": "FK"
+      },
+      {
+        "nombre": "evaluador_id",
+        "tipo": "bigint",
+        "clave": "FK"
+      },
+      {
+        "nombre": "tipo",
+        "tipo": "varchar(40)",
+        "clave": ""
+      }
+    ]
+  },
+  {
+    "tabla": "p1_auditoria",
+    "clase": "Auditoria",
+    "columnas": [
+      {
+        "nombre": "id",
+        "tipo": "bigserial",
+        "clave": "PK"
+      },
+      {
+        "nombre": "fecha",
+        "tipo": "timestamptz",
+        "clave": ""
+      },
+      {
+        "nombre": "actor",
+        "tipo": "varchar(160)",
+        "clave": ""
+      },
+      {
+        "nombre": "accion",
+        "tipo": "varchar(80)",
+        "clave": ""
+      },
+      {
+        "nombre": "entidad",
+        "tipo": "varchar(80)",
+        "clave": ""
+      },
+      {
+        "nombre": "entidad_id",
+        "tipo": "varchar(80)",
+        "clave": ""
+      },
+      {
+        "nombre": "detalle",
+        "tipo": "text",
+        "clave": ""
+      }
+    ]
+  },
+  {
+    "tabla": "p1_correo_procesado",
+    "clase": "CorreoProcesado",
+    "columnas": [
+      {
+        "nombre": "id",
+        "tipo": "bigserial",
+        "clave": "PK"
+      },
+      {
+        "nombre": "mensaje_id",
+        "tipo": "varchar(255)",
+        "clave": "UQ"
+      },
+      {
+        "nombre": "remitente",
+        "tipo": "varchar(160)",
+        "clave": ""
+      },
+      {
+        "nombre": "asunto",
+        "tipo": "text",
+        "clave": ""
+      },
+      {
+        "nombre": "exito",
+        "tipo": "boolean",
+        "clave": ""
+      },
+      {
+        "nombre": "procesado_en",
+        "tipo": "timestamptz",
+        "clave": ""
+      }
+    ]
+  },
+  {
+    "tabla": "p1_correo_control",
+    "clase": "ControlCorreo",
+    "columnas": [
+      {
+        "nombre": "mensaje_id",
+        "tipo": "varchar(255)",
+        "clave": "PK"
+      },
+      {
+        "nombre": "remitente",
+        "tipo": "varchar(160)",
+        "clave": ""
+      },
+      {
+        "nombre": "asunto",
+        "tipo": "text",
+        "clave": ""
+      },
+      {
+        "nombre": "estado",
+        "tipo": "varchar(30)",
+        "clave": ""
+      },
+      {
+        "nombre": "respuesta_asunto",
+        "tipo": "text",
+        "clave": ""
+      },
+      {
+        "nombre": "respuesta_cuerpo",
+        "tipo": "text",
+        "clave": ""
+      },
+      {
+        "nombre": "exito",
+        "tipo": "boolean",
+        "clave": ""
+      },
+      {
+        "nombre": "intentos",
+        "tipo": "integer",
+        "clave": ""
+      },
+      {
+        "nombre": "ultimo_error",
+        "tipo": "text",
+        "clave": ""
+      },
+      {
+        "nombre": "siguiente_intento",
+        "tipo": "timestamptz",
+        "clave": ""
+      },
+      {
+        "nombre": "creado_en",
+        "tipo": "timestamptz",
+        "clave": ""
+      },
+      {
+        "nombre": "actualizado_en",
+        "tipo": "timestamptz",
+        "clave": ""
+      },
+      {
+        "nombre": "admitido_en",
+        "tipo": "timestamptz",
+        "clave": ""
+      }
+    ]
+  },
+  {
+    "tabla": "p1_confirmacion",
+    "clase": "Confirmacion",
+    "columnas": [
+      {
+        "nombre": "mensaje_id",
+        "tipo": "varchar(255)",
+        "clave": "PK"
+      },
+      {
+        "nombre": "remitente",
+        "tipo": "varchar(160)",
+        "clave": ""
+      },
+      {
+        "nombre": "token_hash",
+        "tipo": "varchar(64)",
+        "clave": "UQ"
+      },
+      {
+        "nombre": "orden_json",
+        "tipo": "text",
+        "clave": ""
+      },
+      {
+        "nombre": "vence_en",
+        "tipo": "timestamptz",
+        "clave": ""
+      },
+      {
+        "nombre": "confirmacion_id",
+        "tipo": "varchar(255)",
+        "clave": ""
+      },
+      {
+        "nombre": "usado",
+        "tipo": "boolean",
+        "clave": ""
+      }
+    ]
+  },
+  {
+    "tabla": "p1_resultado_orden",
+    "clase": "ResultadoOrden",
+    "columnas": [
+      {
+        "nombre": "mensaje_id",
+        "tipo": "varchar(255)",
+        "clave": "PK"
+      },
+      {
+        "nombre": "exito",
+        "tipo": "boolean",
+        "clave": ""
+      },
+      {
+        "nombre": "respuesta_asunto",
+        "tipo": "text",
+        "clave": ""
+      },
+      {
+        "nombre": "respuesta_cuerpo",
+        "tipo": "text",
+        "clave": ""
+      },
+      {
+        "nombre": "ejecutado_en",
+        "tipo": "timestamptz",
+        "clave": ""
+      }
+    ]
+  },
+  {
+    "tabla": "p1_servicio_estado",
+    "clase": "EstadoServicio",
+    "columnas": [
+      {
+        "nombre": "clave",
+        "tipo": "varchar(80)",
+        "clave": "PK"
+      },
+      {
+        "nombre": "valor",
+        "tipo": "text",
+        "clave": ""
+      },
+      {
+        "nombre": "actualizado_en",
+        "tipo": "timestamptz",
+        "clave": ""
+      }
+    ]
+  },
+  {
+    "tabla": "p1_adjunto_correo",
+    "clase": "AdjuntoCorreo",
+    "columnas": [
+      {
+        "nombre": "mensaje_id",
+        "tipo": "varchar(255)",
+        "clave": "PK / FK"
+      },
+      {
+        "nombre": "nombre",
+        "tipo": "varchar(180)",
+        "clave": ""
+      },
+      {
+        "nombre": "contenido",
+        "tipo": "bytea",
+        "clave": ""
+      },
+      {
+        "nombre": "sha256",
+        "tipo": "char(64)",
+        "clave": ""
+      },
+      {
+        "nombre": "creado_en",
+        "tipo": "timestamptz",
+        "clave": ""
+      }
+    ]
+  }
+]
