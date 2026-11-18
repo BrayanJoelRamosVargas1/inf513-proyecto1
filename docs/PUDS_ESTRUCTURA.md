@@ -1,147 +1,140 @@
 # Estructura del PUDS
 
-Resumen ejecutivo
-Cómo revisar este documento
-Índice
-1 Introducción
-1 1 Contexto y problema
-1 2 Objetivo general
-1 3 Objetivos específicos
-1 4 Alcance y exclusiones
-2 Fuentes y organización del trabajo
-3 Fundamentos técnicos
-4 Requisitos del sistema
-4 1 Requisitos no funcionales
-4 2 Reglas de negocio y validación
-5 Actores y casos de uso
-5 1 CU1 Gestión de usuarios
-Flujo principal
-Alternativas y excepciones
-Realización en el código
-Criterios de aceptación
-5 2 CU2 Parametrizar convocatorias de auxiliaturas
-Flujo principal
-Alternativas y excepciones
-Realización en el código
-Criterios de aceptación
-5 3 CU3 Postulación múltiple y expediente digital
-Flujo principal
-Alternativas y excepciones
-Realización en el código
-Criterios de aceptación
-5 4 CU4 Evaluar requisitos y habilitar postulantes
-Flujo principal
-Alternativas y excepciones
-Realización en el código
-Criterios de aceptación
-5 5 CU5 Méritos y examen de competencia
-Flujo principal
-Alternativas y excepciones
-Realización en el código
-Criterios de aceptación
-5 6 CU6 Resultado final ranking y plazas
-Flujo principal
-Alternativas y excepciones
-Realización en el código
-Criterios de aceptación
-5 7 CU7 Proceso y auditoría de calificaciones
-Flujo principal
-Alternativas y excepciones
-Realización en el código
-Criterios de aceptación
-5 8 CU8 Reportes y estadísticas
-Flujo principal
-Alternativas y excepciones
-Realización en el código
-Criterios de aceptación
-6 Análisis de arquitectura
-6 1 Arquitectura lógica
-6 2 Arquitectura física
-7 Diseño del sistema
-7 1 Estructura de clases
-7 2 Ciclo de vida de la cola
-7 3 Habilitación y acceso al examen
-7 4 Realización UML de los ocho casos
-7 4 1 CU1 Gestión de usuarios
-CU1 Colaboración y clases participantes
-CU1 Diseño de clases y persistencia
-7 4 2 CU2 Parametrizar convocatorias
-CU2 Colaboración y clases participantes
-CU2 Diseño de clases y persistencia
-7 4 3 CU3 Postulación y expediente
-CU3 Colaboración y clases participantes
-CU3 Diseño de clases y persistencia
-7 4 4 CU4 Requisitos y habilitación
-CU4 Colaboración y clases participantes
-CU4 Diseño de clases y persistencia
-7 4 5 CU5 Méritos y examen
-CU5 Colaboración y clases participantes
-CU5 Diseño de clases y persistencia
-7 4 6 CU6 Ranking y plazas
-CU6 Colaboración y clases participantes
-CU6 Diseño de clases y persistencia
-7 4 7 CU7 Proceso y auditoría
-CU7 Colaboración y clases participantes
-CU7 Diseño de clases y persistencia
-7 4 8 CU8 Reportes y estadísticas
-CU8 Colaboración y clases participantes
-CU8 Diseño de clases y persistencia
-8 Analizador y validación
-8 1 Gramática y límites
-8 2 Flujo sintáctico
-8 3 Validación semántica y autorización
-9 Modelo de base de datos
-9 1 Diseño conceptual del negocio
-9 2 Auditoría y persistencia del correo
-9 3 Mapeo de clases a tablas
-9 4 Diccionario de datos
+1 Perfil
+1.1 Introducción
+1.2 Antecedentes
+1.3 Justificación
+1.4 Descripción del problema
+1.5 Objetivos
+1.5.1 Objetivo general
+1.5.2 Objetivos específicos
+1.6 Alcance
+Alcance funcional
+Alcance técnico
+Limitaciones del sistema
+1.7 Tecnología para el desarrollo de software
+1.7.1 Sistema operativo
+1.7.2 Sistema de gestión de base de datos
+1.7.3 Herramientas CASE
+2 Marco teórico
+2.1 Correo electrónico
+2.1.1 Origen del correo electrónico
+2.1.2 Funcionamiento
+2.1.3 Protocolo SMTP
+2.1.4 Protocolos POP3 e IMAP
+2.1.5 MIME
+2.1.6 Sockets TCP IP
+Descripción de la organización
+Misión del proceso modelado
+Visión del proceso modelado
+Valores del proceso
+Organización funcional
+Ubicación
+3 Requisitos
+3.1 Requisitos del sistema
+3.1.1 Requerimientos funcionales
+3.1.2 Requerimientos no funcionales
+3.2 Identificación de actores y casos de uso
+3.3 Lista de casos de uso
+3.4 Prioridad de casos de uso
+3.5 Detalle de los casos de uso
+CU1 Gestión de Usuarios Decano Vice Evaluadores Postulantes
+CU2 Gestión de Parametrizar Convocatorias de Auxiliaturas
+CU3 Gestión de Postulación Múltiple y Cargar Expediente Digital
+CU4 Gestión para Evaluar Requisitos Habilitar Postulantes y Controlar Acceso a Examen
+CU5 Gestión de Méritos Ponderar Examen de Competencia y Asignar Evaluadores
+CU6 Gestión de Resultado Final Generar Ranking y Asignar Plazas
+CU7 Gestión del Proceso y Auditoría de Calificaciones
+CU8 Reportes y Estadísticas
+3.6 Diagrama general de casos de uso
+4 Flujo de trabajo Análisis
+4.1 Análisis de arquitectura
+4.1.1 Identificar paquete
+4.1.2 Vista de cada paquete
+4.1.3 Dependencia de paquetes
+4.2 Análisis de casos de uso
+CU1 Gestión de usuarios
+CU2 Parametrizar convocatorias
+CU3 Postulación y expediente
+CU4 Requisitos y habilitación
+CU5 Méritos y examen
+CU6 Ranking y plazas
+CU7 Proceso y auditoría
+CU8 Reportes y estadísticas
+5 Flujo de trabajo Diseño
+5.1 Diseño de arquitectura
+5.1.1 Diseño lógico
+5.1.2 Diseño físico
+5.2 Diagrama de secuencia
+CU1 Gestión de usuarios
+CU2 Parametrizar convocatorias
+CU3 Postulación y expediente
+CU4 Requisitos y habilitación
+CU5 Méritos y examen
+CU6 Ranking y plazas
+CU7 Proceso y auditoría
+CU8 Reportes y estadísticas
+5.3 Diseño de detalle procedimental
+Diagrama de clases general
+5.3.1 Diseño de clases dinámico
+CU1 Gestión de usuarios
+CU2 Parametrizar convocatorias
+CU3 Postulación y expediente
+CU4 Requisitos y habilitación
+CU5 Méritos y examen
+CU6 Ranking y plazas
+CU7 Proceso y auditoría
+CU8 Reportes y estadísticas
+6 Diseño de datos
+6.1 Diseño conceptual
+6.1.1 Diagrama de clases
+Auditoría y soporte del mismo modelo
+6.2 Diseño lógico
+6.2.1 Mapeo
 persona
-p1 usuario
-p1 convocatoria
-p1 cargo
-p1 oferta
-p1 area examen
-p1 postulacion
-p1 expediente
-p1 evaluacion requisito
-p1 merito
-p1 examen
-p1 desempate
-p1 asignacion evaluador
-p1 auditoria
-p1 correo procesado
-p1 correo control
-p1 confirmacion
-p1 resultado orden
-p1 servicio estado
-p1 adjunto correo
-Restricciones y cardinalidades del modelo
-9 5 Integridad transacciones y migración
-10 Catálogo de comandos
-10 1 Ejemplos de la actividad oficial
-10 2 Ejemplo de postulación con archivo
-11 Seguridad y recuperación
-11 1 Autorización e información privada
-11 2 Bitácoras y auditoría
-11 3 Fallos y límites del servicio
-12 Verificación y resultados
-12 1 Entorno y resultado reproducible
-12 2 Matriz de comprobación
-12 3 Caso numérico verificable
-12 4 Comprobación institucional de esta versión
-13 Instalación configuración y operación
-13 1 Construcción y base de datos
-13 2 Configuración privada
-13 3 Supervisión y operación diaria
-14 Guion de defensa
-15 Conclusiones
-16 Referencias
-17 Anexos de entrega
-17 1 Script SQL completo
-17 2 Trazabilidad de la actualización documental
-Ampliación de los ocho casos aprobados
-Cupos por categoría
-Ponderaciones por área
-Resolución motivada de empates
-Reportes y persistencia
-Verificación y límites de seguridad
+p1_usuario
+p1_convocatoria
+p1_cargo
+p1_oferta
+p1_area_examen
+p1_postulacion
+p1_expediente
+p1_evaluacion_requisito
+p1_merito
+p1_examen
+p1_desempate
+p1_asignacion_evaluador
+p1_auditoria
+p1_correo_procesado
+p1_correo_control
+p1_confirmacion
+p1_resultado_orden
+p1_servicio_estado
+p1_adjunto_correo
+Restricciones compuestas y relaciones
+6.3 Diseño físico
+6.3.1 Tabla de volumen
+persona
+p1_usuario
+p1_convocatoria
+p1_cargo
+p1_oferta
+p1_area_examen
+p1_postulacion
+p1_expediente
+p1_evaluacion_requisito
+p1_merito
+p1_examen
+p1_desempate
+p1_asignacion_evaluador
+p1_auditoria
+p1_correo_procesado
+p1_correo_control
+p1_confirmacion
+p1_resultado_orden
+p1_servicio_estado
+p1_adjunto_correo
+7 Script
+8 Conclusión
+9 Recomendación
+10 Bibliografías
