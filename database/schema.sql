@@ -60,9 +60,9 @@ create table if not exists area_examen (
 
 create table if not exists postulacion (
     id bigserial primary key,
-    convocatoria_id bigint not null references convocatoria,
+    convocatoria_id bigint not null,
     postulante_id bigint not null references usuario,
-    cargo_id bigint not null references cargo,
+    cargo_id bigint not null,
     estado varchar(30) not null default 'REGISTRADA',
     observacion text,
     puntaje_meritos numeric(7,2) default 0,
@@ -71,9 +71,11 @@ create table if not exists postulacion (
     plaza_asignada boolean not null default false,
     creado_en timestamptz not null default now(),
     unique(convocatoria_id,postulante_id,cargo_id),
+    constraint postulacion_oferta_fk foreign key(convocatoria_id,cargo_id)
+        references oferta(convocatoria_id,cargo_id),
     constraint postulacion_puntajes_ck check (puntaje_meritos between 0 and 100 and puntaje_examen between 0 and 100 and puntaje_final between 0 and 100),
     constraint postulacion_estado_ck check (estado in('REGISTRADA','HABILITADO','INHABILITADO','GANADOR')),
-    constraint postulacion_plaza_ck check (not plaza_asignada or estado='GANADOR'),
+    constraint postulacion_plaza_ck check (plaza_asignada = (estado='GANADOR')),
     evaluacion_version bigint not null default 0
 );
 
@@ -205,7 +207,7 @@ on conflict(protocolo) do nothing;
 create unique index if not exists uq_correo_confirmacion on correo_control(token_hash) where token_hash is not null;
 create index if not exists idx_correo_admitido on correo_control(admitido_en,lower(remitente));
 create unique index if not exists uq_usuario_correo_ci on usuario(lower(correo));
-create index if not exists idx_postulacion_convocatoria on postulacion(convocatoria_id);
+create index if not exists idx_postulacion_oferta on postulacion(convocatoria_id,cargo_id);
 create index if not exists idx_auditoria_entidad on auditoria(entidad,entidad_id,fecha desc);
 create index if not exists idx_correo_control_pendiente on correo_control(estado,siguiente_intento);
 create index if not exists idx_correo_control_remitente_fecha on correo_control(lower(remitente),creado_en desc);
@@ -235,6 +237,11 @@ begin
         raise exception 'La suma de las ofertas supera las plazas de la convocatoria'
             using errcode = '23514';
     end if;
+    if new.plazas < (select count(*) from postulacion
+                     where convocatoria_id=new.convocatoria_id and cargo_id=new.cargo_id and plaza_asignada) then
+        raise exception 'La oferta tiene más plazas asignadas que el cupo solicitado'
+            using errcode='23514';
+    end if;
     return new;
 end
 $$;
@@ -261,30 +268,46 @@ execute function inf513_validar_cupo_convocatoria();
 
 create or replace function inf513_validar_cargo_postulacion()
 returns trigger language plpgsql as $$
+declare
+    cambia_oferta boolean;
+    cupo integer;
 begin
-    if tg_op = 'UPDATE' and (old.convocatoria_id,old.cargo_id) is distinct from (new.convocatoria_id,new.cargo_id) then
+    cambia_oferta := tg_op = 'INSERT'
+        or (old.convocatoria_id,old.cargo_id) is distinct from (new.convocatoria_id,new.cargo_id);
+    if tg_op = 'UPDATE' and cambia_oferta then
         perform 1 from convocatoria where id in (old.convocatoria_id,new.convocatoria_id) order by id for update;
-        if exists (select 1 from examen where postulacion_id=old.id) then
-            raise exception 'La convocatoria y el cargo no pueden cambiar después de registrar un examen'
+        if old.plaza_asignada or exists (select 1 from examen where postulacion_id=old.id) then
+            raise exception 'La oferta no puede cambiar después de asignar una plaza o registrar un examen'
                 using errcode='23514';
         end if;
-    else
+    elsif cambia_oferta then
         perform 1 from convocatoria where id = new.convocatoria_id for update;
     end if;
-    if exists (select 1 from oferta where convocatoria_id = new.convocatoria_id)
-       and not exists (
-          select 1 from oferta where convocatoria_id = new.convocatoria_id
-          and cargo_id = new.cargo_id and plazas > 0
-       ) then
-        raise exception 'El cargo de la postulación debe tener una oferta con cupo'
-            using errcode = '23514';
+    if new.plaza_asignada then
+        -- Comparte el bloqueo de cupo con las ediciones de oferta y otros ganadores.
+        update convocatoria set plazas=plazas where id=new.convocatoria_id;
+    end if;
+    if cambia_oferta or new.plaza_asignada then
+        select plazas into cupo from oferta
+        where convocatoria_id=new.convocatoria_id and cargo_id=new.cargo_id;
+        -- La clave foránea rechaza un par inexistente.
+        if cupo=0 and cambia_oferta then
+            raise exception 'La oferta no tiene cupo para recibir postulaciones' using errcode='23514';
+        end if;
+        if new.plaza_asignada and cupo <= (
+            select count(*) from postulacion
+            where convocatoria_id=new.convocatoria_id and cargo_id=new.cargo_id
+              and plaza_asignada and id<>new.id
+        ) then
+            raise exception 'Todas las plazas de la oferta están asignadas' using errcode='23514';
+        end if;
     end if;
     return new;
 end
 $$;
 
 create or replace trigger postulacion_oferta_trg
-before insert or update of convocatoria_id, cargo_id on postulacion
+before insert or update of convocatoria_id, cargo_id, plaza_asignada on postulacion
 for each row execute function inf513_validar_cargo_postulacion();
 
 create or replace function inf513_validar_total_areas()

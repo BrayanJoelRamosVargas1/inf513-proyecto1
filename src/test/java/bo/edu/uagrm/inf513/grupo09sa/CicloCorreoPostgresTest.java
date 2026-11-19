@@ -84,6 +84,7 @@ class CicloCorreoPostgresTest {
         var hoy=java.time.LocalDate.now();
         orden(mail,"admin@example.com","INSCON","ENSAYO","Auxiliaturas",hoy.minusDays(1).toString(),hoy.plusDays(1).toString(),"ABIERTA","1");
         orden(mail,"vice@example.com","INSCAR","Auxiliar","Facultad","true");
+        orden(mail,"admin@example.com","ASIOFE","1","1","1");
         orden(mail,"luis@example.com","INSPOST","1","1","ADJUNTO");
         orden(mail,"admin@example.com","ASIEVA","1","2","MERITOS_Y_EXAMEN");
         orden(mail,"eva@example.com","EVAREQ","1","Identidad","true","Verificado");
@@ -95,7 +96,7 @@ class CicloCorreoPostgresTest {
         assertTrue(orden(mail,"vice@example.com","AUDCAL","ASIPLA","1").cuerpo().contains("admin@example.com"));
         String reporte=orden(mail,"vice@example.com","REPEST","1").cuerpo();
         assertTrue(reporte.contains("GANADOR"));
-        assertTrue(reporte.lines().anyMatch("NULL | Cupo global | 1 | 1 | 1 | 0"::equals),reporte);
+        assertTrue(reporte.lines().anyMatch("1 | Auxiliar | 1 | 1 | 1 | 0"::equals),reporte);
         assertTrue(orden(mail,"luis@example.com","LISPOST","*").cuerpo().contains("GANADOR"));
         assertTrue(enviar(mail,"intruso@example.com","AUDCAL[\"ASIPLA\",\"1\"]",List.of()).cuerpo().contains("rol requerido"));
         orden(mail,"ensayo@example.com","INSPER","990900137","Ana","Ensayo","Estudiante",

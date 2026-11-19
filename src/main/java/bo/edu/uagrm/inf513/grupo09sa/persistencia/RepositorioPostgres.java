@@ -441,7 +441,7 @@ public final class RepositorioPostgres implements RepositorioProyecto, ColaCorre
             c.setAutoCommit(false);
             try {
                 if (!categorias.cargoOfertado(postulacion.convocatoriaId(), postulacion.cargoId()))
-                    return Resultado.error("El cargo no tiene una oferta vigente con plazas en esta convocatoria.");
+                    return Resultado.error("El cargo no tiene una oferta con plazas en esta convocatoria. La autoridad puede configurarla con ASIOFE.");
                 String nombre=null,sha=null;byte[] contenido=null;
                 if (referenciaExpediente.equalsIgnoreCase("ADJUNTO")) {
                     try(PreparedStatement q=c.prepareStatement("select nombre,contenido,sha256 from adjunto_correo where mensaje_id=?")) {

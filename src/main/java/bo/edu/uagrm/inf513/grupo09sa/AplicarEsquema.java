@@ -15,6 +15,7 @@ public final class AplicarEsquema {
         String preparar = Files.readString(database.resolve("migrations/001_preparar.sql"));
         String instalar = Files.readString(database.resolve("schema.sql"));
         String historial = Files.readString(database.resolve("migrations/002_migrar_historial.sql"));
+        String ofertas = Files.readString(database.resolve("migrations/003_postulacion_oferta.sql"));
         try (var conexion = DriverManager.getConnection(cfg.dbUrl(), cfg.dbUser(), cfg.dbPassword());
              var consulta = conexion.createStatement()) {
             conexion.setAutoCommit(false);
@@ -28,6 +29,7 @@ public final class AplicarEsquema {
                 consulta.execute(preparar);
                 consulta.execute(instalar);
                 consulta.execute(historial);
+                consulta.execute(ofertas);
                 conexion.commit();
                 System.out.println("SCHEMA_OK");
             } catch (SQLException fallo) {

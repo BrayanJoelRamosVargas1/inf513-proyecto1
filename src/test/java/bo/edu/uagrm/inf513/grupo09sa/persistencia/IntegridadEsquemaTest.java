@@ -33,8 +33,17 @@ class IntegridadEsquemaTest {
 
     private void migrar() throws Exception {
         var directorio = Path.of("database/migrations");
-        sql(Files.readString(directorio.resolve("001_preparar.sql")) + "\n" + sqlEsquema + "\n"
-                + Files.readString(directorio.resolve("002_migrar_historial.sql")));
+        String preparacion = Files.readString(directorio.resolve("001_preparar.sql"));
+        String historial = Files.readString(directorio.resolve("002_migrar_historial.sql"));
+        String ofertas = Files.readString(directorio.resolve("003_postulacion_oferta.sql"));
+        try (var c = datos.getConnection(); var q = c.createStatement()) {
+            c.setAutoCommit(false);
+            q.execute(preparacion);
+            q.execute(sqlEsquema);
+            q.execute(historial);
+            q.execute(ofertas);
+            c.commit();
+        }
     }
 
     @AfterEach void limpiar() throws Exception {
@@ -105,7 +114,7 @@ class IntegridadEsquemaTest {
 
     @Test void todasLasTablasSeConectanYCadaMigracionConservaElBuzonAnterior() throws Exception {
         assertEquals(17, numero("select count(*) from pg_tables where schemaname=current_schema()"));
-        assertEquals(21, numero("select count(*) from pg_constraint where contype='f' and connamespace=current_schema()::regnamespace"));
+        assertEquals(20, numero("select count(*) from pg_constraint where contype='f' and connamespace=current_schema()::regnamespace"));
         assertEquals(17, numero("""
             with recursive uniones as (
                 select conrelid origen,confrelid destino from pg_constraint
@@ -147,7 +156,12 @@ class IntegridadEsquemaTest {
             insert into convocatoria(codigo,titulo,fecha_inicio,fecha_fin,estado,plazas)
                 values('ANTES','Ensayo',current_date,current_date,'ABIERTA',1);
             insert into cargo(nombre) values('Auxiliar');
+            alter table postulacion drop constraint postulacion_oferta_fk;
+            alter table postulacion add foreign key(convocatoria_id) references convocatoria;
+            alter table postulacion add foreign key(cargo_id) references cargo;
+            alter table postulacion disable trigger postulacion_oferta_trg;
             insert into postulacion(convocatoria_id,postulante_id,cargo_id) values(1,1,1);
+            alter table postulacion enable trigger postulacion_oferta_trg;
             insert into expediente(postulacion_id,descripcion,ruta_archivo,contenido)
                 values(1,'Ensayo','postgres:p1_expediente/1',convert_to('%PDF-ensayo','UTF8'));
             insert into correo_control(mensaje_id,remitente,asunto,estado,buzon_protocolo)
@@ -176,9 +190,10 @@ class IntegridadEsquemaTest {
             select count(*) from postulacion p join usuario u on u.id=p.postulante_id
             join convocatoria c on c.id=p.convocatoria_id where u.registro='101' and c.codigo='ANTES'
             """));
+        assertEquals(1, numero("select count(*) from oferta where convocatoria_id=1 and cargo_id=1 and plazas=1"));
         assertEquals(1, numero("select count(*) from correo_control c join buzon b on b.protocolo=c.buzon_protocolo where c.mensaje_id='antes' and c.estado='DIFERIDO'"));
         assertEquals(1, numero("select count(*) from expediente where ruta_archivo='postgres:expediente/1' and contenido=convert_to('%PDF-ensayo','UTF8')"));
-        assertEquals(21, numero("select count(*) from pg_constraint where contype='f' and connamespace=current_schema()::regnamespace"));
+        assertEquals(20, numero("select count(*) from pg_constraint where contype='f' and connamespace=current_schema()::regnamespace"));
     }
 
     @Test void moverElEsquemaSeDetieneSiYaExisteUnaTablaHomonima() throws Exception {
@@ -199,7 +214,8 @@ class IntegridadEsquemaTest {
             insert into cargo(nombre) values('Ofertado'),('No ofertado');
             insert into oferta(convocatoria_id,cargo_id,plazas) values(1,1,2);
             """);
-        invalido("insert into postulacion(convocatoria_id,postulante_id,cargo_id) values(1,1,2)");
+        assertEquals("23503", assertThrows(SQLException.class, () ->
+                sql("insert into postulacion(convocatoria_id,postulante_id,cargo_id) values(1,1,2)")).getSQLState());
         sql("insert into postulacion(convocatoria_id,postulante_id,cargo_id) values(1,1,1)");
         long post = numero("select id from postulacion");
         sql("insert into area_examen values(1,1,'teoria',70)");
@@ -225,6 +241,52 @@ class IntegridadEsquemaTest {
                 + post + ",'Identidad',true,1)");
         invalido("insert into auditoria(actor,accion,entidad,entidad_id,postulacion_id)"
                 + " values('eva@example.com','REGEXA','REGEXA','999'," + post + ")");
+    }
+
+    @Test void postgresProtegeLasOfertasYLasPlazasAsignadas() throws Exception {
+        prepararOfertas();
+        sql("""
+            insert into usuario(registro,nombres,apellidos,rol,correo) values
+                ('1','Ana','Ensayo','POSTULANTE','ana@example.com'),
+                ('2','Luis','Ensayo','POSTULANTE','luis@example.com');
+            """);
+        String postular = "insert into postulacion(convocatoria_id,postulante_id,cargo_id) values(1,1,1)";
+        assertEquals("23503", assertThrows(SQLException.class, () -> sql(postular)).getSQLState());
+        sql("insert into oferta values (1,1,0),(1,2,1)");
+        invalido(postular);
+        sql("update oferta set plazas=1 where cargo_id=1");
+        sql(postular);
+        sql("insert into postulacion(convocatoria_id,postulante_id,cargo_id) values(1,2,1)");
+        assertEquals("23503", assertThrows(SQLException.class, () -> sql("delete from oferta where cargo_id=1")).getSQLState());
+
+        invalido("update postulacion set estado='GANADOR' where postulante_id=1");
+        sql("update postulacion set estado='GANADOR', plaza_asignada=true where postulante_id=1");
+        invalido("update postulacion set estado='GANADOR', plaza_asignada=true where postulante_id=2");
+        invalido("update postulacion set cargo_id=2 where postulante_id=1");
+        invalido("update oferta set plazas=0 where cargo_id=1");
+
+        sql("update postulacion set estado='HABILITADO', plaza_asignada=false where postulante_id=1");
+        sql("update oferta set plazas=0 where cargo_id=1");
+        assertEquals(2, numero("select count(*) from postulacion where cargo_id=1"));
+    }
+
+    @Test void noInventaCuposHistoricosParaVariasCategorias() throws Exception {
+        prepararOfertas();
+        sql("""
+            insert into usuario(registro,nombres,apellidos,rol,correo)
+                values('1','Ana','Ensayo','POSTULANTE','ana@example.com');
+            alter table postulacion drop constraint postulacion_oferta_fk;
+            insert into postulacion(convocatoria_id,postulante_id,cargo_id) values(1,1,1),(1,1,2);
+            """);
+        var fallo = assertThrows(SQLException.class, this::migrar);
+        assertEquals("23503", fallo.getSQLState());
+        assertTrue(fallo.getMessage().contains("Falta configurar la oferta histórica"), fallo.getMessage());
+        assertEquals(0, numero("select count(*) from oferta"));
+        assertEquals(2, numero("select count(*) from postulacion"));
+        sql("insert into oferta values (1,1,1),(1,2,1)");
+        migrar();
+        assertEquals(1, numero("select count(*) from pg_constraint where conrelid='postulacion'::regclass "
+                + "and conname='postulacion_oferta_fk' and convalidated"));
     }
 
     @Test void unExamenGeneralImpideCambiarEsaCategoriaAExamenPonderado() throws Exception {

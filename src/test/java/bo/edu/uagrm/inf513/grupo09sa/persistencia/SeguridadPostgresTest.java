@@ -68,6 +68,8 @@ class SeguridadPostgresTest {
     @Test void cargaPdfRealTrasConfirmarYNoLoDuplica()throws Exception {
         iniciarFlujo();
         assertTrue(ordenar("admin@example.com","INSCAR","Segundo cargo","Facultad","true").exito());
+        ejecutarSql("update convocatoria set plazas=2");
+        assertTrue(ordenar("admin@example.com","ASIOFE","1","2","1").exito());
         byte[] bytes="%PDF-1.4\nexpediente de prueba\n%%EOF".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
         var archivo=new bo.edu.uagrm.inf513.grupo09sa.email.AdjuntoPdf("expediente.pdf",bytes);
         Orden orden=new Orden("INSPOST",List.of("1","2","ADJUNTO"));
@@ -86,6 +88,8 @@ class SeguridadPostgresTest {
     @Test void adjuntoAusenteNoCreaPostulacionParcial()throws Exception {
         iniciarFlujo();
         assertTrue(ordenar("admin@example.com","INSCAR","Segundo cargo","Facultad","true").exito());
+        ejecutarSql("update convocatoria set plazas=2");
+        assertTrue(ordenar("admin@example.com","ASIOFE","1","2","1").exito());
         Resultado resultado=ordenar("luis@example.com","INSPOST","1","2","ADJUNTO");
         assertFalse(resultado.exito());assertTrue(resultado.cuerpo().contains("No se recibió el PDF"));
         assertEquals(1,numero("select count(*) from postulacion"));
@@ -95,13 +99,17 @@ class SeguridadPostgresTest {
         String id="flujo-"+(++secuencia);Resultado r=procesador.procesar(id,correo,new Orden(comando,List.of(argumentos)));
         return r.asunto().startsWith("CONFIRMACIÓN REQUERIDA")?confirmar(id+"-confirmado",correo,codigo(r)):r;
     }
-    void iniciarFlujo()throws Exception{
+    void prepararConvocatoria() throws Exception {
         assertTrue(confirmar("inicio", "admin@example.com",codigo(procesador.procesar("alta-inicio","admin@example.com",alta()))).exito());
         assertTrue(ordenar("admin@example.com","INSUSU","2","Eva","Lopez","EVALUADOR","70000001","eva@example.com","true").exito());
         assertTrue(ordenar("admin@example.com","INSUSU","3","Luis","Diaz","POSTULANTE","70000002","luis@example.com","true").exito());
         var hoy=java.time.LocalDate.now();
         assertTrue(ordenar("admin@example.com","INSCON","AUX","Auxiliaturas",hoy.minusDays(1).toString(),hoy.plusDays(1).toString(),"ABIERTA","1").exito());
         assertTrue(ordenar("admin@example.com","INSCAR","Auxiliar","Facultad","true").exito());
+    }
+    void iniciarFlujo() throws Exception {
+        prepararConvocatoria();
+        assertTrue(ordenar("admin@example.com","ASIOFE","1","1","1").exito());
         assertTrue(ordenar("luis@example.com","INSPOST","1","1","https://example.com/expediente.pdf").exito());
         assertTrue(ordenar("admin@example.com","ASIEVA","1","2","MERITOS_Y_EXAMEN").exito());
     }
@@ -198,6 +206,8 @@ class SeguridadPostgresTest {
     List<String> llenarCupoConConfirmacionesPdf()throws Exception{
         iniciarFlujo();
         assertTrue(ordenar("admin@example.com","INSCAR","Segundo cargo","Facultad","true").exito());
+        ejecutarSql("update convocatoria set plazas=2");
+        assertTrue(ordenar("admin@example.com","ASIOFE","1","2","1").exito());
         var tokens=new java.util.ArrayList<String>();var pdf=pdfDeDosMiB();
         for(int i=0;i<4;i++){
             String id="pdf-expira-"+i;
@@ -538,6 +548,8 @@ class SeguridadPostgresTest {
     @Test void referenciaDeExpedienteNoProvocaDescargaDeUnaDireccionInterna()throws Exception{
         iniciarFlujo();
         assertTrue(ordenar("admin@example.com","INSCAR","Otro cargo","Facultad","true").exito());
+        ejecutarSql("update convocatoria set plazas=2");
+        assertTrue(ordenar("admin@example.com","ASIOFE","1","2","1").exito());
         try(var servidor=new java.net.ServerSocket(0,1,java.net.InetAddress.getLoopbackAddress())) {
             servidor.setSoTimeout(250);
             String referencia="http://127.0.0.1:"+servidor.getLocalPort()+"/dato-interno";
@@ -569,19 +581,20 @@ class SeguridadPostgresTest {
         assertTrue(reporte.cuerpo().lines().anyMatch("1 | Auxiliar | 1 | 1 | 1 | 0"::equals),reporte.cuerpo());
         assertTrue(reporte.cuerpo().lines().anyMatch("2 | Redes | 1 | 1 | 1 | 0"::equals),reporte.cuerpo());
     }
-    @Test void reporteUsaUnSoloCupoGlobalYRespetaLasOfertasCuandoSeConfiguran()throws Exception{
-        iniciarFlujo();
-        assertTrue(ordenar("admin@example.com","INSCAR","Redes","Facultad","true").exito());
-        assertTrue(ordenar("luis@example.com","INSPOST","1","2","https://example.com/redes.pdf").exito());
+    @Test void consultaYReporteRespetanLaOfertaInclusoEnUnaConvocatoriaVacia() throws Exception {
+        prepararConvocatoria();
+        Resultado sinOferta = ordenar("luis@example.com","INSPOST","1","1","https://example.com/uno.pdf");
+        assertFalse(sinOferta.exito());
+        assertTrue(sinOferta.cuerpo().contains("ASIOFE"),sinOferta.cuerpo());
+        assertEquals(0,numero("select count(*) from postulacion"));
 
-        String global=ordenar("admin@example.com","REPEST","1").cuerpo();
-        assertTrue(global.lines().anyMatch("NULL | Cupo global | 1 | 2 | 0 | 1"::equals),global);
+        assertTrue(ordenar("admin@example.com","ASIOFE","1","1","0").exito());
+        assertFalse(ordenar("luis@example.com","INSPOST","1","1","https://example.com/uno.pdf").exito());
 
-        assertTrue(ordenar("admin@example.com","ASIOFE","1","2","1").exito());
-        String porCargo=ordenar("admin@example.com","REPEST","1").cuerpo();
-        assertTrue(porCargo.lines().anyMatch("2 | Redes | 1 | 1 | 0 | 1"::equals),porCargo);
-        assertTrue(porCargo.lines().anyMatch(fila -> fila.startsWith("1 | Auxiliar | 1 | ") &&
-                fila.endsWith(" | f | 0 | 0")),porCargo);
+        assertTrue(ordenar("admin@example.com","ASIOFE","1","1","1").exito());
+        assertTrue(ordenar("luis@example.com","INSPOST","1","1","https://example.com/uno.pdf").exito());
+        String reporte = ordenar("admin@example.com","REPEST","1").cuerpo();
+        assertTrue(reporte.lines().anyMatch("1 | Auxiliar | 1 | 1 | 0 | 1"::equals),reporte);
     }
     @Test void reporteGrandeConservaTodasLasSeccionesYElCupoReal()throws Exception{
         iniciarFlujo();
@@ -611,13 +624,14 @@ class SeguridadPostgresTest {
             assertTrue(reporte.lines().anyMatch(seccion::equals),"Falta la sección "+seccion);
         }
         assertTrue(reporte.lines().anyMatch("HABILITADO | 230 | 83.00"::equals));
-        assertTrue(reporte.lines().anyMatch("NULL | Cupo global | 1 | 231 | 0 | 1"::equals));
+        String vacantes = "1 | " + "A".repeat(155) + " | 1 | 231 | 0 | 1";
+        assertTrue(reporte.lines().anyMatch(vacantes::equals));
         assertTrue(reporte.contains("... se omitieron filas por el límite de salida."));
         assertTrue(reporte.length()<=50_000);
     }
 
     @Test void configuracionDeCuposConcurrenteNoSuperaElTotal()throws Exception{
-        iniciarFlujo();assertTrue(ordenar("admin@example.com","INSCAR","Redes","Facultad","true").exito());
+        prepararConvocatoria();assertTrue(ordenar("admin@example.com","INSCAR","Redes","Facultad","true").exito());
         var pool=java.util.concurrent.Executors.newFixedThreadPool(2);
         var inicio=new java.util.concurrent.CountDownLatch(1);
         try{
