@@ -33,7 +33,7 @@ Las migraciones PHP del paquete declaran doce tablas propias de BarberSeven y si
 
 `AYUDA` muestra los comandos, `CONFIRMAR` autoriza una orden pendiente y `LISPER` e `INSPER` reproducen el ejemplo de la consigna. Estos son comandos auxiliares a los ocho casos del proyecto. En el CU8, `REPEST` muestra el cupo global cuando la convocatoria no tiene ofertas por cargo. Cuando hay ofertas configuradas, el consolidado y el resumen usan las plazas de cada oferta.
 
-En el CU5, el tercer parámetro de `ASIEVA` delimita la calificación autorizada. `MERITOS` habilita `REGMER`. `EXAMEN` habilita `REGEXA` para examen general o `REGAREA` si hay áreas configuradas. `MERITOS_Y_EXAMEN` cubre ambos. Para asignar por nombre, primero configurá el área para el cargo de la postulación. `ASIEVA` acepta los mismos 80 caracteres que `CFGARE` y rechaza nombres que no correspondan a un área configurada. `EVAREQ` exige un evaluador asignado a la postulación. Antes de actualizar TecnoWeb, hay que comprobar los valores históricos de `p1_asignacion_evaluador.tipo`.
+En el CU5, el tercer parámetro de `ASIEVA` delimita la calificación autorizada. `MERITOS` habilita `REGMER`. `EXAMEN` habilita `REGEXA` para examen general o `REGAREA` si hay áreas configuradas. `MERITOS_Y_EXAMEN` cubre ambos. Para asignar por nombre, primero configurá el área para el cargo de la postulación. `ASIEVA` acepta los mismos 80 caracteres que `CFGARE` y rechaza nombres que no correspondan a un área configurada. `EVAREQ` exige un evaluador asignado a la postulación. Antes de actualizar TecnoWeb, hay que comprobar los valores históricos de `asignacion_evaluador.tipo`.
 
 ### Revisión por caso y prueba manual
 
@@ -52,18 +52,18 @@ Usá las cuentas de ensayo y los identificadores que devuelva la aplicación. Cu
 
 El recorrido automatizado de los ocho casos usa PostgreSQL y un buzón de ensayo. La prueba de protocolos ejecuta el JAR contra servicios POP3 y SMTP locales. La entrega institucional de correo, los permisos reales de las cuentas y la migración sobre los datos de TecnoWeb siguen pendientes.
 
-En `AUDCAL`, la referencia de `INSPOST` es el ID de convocatoria, la de `INSUSU` es el registro y la de `INSPER` es el CI. Los ceros iniciales de registros y CI forman parte del identificador. La columna `p1_auditoria.entidad_id` admite hasta 160 caracteres para registrar el nombre completo de un cargo.
+En `AUDCAL`, la referencia de `INSPOST` es el ID de convocatoria, la de `INSUSU` es el registro y la de `INSPER` es el CI. Los ceros iniciales de registros y CI forman parte del identificador. La columna `auditoria.entidad_id` admite hasta 160 caracteres para registrar el nombre completo de un cargo.
 
 ## Inventario de la base nueva
 
 | Grupo | Tablas | Decisión |
 |---|---:|---|
-| Auxiliaturas y auditoría | 13 | Usuarios, convocatorias, cargos, ofertas, áreas, postulaciones, expedientes, requisitos, méritos, exámenes, desempates, asignaciones y auditoría. `AUDCAL` sigue consultando `p1_auditoria`. |
+| Auxiliaturas y auditoría | 13 | Usuarios, convocatorias, cargos, ofertas, áreas, postulaciones, expedientes, requisitos, méritos, exámenes, desempates, asignaciones y auditoría. `AUDCAL` sigue consultando `auditoria`. |
 | Recepción de correo | 3 | Control del mensaje, adjunto temporal y estado del buzón. Confirmación y resultado se guardan en el correo original. |
 | Ejemplo de la consigna | 1 | `persona` sigue sirviendo a `LISPER` e `INSPER` con datos ficticios. |
 | **Total** | **17** | **18 claves foráneas** declaradas. Las 17 tablas forman un solo conjunto conectado. |
 
-La instalación anterior guardaba cada respuesta exitosa o fallida en dos tablas. Esta versión usa `p1_correo_control` también para el historial y reconoce los mensajes ya procesados por el estado `RESPONDIDO`. En una base nueva, `p1_correo_procesado` ya no se crea. En una base anterior, el esquema importa los históricos que faltan sin cambiar las filas de la cola. Conserva la tabla antigua como respaldo para compatibilidad. La confirmación y el resultado de negocio quedan en la fila del mensaje original, en campos distintos de la respuesta SMTP. El resultado se guarda en la misma transacción que el negocio para evitar repetir operaciones si falla el envío.
+La instalación anterior guardaba cada respuesta exitosa o fallida en dos tablas. Esta versión usa `correo_control` también para el historial y reconoce los mensajes ya procesados por el estado `RESPONDIDO`. En una base nueva, `p1_correo_procesado` ya no se crea. En una base anterior, el esquema importa los históricos que faltan sin cambiar las filas de la cola. Conserva la tabla antigua como respaldo para compatibilidad. La confirmación y el resultado de negocio quedan en la fila del mensaje original, en campos distintos de la respuesta SMTP. El resultado se guarda en la misma transacción que el negocio para evitar repetir operaciones si falla el envío.
 
 PostgreSQL rechaza por SQL directo las ofertas que superan en conjunto las plazas de una convocatoria y las reducciones del total por debajo de lo ofertado. Si una transacción intenta modificar las ofertas usando una versión anterior de la convocatoria, debe reintentar con datos vigentes. La base también valida el cargo de cada postulación cuando hay ofertas, el límite de 100 % en las ponderaciones y el área y evaluador de las notas. Cuando una categoría ya tiene notas de examen, PostgreSQL también protege la configuración de áreas contra altas, modificaciones y bajas. Esto cubre el examen general y el ponderado. El modo histórico de cupo global se conserva para convocatorias sin ofertas. Los controles se aplican a nuevas escrituras y a cambios de las columnas relacionadas. Si hay filas históricas incompatibles, las conserva para revisión.
 
@@ -85,7 +85,7 @@ Esta revisión es local. Quedan pendientes la aplicación del esquema actualizad
 
 ## Verificación
 
-Una compilación limpia con Maven y JDK 17 ejecutó **140 pruebas con éxito** en PostgreSQL 15. En una base vacía se verificó el rechazo del primer decano inactivo, el alta posterior del decano activo y la posibilidad de registrar un evaluador inactivo una vez iniciado el sistema. El recorrido por correo cubrió los ocho casos y comprobó las relaciones de auditoría con el buzón, la postulación y el catálogo docente. Se verificó que un fallo transitorio en LISPER genere un error para el remitente cuando la cola sigue disponible. Una prueba con 231 postulaciones comprobó las cinco secciones del reporte. El ejecutable procesó una consulta válida y un asunto inválido por POP3 y SMTP contra servicios locales de ensayo y se recuperó de un conflicto con el bloqueo de instancia única. El SQL se aplicó dos veces sobre una copia del esquema anterior y el laboratorio arrancó desde una extracción limpia.
+Una compilación limpia con Maven y JDK 17 ejecutó **142 pruebas con éxito** en PostgreSQL 15. En una base vacía se verificó el rechazo del primer decano inactivo, el alta posterior del decano activo y la posibilidad de registrar un evaluador inactivo una vez iniciado el sistema. El recorrido por correo cubrió los ocho casos y comprobó las relaciones de auditoría con el buzón, la postulación y el catálogo docente. Se verificó que un fallo transitorio en LISPER genere un error para el remitente cuando la cola sigue disponible. Una prueba con 231 postulaciones comprobó las cinco secciones del reporte. El ejecutable procesó una consulta válida y un asunto inválido por POP3 y SMTP contra servicios locales de ensayo y se recuperó de un conflicto con el bloqueo de instancia única. El cambio de nombre conservó las filas y las claves, y la migración abortó ante un nombre de destino ocupado. El SQL se aplicó dos veces sobre una copia del esquema anterior y el laboratorio arrancó desde una extracción limpia.
 
 
 ## Depuración del paquete local

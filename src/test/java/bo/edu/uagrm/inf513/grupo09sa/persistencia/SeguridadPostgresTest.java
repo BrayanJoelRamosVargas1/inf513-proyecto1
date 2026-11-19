@@ -35,14 +35,14 @@ class SeguridadPostgresTest {
         assertFalse(rechazado.exito());
         assertTrue(rechazado.cuerpo().contains("El primer DECANO debe quedar activo."),rechazado.cuerpo());
         assertEquals(0,usuarios());
-        assertEquals(0,numero("select count(*) from p1_correo_control where token_hash is not null"));
+        assertEquals(0,numero("select count(*) from correo_control where token_hash is not null"));
 
         String token=codigo(procesador.procesar("arranque-activo","admin@example.com",alta()));
         assertTrue(confirmar("confirmar-arranque","admin@example.com",token).exito());
         assertTrue(repo.autorizado("admin@example.com","DECANO"));
         assertTrue(ordenar("admin@example.com","INSUSU","2","Eva","Prueba","EVALUADOR",
                 "70000001","eva@example.com","false").exito());
-        assertEquals(1,numero("select count(*) from p1_usuario where not activo"));
+        assertEquals(1,numero("select count(*) from usuario where not activo"));
     }
     @Test void ejemplosLiteralesDeLaPlataformaInsertanYListanPersona()throws Exception {
         var parser=new AnalizadorOrden();
@@ -74,12 +74,12 @@ class SeguridadPostgresTest {
         assertEquals(RepositorioPostgres.Admision.DIFERIDO,repo.registrarEntrada("correo-pdf","luis@example.com","INSPOST[]",List.of(archivo)));
         assertEquals(RepositorioPostgres.Admision.DUPLICADO,repo.registrarEntrada("correo-pdf","luis@example.com","INSPOST[]",List.of(archivo)));
         Resultado desafio=procesador.procesar("correo-pdf","luis@example.com",orden);
-        assertEquals(1,numero("select count(*) from p1_postulacion"));
+        assertEquals(1,numero("select count(*) from postulacion"));
         String token=codigo(desafio);
         assertTrue(confirmar("pdf-confirmado","luis@example.com",token).exito());
         assertTrue(confirmar("pdf-confirmado","luis@example.com",token).exito());
-        assertEquals(2,numero("select count(*) from p1_postulacion"));
-        try(var c=ds.getConnection();var s=c.createStatement();var r=s.executeQuery("select contenido,sha256,nombre_archivo from p1_expediente where contenido is not null")){
+        assertEquals(2,numero("select count(*) from postulacion"));
+        try(var c=ds.getConnection();var s=c.createStatement();var r=s.executeQuery("select contenido,sha256,nombre_archivo from expediente where contenido is not null")){
             assertTrue(r.next());assertArrayEquals(bytes,r.getBytes(1));assertEquals(archivo.sha256(),r.getString(2));assertEquals("expediente.pdf",r.getString(3));assertFalse(r.next());
         }
     }
@@ -88,7 +88,7 @@ class SeguridadPostgresTest {
         assertTrue(ordenar("admin@example.com","INSCAR","Segundo cargo","Facultad","true").exito());
         Resultado resultado=ordenar("luis@example.com","INSPOST","1","2","ADJUNTO");
         assertFalse(resultado.exito());assertTrue(resultado.cuerpo().contains("No se recibió el PDF"));
-        assertEquals(1,numero("select count(*) from p1_postulacion"));
+        assertEquals(1,numero("select count(*) from postulacion"));
     }
     int secuencia;
     Resultado ordenar(String correo,String comando,String... argumentos){
@@ -111,7 +111,7 @@ class SeguridadPostgresTest {
         assertFalse(ordenar("admin@example.com","HABPOS","1","HABILITADO","Revisar").exito());
         assertTrue(ordenar("eva@example.com","EVAREQ","1","Identidad","true","Documento subsanado").exito());
         assertTrue(ordenar("admin@example.com","HABPOS","1","HABILITADO","Verificado").exito());
-        assertEquals(2,numero("select count(*) from p1_evaluacion_requisito"));
+        assertEquals(2,numero("select count(*) from evaluacion_requisito"));
     }
     @Test void inhabilitarGanadorLiberaPlazaSinRomperRestricciones()throws Exception{
         iniciarFlujo();
@@ -121,9 +121,9 @@ class SeguridadPostgresTest {
         assertTrue(ordenar("eva@example.com","REGEXA","1","85","Revisado").exito());
         assertTrue(ordenar("admin@example.com","ASIPLA","1","true").exito());
         assertTrue(ordenar("admin@example.com","HABPOS","1","HABILITADO","Revisado").exito());
-        assertEquals(1,numero("select count(*) from p1_postulacion where estado='GANADOR' and plaza_asignada"));
+        assertEquals(1,numero("select count(*) from postulacion where estado='GANADOR' and plaza_asignada"));
         assertTrue(ordenar("admin@example.com","HABPOS","1","INHABILITADO","Requisito revocado").exito());
-        assertEquals(1,numero("select count(*) from p1_postulacion where estado='INHABILITADO' and not plaza_asignada"));
+        assertEquals(1,numero("select count(*) from postulacion where estado='INHABILITADO' and not plaza_asignada"));
     }
     void habilitarEnsayo()throws Exception{
         iniciarFlujo();
@@ -134,26 +134,26 @@ class SeguridadPostgresTest {
         iniciarFlujo();
         assertTrue(ordenar("eva@example.com","REGMER","1","Experiencia","30","Primero").exito());
         assertTrue(ordenar("eva@example.com","REGMER","1","EXPERIENCIA","30","Repetido").exito());
-        assertEquals(30,numero("select puntaje_meritos::int from p1_postulacion where id=1"));
-        assertEquals(2,numero("select count(*) from p1_merito"),"El historial se conserva");
+        assertEquals(30,numero("select puntaje_meritos::int from postulacion where id=1"));
+        assertEquals(2,numero("select count(*) from merito"),"El historial se conserva");
     }
     @Test void auditoriaUnaCorreccionDeExamenNoDaDosVotosAlEvaluador()throws Exception{
         habilitarEnsayo();
         assertTrue(ordenar("eva@example.com","REGEXA","1","20","Original").exito());
         assertTrue(ordenar("eva@example.com","REGEXA","1","80","Corregido").exito());
-        assertEquals(80,numero("select puntaje_examen::int from p1_postulacion where id=1"));
-        assertEquals(2,numero("select count(*) from p1_examen"));
+        assertEquals(80,numero("select puntaje_examen::int from postulacion where id=1"));
+        assertEquals(2,numero("select count(*) from examen"));
     }
     @Test void auditoriaExamenNoAceptaRequisitoRevocadoDespuesDeHabilitar()throws Exception{
         habilitarEnsayo();
         assertTrue(ordenar("eva@example.com","EVAREQ","1","Identidad","false","Documento revocado").exito());
         assertFalse(ordenar("eva@example.com","REGEXA","1","100","Intenta saltar requisito").exito());
-        assertEquals(0,numero("select count(*) from p1_examen"));
+        assertEquals(0,numero("select count(*) from examen"));
     }
     @Test void auditoriaNoAsignaPlazaSinMeritosYExamenRegistrados()throws Exception{
         habilitarEnsayo();
         assertFalse(ordenar("admin@example.com","ASIPLA","1","true").exito());
-        assertEquals(0,numero("select count(*) from p1_postulacion where plaza_asignada"));
+        assertEquals(0,numero("select count(*) from postulacion where plaza_asignada"));
     }
     @Test void auditoriaNotasNoCambianDespuesDeAsignarUnaPlaza()throws Exception{
         habilitarEnsayo();
@@ -162,15 +162,15 @@ class SeguridadPostgresTest {
         assertTrue(ordenar("admin@example.com","ASIPLA","1","true").exito());
         assertFalse(ordenar("eva@example.com","REGEXA","1","0","Cambiar ganador").exito());
         assertFalse(ordenar("eva@example.com","EVAREQ","1","Identidad","false","Cambiar ganador").exito());
-        assertEquals(83,numero("select puntaje_final::int from p1_postulacion where id=1"));
+        assertEquals(83,numero("select puntaje_final::int from postulacion where id=1"));
         assertTrue(ordenar("admin@example.com","ASIPLA","1","false").exito());
         assertTrue(ordenar("eva@example.com","REGEXA","1","0","Correccion autorizada tras retirar plaza").exito());
     }
     @Test void auditoriaUnDesconocidoNoPuedeOcuparAlmacenamientoPdf()throws Exception{
         var a=new bo.edu.uagrm.inf513.grupo09sa.email.AdjuntoPdf("expediente.pdf","%PDF-1.4\n%%EOF".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
         assertEquals(RepositorioPostgres.Admision.DIFERIDO,repo.registrarEntrada("pdf-sin-rol","desconocido@example.com","INSPOST[\"1\",\"1\",\"ADJUNTO\"]",List.of(a)));
-        assertEquals(0,numero("select count(*) from p1_adjunto_correo"));
-        assertEquals(1,numero("select count(*) from p1_correo_control"),"Se conserva la orden para responder el rechazo");
+        assertEquals(0,numero("select count(*) from adjunto_correo"));
+        assertEquals(1,numero("select count(*) from correo_control"),"Se conserva la orden para responder el rechazo");
     }
     @Test void auditoriaCupoPdfSeRecuperaSinBorrarConfirmacionesPendientes()throws Exception{
         iniciarFlujo();
@@ -179,16 +179,16 @@ class SeguridadPostgresTest {
         var pdf=new bo.edu.uagrm.inf513.grupo09sa.email.AdjuntoPdf("expediente.pdf",contenido);
         for(int i=0;i<4;i++)assertEquals(RepositorioPostgres.Admision.DIFERIDO,repo.registrarEntrada("cupo-"+i,"luis@example.com","INSPOST[]",List.of(pdf)));
         assertEquals(RepositorioPostgres.Admision.DIFERIDO,repo.registrarEntrada("exceso","luis@example.com","INSPOST[]",List.of(pdf)));
-        assertEquals(4,numero("select count(*) from p1_adjunto_correo"));
-        assertEquals(1,numero("select count(*) from p1_correo_control where mensaje_id='exceso' and asunto like 'ADJUNTO_RECHAZADO:%'"),"El rechazo es durable y no bloquea la bandeja");
-        assertEquals(0,numero("select count(*) from p1_adjunto_correo where mensaje_id='exceso'"));
+        assertEquals(4,numero("select count(*) from adjunto_correo"));
+        assertEquals(1,numero("select count(*) from correo_control where mensaje_id='exceso' and asunto like 'ADJUNTO_RECHAZADO:%'"),"El rechazo es durable y no bloquea la bandeja");
+        assertEquals(0,numero("select count(*) from adjunto_correo where mensaje_id='exceso'"));
         procesador.procesar("cupo-0","luis@example.com",new Orden("INSPOST",List.of("1","2","ADJUNTO")));
         repo.confirmarRespuesta("cupo-0");
         assertEquals(RepositorioPostgres.Admision.DIFERIDO,repo.registrarEntrada("exceso-2","luis@example.com","INSPOST[]",List.of(pdf)),"La confirmación pendiente conserva su PDF y el exceso recibe rechazo");
         repo.confirmarRespuesta("cupo-1");
         assertEquals(RepositorioPostgres.Admision.DIFERIDO,repo.registrarEntrada("reintento","luis@example.com","INSPOST[]",List.of(pdf)));
-        assertEquals(1,numero("select count(*) from p1_adjunto_correo where mensaje_id='cupo-0'"));
-        assertEquals(4,numero("select count(*) from p1_adjunto_correo"));
+        assertEquals(1,numero("select count(*) from adjunto_correo where mensaje_id='cupo-0'"));
+        assertEquals(4,numero("select count(*) from adjunto_correo"));
     }
     bo.edu.uagrm.inf513.grupo09sa.email.AdjuntoPdf pdfDeDosMiB(){
         byte[] contenido=new byte[2*1024*1024];
@@ -205,44 +205,44 @@ class SeguridadPostgresTest {
             tokens.add(codigo(procesador.procesar(id,"luis@example.com",new Orden("INSPOST",List.of("1","2","ADJUNTO")))));
             repo.confirmarRespuesta(id);
         }
-        assertEquals(4,numero("select count(*) from p1_adjunto_correo"));
+        assertEquals(4,numero("select count(*) from adjunto_correo"));
         return tokens;
     }
     @Test void pdfVencidosLiberanCupoSinBorrarExpedientesConfirmados()throws Exception{
         var tokens=llenarCupoConConfirmacionesPdf();
-        ejecutarSql("update p1_correo_control set vence_en=now()-interval '1 minute' where mensaje_id like 'pdf-expira-%'");
+        ejecutarSql("update correo_control set vence_en=now()-interval '1 minute' where mensaje_id like 'pdf-expira-%'");
         repo.registrarEntrada("nuevo-tras-vencer","luis@example.com","INSPOST[]",List.of(pdfDeDosMiB()));
-        assertEquals(1,numero("select count(*) from p1_adjunto_correo where mensaje_id='nuevo-tras-vencer'"),"Los códigos vencidos no deben bloquear permanentemente el cupo de PDF");
-        assertEquals(0,numero("select count(*) from p1_adjunto_correo where mensaje_id like 'pdf-expira-%'"));
-        assertEquals(4,numero("select count(*) from p1_correo_control where token_hash is not null and mensaje_id like 'pdf-expira-%'"),"Se conserva el registro de las confirmaciones");
-        assertEquals(1,numero("select count(*) from p1_expediente"),"La limpieza solo afecta los adjuntos temporales");
+        assertEquals(1,numero("select count(*) from adjunto_correo where mensaje_id='nuevo-tras-vencer'"),"Los códigos vencidos no deben bloquear permanentemente el cupo de PDF");
+        assertEquals(0,numero("select count(*) from adjunto_correo where mensaje_id like 'pdf-expira-%'"));
+        assertEquals(4,numero("select count(*) from correo_control where token_hash is not null and mensaje_id like 'pdf-expira-%'"),"Se conserva el registro de las confirmaciones");
+        assertEquals(1,numero("select count(*) from expediente"),"La limpieza solo afecta los adjuntos temporales");
         assertFalse(confirmar("vencida-posterior","luis@example.com",tokens.get(0)).exito());
-        assertEquals(1,numero("select count(*) from p1_postulacion"));
+        assertEquals(1,numero("select count(*) from postulacion"));
     }
     @Test void limpiezaConservaPdfSiLaConfirmacionValidaLlegoATiempoPeroEstaDiferida()throws Exception{
         var tokens=llenarCupoConConfirmacionesPdf();
-        ejecutarSql("update p1_correo_control set vence_en=now()-interval '1 minute' where mensaje_id like 'pdf-expira-%'");
+        ejecutarSql("update correo_control set vence_en=now()-interval '1 minute' where mensaje_id like 'pdf-expira-%'");
         repo.registrarEntrada("confirmacion-pdf-diferida","LUIS@example.com"," confirmar [ \u2003\""+tokens.get(0)+"\"\u2003 ] ");
-        ejecutarSql("update p1_correo_control set creado_en=now()-interval '2 minutes' where mensaje_id='confirmacion-pdf-diferida'");
+        ejecutarSql("update correo_control set creado_en=now()-interval '2 minutes' where mensaje_id='confirmacion-pdf-diferida'");
         repo.registrarEntrada("nuevo-con-cola","luis@example.com","INSPOST[]",List.of(pdfDeDosMiB()));
-        assertEquals(1,numero("select count(*) from p1_adjunto_correo where mensaje_id='pdf-expira-0'"));
-        assertEquals(0,numero("select count(*) from p1_adjunto_correo where mensaje_id in('pdf-expira-1','pdf-expira-2','pdf-expira-3')"));
-        assertEquals(1,numero("select count(*) from p1_adjunto_correo where mensaje_id='nuevo-con-cola'"));
+        assertEquals(1,numero("select count(*) from adjunto_correo where mensaje_id='pdf-expira-0'"));
+        assertEquals(0,numero("select count(*) from adjunto_correo where mensaje_id in('pdf-expira-1','pdf-expira-2','pdf-expira-3')"));
+        assertEquals(1,numero("select count(*) from adjunto_correo where mensaje_id='nuevo-con-cola'"));
         assertTrue(confirmar("confirmacion-pdf-diferida","luis@example.com",tokens.get(0)).exito());
-        assertEquals(1,numero("select count(*) from p1_expediente where postulacion_id=2 and octet_length(contenido)=2097152"));
+        assertEquals(1,numero("select count(*) from expediente where postulacion_id=2 and octet_length(contenido)=2097152"));
     }
     @Test void confirmacionesFalsasOAtrasadasNoRetienenPdfVencidos()throws Exception{
         var tokens=llenarCupoConConfirmacionesPdf();
-        ejecutarSql("update p1_correo_control set vence_en=now()-interval '1 minute' where mensaje_id like 'pdf-expira-%'");
+        ejecutarSql("update correo_control set vence_en=now()-interval '1 minute' where mensaje_id like 'pdf-expira-%'");
         repo.registrarEntrada("falsa-cuenta","intruso@example.com","CONFIRMAR[\""+tokens.get(0)+"\"]");
         repo.registrarEntrada("llego-tarde","luis@example.com","CONFIRMAR[\""+tokens.get(1)+"\"]");
         repo.registrarEntrada("codigo-incorrecto","luis@example.com","CONFIRMAR[\""+"X".repeat(43)+"\"]");
         repo.registrarEntrada("parametro-extra","luis@example.com","CONFIRMAR[\""+tokens.get(2)+"\",\"extra\"]");
         repo.registrarEntrada("comando-distinto","luis@example.com","LISPER[\""+tokens.get(3)+"\"]");
-        ejecutarSql("update p1_correo_control set creado_en=now()-interval '2 minutes' where mensaje_id in('falsa-cuenta','codigo-incorrecto','parametro-extra','comando-distinto')");
+        ejecutarSql("update correo_control set creado_en=now()-interval '2 minutes' where mensaje_id in('falsa-cuenta','codigo-incorrecto','parametro-extra','comando-distinto')");
         repo.registrarEntrada("nuevo-sin-retencion-falsa","luis@example.com","INSPOST[]",List.of(pdfDeDosMiB()));
-        assertEquals(0,numero("select count(*) from p1_adjunto_correo where mensaje_id like 'pdf-expira-%'"));
-        assertEquals(1,numero("select count(*) from p1_adjunto_correo where mensaje_id='nuevo-sin-retencion-falsa'"));
+        assertEquals(0,numero("select count(*) from adjunto_correo where mensaje_id like 'pdf-expira-%'"));
+        assertEquals(1,numero("select count(*) from adjunto_correo where mensaje_id='nuevo-sin-retencion-falsa'"));
         assertFalse(confirmar("falsa-cuenta","intruso@example.com",tokens.get(0)).exito());
         assertFalse(confirmar("llego-tarde","luis@example.com",tokens.get(1)).exito());
     }
@@ -253,8 +253,8 @@ class SeguridadPostgresTest {
         assertTrue(ordenar("eva@example.com","REGMER","1","Experiencia","20","Inicial").exito());
         assertTrue(ordenar("eva@example.com","REGMER","1","experiencia","40","Correccion").exito());
         assertTrue(ordenar("eva2@example.com","REGMER","1","EXPERIENCIA","60","Segunda evaluadora").exito());
-        assertEquals(50,numero("select puntaje_meritos::int from p1_postulacion where id=1"));
-        assertEquals(3,numero("select count(*) from p1_merito"));
+        assertEquals(50,numero("select puntaje_meritos::int from postulacion where id=1"));
+        assertEquals(3,numero("select count(*) from merito"));
     }
     @Test void auditoriaNotaCeroRegistradaNoSeConfundeConEvaluacionAusente()throws Exception{
         habilitarEnsayo();
@@ -280,8 +280,8 @@ class SeguridadPostgresTest {
         assertFalse(ordenar("eva@example.com","REGMER","2","Experiencia","100","Alterar ranking cerrado").exito());
         assertFalse(ordenar("admin@example.com","HABPOS","2","INHABILITADO","Cambiar elegibles").exito());
         assertTrue(ordenar("ana@example.com","INSPOST","1","999","https://example.com/extra.pdf").cuerpo().contains("Retire primero"));
-        assertEquals(50,numero("select puntaje_final::int from p1_postulacion where id=2"));
-        assertEquals(1,numero("select count(*) from p1_postulacion where plaza_asignada"));
+        assertEquals(50,numero("select puntaje_final::int from postulacion where id=2"));
+        assertEquals(1,numero("select count(*) from postulacion where plaza_asignada"));
     }
     @Test void recorridoDeLosOchoCasosDeUsoConConfirmacionesYBaseReal()throws Exception{
         iniciarFlujo();
@@ -294,26 +294,26 @@ class SeguridadPostgresTest {
         assertTrue(ordenar("admin@example.com","HABPOS","1","HABILITADO","Cumple requisitos").exito());
         assertTrue(ordenar("eva@example.com","REGMER","1","Experiencia","80","Revisado").exito());
         assertTrue(ordenar("eva@example.com","REGEXA","1","85","Revisado").exito());
-        assertEquals(83,numero("select puntaje_final::int from p1_postulacion where id=1"));
+        assertEquals(83,numero("select puntaje_final::int from postulacion where id=1"));
         assertTrue(ordenar("admin@example.com","GENRAN","1").cuerpo().contains("Luis"));
         assertTrue(ordenar("admin@example.com","ASIPLA","1","true").exito());
         assertTrue(ordenar("admin@example.com","AUDCAL","ASIPLA","1").cuerpo().contains("admin@example.com"));
         assertTrue(ordenar("admin@example.com","REPEST","1").cuerpo().contains("GANADOR"));
         assertTrue(ordenar("atacante@example.com","AYUDA").exito());
-        assertEquals(1,numero("select count(*) from p1_expediente"));
+        assertEquals(1,numero("select count(*) from expediente"));
     }
     @Test void examenExigeHabilitacionYRetirarPlazaNoHabilitaAlRechazado()throws Exception{
         iniciarFlujo();
         assertFalse(ordenar("eva@example.com","REGEXA","1","85","Revisado").exito());
-        assertEquals(0,numero("select count(*) from p1_examen"));
+        assertEquals(0,numero("select count(*) from examen"));
         assertTrue(ordenar("admin@example.com","HABPOS","1","INHABILITADO","No cumple").exito());
         assertTrue(ordenar("admin@example.com","ASIPLA","1","false").exito());
-        assertEquals(1,numero("select count(*) from p1_postulacion where estado='INHABILITADO' and not plaza_asignada"));
+        assertEquals(1,numero("select count(*) from postulacion where estado='INHABILITADO' and not plaza_asignada"));
     }
     @Test void auditoriaReconstruyeLaCalificacionAnteriorYPosterior()throws Exception{
         iniciarFlujo();
         assertTrue(ordenar("eva@example.com","REGMER","0001","Experiencia","80","Documento revisado").exito());
-        try(var c=ds.getConnection();var s=c.createStatement();var r=s.executeQuery("select actor,detalle,entidad_id from p1_auditoria where accion='REGMER'")){
+        try(var c=ds.getConnection();var s=c.createStatement();var r=s.executeQuery("select actor,detalle,entidad_id from auditoria where accion='REGMER'")){
             assertTrue(r.next());assertEquals("eva@example.com",r.getString(1));
             assertEquals("1",r.getString(3));
             var d=new com.fasterxml.jackson.databind.ObjectMapper().readTree(r.getString(2));
@@ -324,7 +324,7 @@ class SeguridadPostgresTest {
         }
         String historial=ordenar("admin@example.com","AUDCAL","REGMER","1").cuerpo();
         assertTrue(historial.contains("Documento revisado"));assertTrue(historial.contains("posterior"));
-        ejecutarSql("update p1_auditoria set entidad_id='+0001' where accion='REGMER'");
+        ejecutarSql("update auditoria set entidad_id='+0001' where accion='REGMER'");
         String historico=ordenar("admin@example.com","AUDCAL","REGMER","0001").cuerpo();
         assertTrue(historico.contains("Documento revisado"));
     }
@@ -333,7 +333,7 @@ class SeguridadPostgresTest {
         String nombre="A".repeat(160);
         Resultado cargo=ordenar("admin@example.com","INSCAR",nombre,"Facultad","true");
         assertTrue(cargo.exito(),cargo.cuerpo());
-        assertEquals(2,numero("select count(*) from p1_cargo"));
+        assertEquals(2,numero("select count(*) from cargo"));
         Resultado altaCargo=ordenar("admin@example.com","AUDCAL","INSCAR",nombre);
         assertTrue(altaCargo.exito(),altaCargo.cuerpo());
         assertTrue(altaCargo.cuerpo().contains("admin@example.com | INSCAR"));
@@ -342,13 +342,13 @@ class SeguridadPostgresTest {
     }
     @Test void falloDeAuditoriaRevierteTambienUnaLlamadaDirecta()throws Exception{
         iniciarFlujo();
-        ejecutarSql("create function rechazar_auditoria() returns trigger language plpgsql as $$ begin raise exception 'Auditoria no disponible'; end $$; create trigger qa_auditoria before insert on p1_auditoria for each row execute function rechazar_auditoria()");
+        ejecutarSql("create function rechazar_auditoria() returns trigger language plpgsql as $$ begin raise exception 'Auditoria no disponible'; end $$; create trigger qa_auditoria before insert on auditoria for each row execute function rechazar_auditoria()");
         assertThrows(SQLException.class,()->repo.ejecutar("eva@example.com",new Orden("REGMER",List.of("1","Experiencia","80","Revisado"))));
-        assertEquals(0,numero("select count(*) from p1_merito"));
-        assertEquals(0,numero("select puntaje_final::int from p1_postulacion where id=1"));
-        ejecutarSql("drop trigger qa_auditoria on p1_auditoria");
+        assertEquals(0,numero("select count(*) from merito"));
+        assertEquals(0,numero("select puntaje_final::int from postulacion where id=1"));
+        ejecutarSql("drop trigger qa_auditoria on auditoria");
         assertTrue(ordenar("eva@example.com","REGMER","1","Experiencia","80","Revisado").exito());
-        assertEquals(1,numero("select count(*) from p1_merito"));
+        assertEquals(1,numero("select count(*) from merito"));
     }
     @Test void correosSimultaneosRecalculanLasNotasSinPerderAportes()throws Exception{
         iniciarFlujo();
@@ -364,10 +364,10 @@ class SeguridadPostgresTest {
             var b=pool.submit(()->{inicio.await();return repo.ejecutarIdempotente("nota-b","eva2@example.com",new Orden("REGEXA",List.of("1","95","Segunda")));});
             inicio.countDown();assertTrue(a.get(15,java.util.concurrent.TimeUnit.SECONDS).exito());assertTrue(b.get(15,java.util.concurrent.TimeUnit.SECONDS).exito());
         }finally{pool.shutdownNow();}
-        assertEquals(2,numero("select count(*) from p1_examen"));
-        assertEquals(90,numero("select puntaje_examen::int from p1_postulacion where id=1"));
-        assertEquals(86,numero("select puntaje_final::int from p1_postulacion where id=1"));
-        assertEquals(2,numero("select count(*) from p1_auditoria where accion='REGEXA'"));
+        assertEquals(2,numero("select count(*) from examen"));
+        assertEquals(90,numero("select puntaje_examen::int from postulacion where id=1"));
+        assertEquals(86,numero("select puntaje_final::int from postulacion where id=1"));
+        assertEquals(2,numero("select count(*) from auditoria where accion='REGEXA'"));
     }
     @Test void reintentosConcurrentesDelMismoMensajeRecuperanElMismoResultado()throws Exception{
         Orden persona=new Orden("INSPER",List.of("123","Ana","Lopez","Estudiante","33333","77777","ana@example.com"));
@@ -380,11 +380,11 @@ class SeguridadPostgresTest {
             assertTrue(primero.exito());assertEquals(primero,segundo);
         }finally{pool.shutdownNow();}
         assertEquals(1,numero("select count(*) from persona"));
-        assertEquals(1,numero("select count(*) from p1_auditoria where accion='INSPER'"));
+        assertEquals(1,numero("select count(*) from auditoria where accion='INSPER'"));
     }
     String codigo(Resultado r){var m=Pattern.compile("CONFIRMAR\\[\"([A-Za-z0-9_-]{43})\"\\]").matcher(r.cuerpo());assertTrue(m.find(),r.cuerpo());return m.group(1);}
     Resultado confirmar(String id,String correo,String token){return procesador.procesar(id,correo,new Orden("CONFIRMAR",List.of(token)));}
-    int usuarios()throws Exception{return numero("select count(*) from p1_usuario");}
+    int usuarios()throws Exception{return numero("select count(*) from usuario");}
     int numero(String sql)throws Exception{try(var c=ds.getConnection();var s=c.createStatement();var r=s.executeQuery(sql)){r.next();return r.getInt(1);}}
     void ejecutarSql(String sql)throws Exception{try(var c=ds.getConnection();var s=c.createStatement()){s.execute(sql);}}
     @Test void fromFalsificadoNoCreaDecanoHastaDemostrarAccesoAlCorreo()throws Exception{
@@ -402,12 +402,12 @@ class SeguridadPostgresTest {
         Orden cargo=new Orden("INSCAR",List.of("Ayudante","Facultad","true"));
         String token=codigo(procesador.procesar("cargo","admin@example.com",cargo));
         assertFalse(procesador.procesar("mutacion","admin@example.com",new Orden("CONFIRMAR",List.of(token,"LISUSU[\"*\"]"))).exito());
-        ejecutarSql("update p1_usuario set activo=false");
-        assertFalse(confirmar("revocado","admin@example.com",token).exito());assertEquals(0,numero("select count(*) from p1_cargo"));
+        ejecutarSql("update usuario set activo=false");
+        assertFalse(confirmar("revocado","admin@example.com",token).exito());assertEquals(0,numero("select count(*) from cargo"));
     }
     @Test void tokenVencidoNoEjecuta()throws Exception{
         String token=codigo(procesador.procesar("caduca","admin@example.com",alta()));
-        ejecutarSql("update p1_correo_control set vence_en=now()-interval '1 minute'");
+        ejecutarSql("update correo_control set vence_en=now()-interval '1 minute'");
         assertFalse(confirmar("c","admin@example.com",token).exito());assertEquals(0,usuarios());
     }
     @Test void falloDeBaseRevierteNegocioYConsumoDelCodigo()throws Exception{
@@ -415,7 +415,7 @@ class SeguridadPostgresTest {
         assertThrows(SQLException.class,()->repo.confirmarOrden("c","admin@example.com",token,(id,o)->{
             repo.ejecutarIdempotente(id,"admin@example.com",o);throw new SQLException("Corte simulado","08006");
         }));
-        assertEquals(0,usuarios());assertEquals(0,numero("select count(*) from p1_correo_control where usado"));
+        assertEquals(0,usuarios());assertEquals(0,numero("select count(*) from correo_control where usado"));
         assertTrue(confirmar("c","admin@example.com",token).exito());assertEquals(1,usuarios());
     }
     @Test void errorFuncionalNoDejaTransaccionAbortadaNiCodigoReutilizable()throws Exception{
@@ -425,31 +425,31 @@ class SeguridadPostgresTest {
         assertFalse(confirmar("otro","admin@example.com",token).exito());assertEquals(1,usuarios());
     }
     @Test void saturacionConservaOrdenYLaPromueveCuandoSeLiberaLaVentana()throws Exception{
-        ejecutarSql("insert into p1_correo_control(mensaje_id,remitente,asunto,estado,admitido_en) select 'old-'||n,'persona-'||n||'@example.com','AYUDA[]','RESPONDIDO',now() from generate_series(1,1000) n");
+        ejecutarSql("insert into correo_control(mensaje_id,remitente,asunto,estado,admitido_en) select 'old-'||n,'persona-'||n||'@example.com','AYUDA[]','RESPONDIDO',now() from generate_series(1,1000) n");
         assertEquals(RepositorioPostgres.Admision.DIFERIDO,repo.registrarEntrada("legitimo","admin@example.com","AYUDA[]"));
         assertEquals(0,repo.promoverDiferidos(25));assertFalse(repo.correoProcesado("legitimo"));
-        ejecutarSql("update p1_correo_control set admitido_en=now()-interval '2 hours' where estado='RESPONDIDO'");
+        ejecutarSql("update correo_control set admitido_en=now()-interval '2 hours' where estado='RESPONDIDO'");
         assertEquals(1,repo.promoverDiferidos(25));assertEquals("legitimo",repo.correosPendientes(25).get(0).id());
         assertEquals(RepositorioPostgres.Admision.DUPLICADO,repo.registrarEntrada("legitimo","admin@example.com","AYUDA[]"));
     }
     @Test void unRemitenteSaturadoNoBloqueaOtrosEnLaCola()throws Exception{
-        ejecutarSql("insert into p1_correo_control(mensaje_id,remitente,estado,admitido_en) select 'spam-'||n,'spam@example.com','RESPONDIDO',now() from generate_series(1,60) n");
+        ejecutarSql("insert into correo_control(mensaje_id,remitente,estado,admitido_en) select 'spam-'||n,'spam@example.com','RESPONDIDO',now() from generate_series(1,60) n");
         repo.registrarEntrada("spam-diferido","spam@example.com","AYUDA[]");repo.registrarEntrada("bueno","admin@example.com","AYUDA[]");
         assertEquals(1,repo.promoverDiferidos(25));assertEquals("bueno",repo.correosPendientes(25).get(0).id());
     }
     @Test void limiteDeColaMantieneElExcedenteEnLaBandejaYPublicosNoPidenCodigo()throws Exception{
-        ejecutarSql("insert into p1_correo_control(mensaje_id,remitente,estado) select 'pending-'||n,'spam@example.com','DIFERIDO' from generate_series(1,10000) n");
+        ejecutarSql("insert into correo_control(mensaje_id,remitente,estado) select 'pending-'||n,'spam@example.com','DIFERIDO' from generate_series(1,10000) n");
         assertEquals(RepositorioPostgres.Admision.SATURADO,repo.registrarEntrada("excedente","a@example.com","AYUDA[]"));
         assertFalse(repo.correosConocidos(List.of("excedente")).contains("excedente"));
         assertTrue(procesador.procesar("publico","atacante@example.com",new Orden("AYUDA",List.of())).exito());
     }
     @Test void confirmacionRecibidaATiempoNoVenceMientrasEstaDiferida()throws Exception{
         String token=codigo(procesador.procesar("original-cola","admin@example.com",alta()));
-        ejecutarSql("insert into p1_correo_control(mensaje_id,remitente,estado,admitido_en) select 'limite-'||n,'admin@example.com','RESPONDIDO',now() from generate_series(1,60) n");
+        ejecutarSql("insert into correo_control(mensaje_id,remitente,estado,admitido_en) select 'limite-'||n,'admin@example.com','RESPONDIDO',now() from generate_series(1,60) n");
         repo.registrarEntrada("confirmacion-cola","admin@example.com","confirmar [ \""+token+"\" ]");
         assertEquals(0,repo.promoverDiferidos(25));
-        ejecutarSql("update p1_correo_control set creado_en=now()-interval '2 hours' where mensaje_id='confirmacion-cola'");
-        ejecutarSql("update p1_correo_control set vence_en=now()-interval '1 hour'");
+        ejecutarSql("update correo_control set creado_en=now()-interval '2 hours' where mensaje_id='confirmacion-cola'");
+        ejecutarSql("update correo_control set vence_en=now()-interval '1 hour'");
         assertTrue(confirmar("confirmacion-cola","admin@example.com",token).exito());assertEquals(1,usuarios());
     }
     @Test void migracionRepetidaConservaLasOrdenesDiferidas()throws Exception{
@@ -479,24 +479,24 @@ class SeguridadPostgresTest {
         var carla=ordenar("carla@example.com","LISPOST","*");
         assertTrue(carla.exito());assertTrue(carla.cuerpo().contains("2 | AUX |"));assertFalse(carla.cuerpo().contains("1 | AUX |"));
         assertFalse(procesador.procesar("leer-roles-ajenos","luis@example.com",new Orden("LISUSU",List.of("*"))).exito());
-        assertEquals(2,numero("select count(*) from p1_postulacion"));
+        assertEquals(2,numero("select count(*) from postulacion"));
     }
     @Test void evaluadorNoCalificaOtraPostulacionAunqueConozcaSuId()throws Exception{
         iniciarFlujo();segundoPostulante();
-        ejecutarSql("delete from p1_asignacion_evaluador where postulacion_id=2");
+        ejecutarSql("delete from asignacion_evaluador where postulacion_id=2");
         assertFalse(ordenar("eva@example.com","EVAREQ","2","Identidad","true","Intento sin asignación").exito());
-        assertEquals(0,numero("select count(*) from p1_evaluacion_requisito where postulacion_id=2"));
+        assertEquals(0,numero("select count(*) from evaluacion_requisito where postulacion_id=2"));
         // Estado elegible de ensayo: el rechazo debe depender de la asignación, no solo del estado.
-        ejecutarSql("insert into p1_evaluacion_requisito(postulacion_id,requisito,cumple,evaluador_correo) values(2,'Identidad',true,'otro@example.com')");
-        ejecutarSql("update p1_postulacion set estado='HABILITADO' where id=2");
+        ejecutarSql("insert into evaluacion_requisito(postulacion_id,requisito,cumple,evaluador_correo) values(2,'Identidad',true,'otro@example.com')");
+        ejecutarSql("update postulacion set estado='HABILITADO' where id=2");
         assertFalse(ordenar("eva@example.com","REGMER","2","Experiencia","100","Intento sin asignación").exito());
         assertFalse(ordenar("eva@example.com","REGEXA","2","100","Intento sin asignación").exito());
         assertTrue(ordenar("admin@example.com","ASIOFE","1","1","1").exito());
         assertTrue(ordenar("admin@example.com","CFGARE","1","1","teoria","100").exito());
         assertFalse(ordenar("eva@example.com","REGAREA","2","teoria","100","Intento sin asignación").exito());
-        assertEquals(0,numero("select count(*) from p1_merito where postulacion_id=2"));
-        assertEquals(0,numero("select count(*) from p1_examen where postulacion_id=2"));
-        assertEquals(0,numero("select puntaje_final::int from p1_postulacion where id=2"));
+        assertEquals(0,numero("select count(*) from merito where postulacion_id=2"));
+        assertEquals(0,numero("select count(*) from examen where postulacion_id=2"));
+        assertEquals(0,numero("select puntaje_final::int from postulacion where id=2"));
         assertTrue(ordenar("eva@example.com","EVAREQ","1","Identidad","true","Asignación válida").exito());
     }
     @Test void dosConfirmacionesSimultaneasNoReutilizanUnCodigoNiDuplicanLaEscritura()throws Exception{
@@ -509,7 +509,7 @@ class SeguridadPostgresTest {
             inicio.countDown();
             var ra=a.get(20,java.util.concurrent.TimeUnit.SECONDS);var rb=b.get(20,java.util.concurrent.TimeUnit.SECONDS);
             assertNotEquals(ra.exito(),rb.exito(),"Solo una confirmación distinta puede consumir el código");
-            assertEquals(1,usuarios());assertEquals(1,numero("select count(*) from p1_auditoria where accion='INSUSU'"));
+            assertEquals(1,usuarios());assertEquals(1,numero("select count(*) from auditoria where accion='INSUSU'"));
             assertFalse(confirmar("repeticion-tercera","admin@example.com",token).exito());
             assertTrue(confirmar(ra.exito()?"confirmacion-a":"confirmacion-b","admin@example.com",token).exito());
             assertEquals(1,usuarios());
@@ -524,13 +524,13 @@ class SeguridadPostgresTest {
             var r=ordenar("luis@example.com","INSPOST","1","2",referencia);
             assertTrue(r.exito(),r.cuerpo());assertTrue(r.cuerpo().contains("referencia externa"));
             assertThrows(java.net.SocketTimeoutException.class,()->{try(var socket=servidor.accept()){fail("El servicio no debe descargar referencias de expediente");}});
-            try(var c=ds.getConnection();var s=c.prepareStatement("select ruta_archivo,contenido from p1_expediente where postulacion_id=2");var filas=s.executeQuery()) {
+            try(var c=ds.getConnection();var s=c.prepareStatement("select ruta_archivo,contenido from expediente where postulacion_id=2");var filas=s.executeQuery()) {
                 assertTrue(filas.next());assertEquals(referencia,filas.getString(1));assertNull(filas.getBytes(2));
             }
         }
     }
     @Test void categoriasTienenRankingYCuposIndependientes()throws Exception{
-        iniciarFlujo();ejecutarSql("update p1_convocatoria set plazas=2");
+        iniciarFlujo();ejecutarSql("update convocatoria set plazas=2");
         assertTrue(ordenar("admin@example.com","INSCAR","Redes","Facultad","true").exito());
         assertTrue(ordenar("admin@example.com","ASIOFE","1","1","1").exito());
         assertTrue(ordenar("admin@example.com","ASIOFE","1","2","1").exito());
@@ -542,7 +542,7 @@ class SeguridadPostgresTest {
         assertFalse(ranking.cuerpo().contains("EMPATE_PENDIENTE"));
         assertTrue(ordenar("admin@example.com","ASIPLA","1","true").exito());
         assertTrue(ordenar("admin@example.com","ASIPLA","2","true").exito());
-        assertEquals(2,numero("select count(*) from p1_postulacion where plaza_asignada"));
+        assertEquals(2,numero("select count(*) from postulacion where plaza_asignada"));
         Resultado reporte=ordenar("admin@example.com","REPEST","1");
         assertTrue(reporte.exito());assertTrue(reporte.cuerpo().contains("aporte_meritos_40"));assertTrue(reporte.cuerpo().contains("vacantes"));
         assertTrue(reporte.cuerpo().contains("GANADOR"));assertTrue(reporte.cuerpo().contains("RANKING Y EMPATES"));
@@ -566,21 +566,21 @@ class SeguridadPostgresTest {
     @Test void reporteGrandeConservaTodasLasSeccionesYElCupoReal()throws Exception{
         iniciarFlujo();
         ejecutarSql("""
-            update p1_cargo set nombre=repeat('A',155) where id=1;
-            insert into p1_usuario(registro,nombres,apellidos,rol,correo)
+            update cargo set nombre=repeat('A',155) where id=1;
+            insert into usuario(registro,nombres,apellidos,rol,correo)
                 select n::text,repeat('N',95),repeat('P',115),'POSTULANTE','p'||n||'@example.com'
                 from generate_series(10,239) n;
-            insert into p1_postulacion(convocatoria_id,postulante_id,cargo_id,estado,
+            insert into postulacion(convocatoria_id,postulante_id,cargo_id,estado,
                     puntaje_meritos,puntaje_examen,puntaje_final)
-                select 1,id,1,'HABILITADO',80,85,83 from p1_usuario where id>3;
-            insert into p1_asignacion_evaluador(postulacion_id,evaluador_id,tipo)
-                select id,2,'MERITOS_Y_EXAMEN' from p1_postulacion where id>1;
-            insert into p1_evaluacion_requisito(postulacion_id,requisito,cumple,evaluador_correo)
-                select id,'Identidad',true,'eva@example.com' from p1_postulacion where id>1;
-            insert into p1_merito(postulacion_id,criterio,puntaje,evaluador_correo)
-                select id,'Experiencia',80,'eva@example.com' from p1_postulacion where id>1;
-            insert into p1_examen(postulacion_id,puntaje,evaluador_correo)
-                select id,85,'eva@example.com' from p1_postulacion where id>1;
+                select 1,id,1,'HABILITADO',80,85,83 from usuario where id>3;
+            insert into asignacion_evaluador(postulacion_id,evaluador_id,tipo)
+                select id,2,'MERITOS_Y_EXAMEN' from postulacion where id>1;
+            insert into evaluacion_requisito(postulacion_id,requisito,cumple,evaluador_correo)
+                select id,'Identidad',true,'eva@example.com' from postulacion where id>1;
+            insert into merito(postulacion_id,criterio,puntaje,evaluador_correo)
+                select id,'Experiencia',80,'eva@example.com' from postulacion where id>1;
+            insert into examen(postulacion_id,puntaje,evaluador_correo)
+                select id,85,'eva@example.com' from postulacion where id>1;
             """);
 
         Resultado respuesta=ordenar("admin@example.com","REPEST","1");
@@ -604,18 +604,18 @@ class SeguridadPostgresTest {
             var a=pool.submit(()->{inicio.await();return repo.ejecutarIdempotente("oferta-a","admin@example.com",new Orden("ASIOFE",List.of("1","1","1")));});
             var b=pool.submit(()->{inicio.await();return repo.ejecutarIdempotente("oferta-b","admin@example.com",new Orden("ASIOFE",List.of("1","2","1")));});
             inicio.countDown();var ra=a.get(15,java.util.concurrent.TimeUnit.SECONDS);var rb=b.get(15,java.util.concurrent.TimeUnit.SECONDS);
-            assertNotEquals(ra.exito(),rb.exito());assertEquals(1,numero("select sum(plazas)::int from p1_oferta"));
+            assertNotEquals(ra.exito(),rb.exito());assertEquals(1,numero("select sum(plazas)::int from oferta"));
         }finally{pool.shutdownNow();}
     }
     @Test void empateEnElCorteNoSeResuelvePorIdYExigeDecisionAuditada()throws Exception{
         iniciarFlujo();segundoPostulante();habilitarYCalificar("1","80");habilitarYCalificar("2","80");
         assertTrue(ordenar("admin@example.com","GENRAN","1").cuerpo().contains("EMPATE_PENDIENTE"));
         assertTrue(ordenar("admin@example.com","ASIPLA","1","true").cuerpo().contains("Empate pendiente"));
-        assertEquals(0,numero("select count(*) from p1_postulacion where plaza_asignada"));
+        assertEquals(0,numero("select count(*) from postulacion where plaza_asignada"));
         assertTrue(ordenar("admin@example.com","DESEMP","1","1","2,1","Acta de autoridad ficticia número 1").exito());
         assertFalse(ordenar("admin@example.com","ASIPLA","1","true").exito());
         assertTrue(ordenar("admin@example.com","ASIPLA","2","true").exito());
-        assertEquals(1,numero("select count(*) from p1_auditoria where accion='DESEMP' and detalle like '%Acta de autoridad%'"));
+        assertEquals(1,numero("select count(*) from auditoria where accion='DESEMP' and detalle like '%Acta de autoridad%'"));
     }
     @Test void rankingDejaPendienteATodoElEmpateSiSeSumaOtroCandidato()throws Exception{
         iniciarFlujo();segundoPostulante();habilitarYCalificar("1","80");habilitarYCalificar("2","80");
@@ -656,27 +656,27 @@ class SeguridadPostgresTest {
         assertTrue(ordenar("eva@example.com","REGAREA","1","TEORÍA","50","Examen").exito());
         assertFalse(ordenar("admin@example.com","ASIPLA","1","true").exito());
         assertTrue(ordenar("eva@example.com","REGAREA","1","práctica","90","Examen").exito());
-        assertEquals(7880,numero("select (puntaje_final*100)::int from p1_postulacion where id=1"));
+        assertEquals(7880,numero("select (puntaje_final*100)::int from postulacion where id=1"));
         assertFalse(ordenar("admin@example.com","CFGARE","1","1","Práctica","60").exito());
         assertTrue(ordenar("admin@example.com","ASIPLA","1","true").exito());
         assertTrue(ordenar("admin@example.com","REPEST","1").cuerpo().contains("práctica"));
     }
     @Test void asignacionDeMeritosYExamenRespetaLaTareaIndicada()throws Exception{
         iniciarFlujo();
-        ejecutarSql("delete from p1_asignacion_evaluador");
+        ejecutarSql("delete from asignacion_evaluador");
         assertTrue(ordenar("admin@example.com","ASIEVA","1","2","MERITOS").exito());
         assertTrue(ordenar("eva@example.com","EVAREQ","1","Identidad","true","Vigente").exito());
         assertTrue(ordenar("admin@example.com","HABPOS","1","HABILITADO","Cumple").exito());
         assertFalse(ordenar("eva@example.com","REGEXA","1","95","Sin permiso de examen").exito());
         assertTrue(ordenar("eva@example.com","REGMER","1","Experiencia","80","Asignación de méritos").exito());
 
-        ejecutarSql("delete from p1_asignacion_evaluador");
+        ejecutarSql("delete from asignacion_evaluador");
         assertTrue(ordenar("admin@example.com","ASIEVA","1","2","EXAMEN").exito());
         assertFalse(ordenar("eva@example.com","REGMER","1","Experiencia","95","Sin permiso de méritos").exito());
         assertTrue(ordenar("eva@example.com","REGEXA","1","85","Asignación de examen").exito());
-        assertEquals(1,numero("select count(*) from p1_merito"));
-        assertEquals(1,numero("select count(*) from p1_examen"));
-        assertEquals(2,numero("select count(*) from p1_auditoria where accion in ('REGMER','REGEXA')"));
+        assertEquals(1,numero("select count(*) from merito"));
+        assertEquals(1,numero("select count(*) from examen"));
+        assertEquals(2,numero("select count(*) from auditoria where accion in ('REGMER','REGEXA')"));
     }
 
     @Test void asignacionAceptaUnAreaLargaConfiguradaYRechazaUnNombreInventado()throws Exception{
@@ -686,13 +686,13 @@ class SeguridadPostgresTest {
         assertTrue(ordenar("admin@example.com","CFGARE","1","1",area,"100").exito());
         assertTrue(ordenar("eva@example.com","EVAREQ","1","Identidad","true","Vigente").exito());
         assertTrue(ordenar("admin@example.com","HABPOS","1","HABILITADO","Cumple").exito());
-        ejecutarSql("delete from p1_asignacion_evaluador");
+        ejecutarSql("delete from asignacion_evaluador");
         Resultado alta=ordenar("admin@example.com","ASIEVA","1","2",area);
         assertTrue(alta.exito(),alta.cuerpo());
         assertFalse(ordenar("admin@example.com","ASIEVA","1","2","área equivocada").exito());
         assertTrue(ordenar("eva@example.com","REGAREA","1",area,"80","Evaluación realizada").exito());
-        assertEquals(1,numero("select count(*) from p1_asignacion_evaluador"));
-        assertEquals(80,numero("select puntaje_examen::int from p1_postulacion where id=1"));
+        assertEquals(1,numero("select count(*) from asignacion_evaluador"));
+        assertEquals(80,numero("select puntaje_examen::int from postulacion where id=1"));
     }
 
     @Test void nuevasOperacionesNoPermitenEscalarRolesNiCambiarElAreaAsignada()throws Exception{
@@ -704,7 +704,7 @@ class SeguridadPostgresTest {
         assertTrue(ordenar("admin@example.com","CFGARE","1","1","práctica","50").exito());
         assertTrue(ordenar("eva@example.com","EVAREQ","1","Identidad","true","Vigente").exito());
         assertTrue(ordenar("admin@example.com","HABPOS","1","HABILITADO","Cumple").exito());
-        ejecutarSql("update p1_asignacion_evaluador set tipo='teoría'");
+        ejecutarSql("update asignacion_evaluador set tipo='teoría'");
         assertFalse(ordenar("eva@example.com","REGMER","1","Experiencia","99","Solo asignada al área").exito());
         assertFalse(ordenar("eva@example.com","REGAREA","1","práctica","99","No asignada").exito());
         assertTrue(ordenar("eva@example.com","REGAREA","1","teoría","80","Asignada").exito());
@@ -714,15 +714,15 @@ class SeguridadPostgresTest {
         iniciarFlujo();assertTrue(ordenar("admin@example.com","ASIOFE","1","1","1").exito());
         assertTrue(ordenar("admin@example.com","INSCAR","Redes","Facultad","true").exito());
         assertFalse(ordenar("luis@example.com","INSPOST","1","2","https://example.com/redes.pdf").exito());
-        assertEquals(1,numero("select count(*) from p1_postulacion"));
+        assertEquals(1,numero("select count(*) from postulacion"));
         assertFalse(ordenar("admin@example.com","ASIOFE","1","2","1").exito());
     }
     @Test void nombresDeAreaConSqlSeConservanComoDatos()throws Exception{
         iniciarFlujo();assertTrue(ordenar("admin@example.com","ASIOFE","1","1","1").exito());
-        String area="redes'); drop table p1_usuario; --";
+        String area="redes'); drop table usuario; --";
         assertTrue(ordenar("admin@example.com","CFGARE","1","1",area,"100").exito());
         assertEquals(3,usuarios());
-        try(var c=ds.getConnection();var q=c.prepareStatement("select area from p1_area_examen" );var r=q.executeQuery()){
+        try(var c=ds.getConnection();var q=c.prepareStatement("select area from area_examen" );var r=q.executeQuery()){
             assertTrue(r.next());assertEquals(area,r.getString(1));
         }
         assertFalse(ordenar("admin@example.com","ASIOFE","1","1","1;drop table persona").exito());

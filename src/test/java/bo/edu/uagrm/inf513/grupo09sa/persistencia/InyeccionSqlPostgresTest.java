@@ -24,7 +24,7 @@ class InyeccionSqlPostgresTest {
         "' OR '1'='1", "x'); DROP TABLE persona; --",
         "1; SELECT pg_sleep(2); --", "x' UNION SELECT current_user --",
         "100%_\\comilla'", "José'); SELECT 1; --", "'/**/OR/**/1=1--",
-        "\"; DROP TABLE p1_usuario; --", "$$; DROP TABLE persona; --", "\\'; SELECT 1; --");
+        "\"; DROP TABLE usuario; --", "$$; DROP TABLE persona; --", "\\'; SELECT 1; --");
 
     @BeforeEach void preparar() throws Exception {
         ds=new PGSimpleDataSource(); ds.setURL(System.getenv("TEST_DB_URL"));
@@ -76,7 +76,7 @@ class InyeccionSqlPostgresTest {
     }
     @Test void identificadoresRemitentesYControlesDeAccesoNoInterpretanSql() throws Exception {
         try(var c=ds.getConnection();var s=c.createStatement()) {
-            s.execute("insert into p1_usuario(registro,nombres,apellidos,rol,telefono,correo,activo) values('1','Admin','Ficticio','DECANO','0','admin@example.com',true)");
+            s.execute("insert into usuario(registro,nombres,apellidos,rol,telefono,correo,activo) values('1','Admin','Ficticio','DECANO','0','admin@example.com',true)");
         }
         assertTrue(repo.autorizado("admin@example.com","DECANO"));
         for(int i=0;i<CARGAS.size();i++) {
@@ -106,7 +106,7 @@ class InyeccionSqlPostgresTest {
                 s.setString(1,ci);try(var r=s.executeQuery()){assertTrue(r.next());assertEquals(carga,r.getString(1));}
             }
         }
-        try(var c=ds.getConnection();var s=c.createStatement();var r=s.executeQuery("select (select count(*) from persona),(select count(*) from p1_usuario)")) {
+        try(var c=ds.getConnection();var s=c.createStatement();var r=s.executeQuery("select (select count(*) from persona),(select count(*) from usuario)")) {
             assertTrue(r.next());assertEquals(CARGAS.size(),r.getInt(1));assertEquals(0,r.getInt(2));
         }
     }
@@ -119,7 +119,7 @@ class InyeccionSqlPostgresTest {
             new Campo("REGMER",List.of("1","experiencia","50","Ensayo"),0),new Campo("REGMER",List.of("1","experiencia","50","Ensayo"),2),
             new Campo("REGEXA",List.of("1","50","Ensayo"),1),new Campo("REGAREA",List.of("1","teoria","50","Ensayo"),2),
             new Campo("GENRAN",List.of("1"),0),new Campo("REPEST",List.of("1"),0),new Campo("LISCFG",List.of("1"),0),
-            new Campo("AUDCAL",List.of("p1_postulacion","1"),1),new Campo("ASIPLA",List.of("1","true"),0),
+            new Campo("AUDCAL",List.of("postulacion","1"),1),new Campo("ASIPLA",List.of("1","true"),0),
             new Campo("DESEMP",List.of("1","1","1,2","Resolución ficticia"),2));
         var parser=new AnalizadorOrden();int intentos=0;
         for(var caso:casos)for(String carga:CARGAS) {
@@ -129,15 +129,15 @@ class InyeccionSqlPostgresTest {
             assertFalse(r.asunto().startsWith("CONFIRMACIÓN REQUERIDA"));
         }
         assertEquals(180,intentos);
-        try(var c=ds.getConnection();var s=c.createStatement();var r=s.executeQuery("select (select count(*) from p1_correo_control where token_hash is not null),(select count(*) from p1_auditoria),(select count(*) from p1_postulacion)")) {
+        try(var c=ds.getConnection();var s=c.createStatement();var r=s.executeQuery("select (select count(*) from correo_control where token_hash is not null),(select count(*) from auditoria),(select count(*) from postulacion)")) {
             assertTrue(r.next());for(int i=1;i<=3;i++)assertEquals(0,r.getInt(i));
         }
     }
     @Test void sqlPersistidoYConsultadoDeNuevoNoSeEjecutaDesdeCatalogoNiAuditoria() throws Exception {
         try(var c=ds.getConnection();var s=c.createStatement()) {
-            s.execute("insert into p1_usuario(registro,nombres,apellidos,rol,correo) values('1','Admin','Ficticio','DECANO','admin@example.com')");
+            s.execute("insert into usuario(registro,nombres,apellidos,rol,correo) values('1','Admin','Ficticio','DECANO','admin@example.com')");
         }
-        String carga="x'); DROP TABLE p1_usuario; --";
+        String carga="x'); DROP TABLE usuario; --";
         var parser=new AnalizadorOrden();
         var desafio=procesador.procesar("cargo-sql","admin@example.com",parser.analizar(asunto("INSCAR",List.of(carga,carga,"true"))));
         var token=Pattern.compile("CONFIRMAR\\[\"([A-Za-z0-9_-]{43})\"\\]").matcher(desafio.cuerpo());assertTrue(token.find());
@@ -150,7 +150,7 @@ class InyeccionSqlPostgresTest {
         var resultado=procesador.procesar("auditoria-confirmada","admin@example.com",new Orden("CONFIRMAR",List.of(segundo.group(1))));
         assertTrue(resultado.exito());assertEquals("Sin resultados.",resultado.cuerpo());
         assertTrue(repo.autorizado("admin@example.com","DECANO"));
-        try(var c=ds.getConnection();var s=c.createStatement();var r=s.executeQuery("select nombre,unidad from p1_cargo")) {
+        try(var c=ds.getConnection();var s=c.createStatement();var r=s.executeQuery("select nombre,unidad from cargo")) {
             assertTrue(r.next());assertEquals(carga,r.getString(1));assertEquals(carga,r.getString(2));assertFalse(r.next());
         }
     }

@@ -38,7 +38,7 @@ Las órdenes se escriben en el asunto de correos nuevos. Enviá `LISPER["*"]` pa
 
 Si falla temporalmente la consulta `LISPER`, el servicio prepara una respuesta de error para el remitente. Si PostgreSQL está completamente fuera de servicio, el procesamiento espera a que vuelva la cola. Las escrituras conservan sus reintentos para evitar resultados inciertos o duplicados. Revisá `logs/access.log` y `logs/error.log` en el equipo que ejecuta el JAR.
 
-En una instalación existente, ejecutá la migración en una copia y respaldá la base antes de arrancar una versión nueva. Detené el JAR anterior antes de aplicar `database/schema.sql`. La migración reúne historial, resultados y confirmaciones en `p1_correo_control` y conserva las tablas anteriores como respaldo si existen. El respaldo ejecutado antes de migrar es la referencia para una reversión.
+En una instalación existente, ejecutá la migración en una copia y respaldá la base antes de arrancar una versión nueva. Detené el JAR anterior antes de aplicar `database/schema.sql`. La migración reúne historial, resultados y confirmaciones en `correo_control` y conserva las tablas anteriores como respaldo si existen. El respaldo ejecutado antes de migrar es la referencia para una reversión.
 
 
 ## Aplicar y comprobar el esquema
@@ -50,4 +50,4 @@ java -cp dist/inf513-proyecto1-1.0.0.jar bo.edu.uagrm.inf513.grupo09sa.AplicarEs
 java -cp dist/inf513-proyecto1-1.0.0.jar bo.edu.uagrm.inf513.grupo09sa.DiagnosticoIntegridad
 ```
 
-El primer comando aplica el SQL completo en una transacción. El segundo comprueba las restricciones de la base seleccionada.
+El primer comando aplica el SQL completo en una transacción. También renombra las tablas activas de una versión anterior y se detiene si detecta una colisión de nombres. El segundo comprueba las restricciones de la base seleccionada.

@@ -28,27 +28,27 @@ class CicloCorreoPostgresTest {
     void ciclo(CorreoFalso mail)throws Exception{ciclo(mail,AntivirusPdf.desdeEntorno());}
     void ciclo(CorreoFalso mail,InspectorPdf inspector)throws Exception{new ControladorCorreo(cfg.inboundProtocol(),cfg.maxMessagesPerCycle(),cfg.retryMaxSeconds(),mail,repo,processor,new AnalizadorOrden(),inspector).ejecutarCiclo();}
     AdjuntoPdf pdf(){return new AdjuntoPdf("expediente.pdf","%PDF-1.4\n%%EOF".getBytes(java.nio.charset.StandardCharsets.US_ASCII));}
-    void postulante()throws Exception{sql("insert into p1_usuario(registro,nombres,apellidos,rol,telefono,correo,activo) values('3','Luis','Prueba','POSTULANTE','70000002','luis@example.com',true)");}
+    void postulante()throws Exception{sql("insert into usuario(registro,nombres,apellidos,rol,telefono,correo,activo) values('3','Luis','Prueba','POSTULANTE','70000002','luis@example.com',true)");}
     CorreoFalso correoPdf(){var mail=new CorreoFalso();mail.entrada.add(new MensajeEntrada("pdf-av","luis@example.com","INSPOST[\"1\",\"1\",\"ADJUNTO\"]",List.of(pdf())));return mail;}
     @Test void pdfAprobadoSeConservaAntesDePedirConfirmacion()throws Exception{
         postulante();var mail=correoPdf();var inspecciones=new java.util.concurrent.atomic.AtomicInteger();
         ciclo(mail,a->{inspecciones.incrementAndGet();return true;});ciclo(mail,a->{fail("Un correo conocido no se vuelve a analizar");return false;});
-        assertEquals(1,inspecciones.get());assertEquals(1,cantidad("p1_adjunto_correo"));assertEquals(1,cantidad("p1_correo_control where token_hash is not null"));assertEquals(0,cantidad("p1_postulacion"));
+        assertEquals(1,inspecciones.get());assertEquals(1,cantidad("adjunto_correo"));assertEquals(1,cantidad("correo_control where token_hash is not null"));assertEquals(0,cantidad("postulacion"));
     }
     @Test void pdfNoAprobadoSeRespondeSinAlmacenarNiConfirmar()throws Exception{
         postulante();var mail=correoPdf();ciclo(mail,a->false);ciclo(mail,a->false);
-        assertEquals(0,cantidad("p1_adjunto_correo"));assertEquals(0,cantidad("p1_correo_control where token_hash is not null"));
+        assertEquals(0,cantidad("adjunto_correo"));assertEquals(0,cantidad("correo_control where token_hash is not null"));
         assertTrue(mail.detalle.get("pdf-av").cuerpo().contains("antivirus no aprobó"));assertTrue(repo.correoProcesado("pdf-av"));
     }
     @Test void motorAntivirusInaccesibleNoApruebaNiBloqueaOtrosCorreos()throws Exception{
         postulante();var mail=correoPdf();mail.entrada.add(new MensajeEntrada("siguiente-av","otro@example.com","AYUDA[]"));
         InspectorPdf caido=a->{throw new java.io.IOException("Fallo de motor simulado");};ciclo(mail,caido);ciclo(mail,caido);
-        assertEquals(0,cantidad("p1_adjunto_correo"));assertEquals(0,cantidad("p1_correo_control where token_hash is not null"));
+        assertEquals(0,cantidad("adjunto_correo"));assertEquals(0,cantidad("correo_control where token_hash is not null"));
         assertTrue(mail.detalle.get("pdf-av").cuerpo().contains("no estuvo disponible"));assertTrue(repo.correoProcesado("siguiente-av"));
     }
     @Test void remitenteSinRolNoConsumeElProcesoAntivirus()throws Exception{
         var mail=correoPdf();ciclo(mail,a->{fail("No debe analizar un PDF sin rol");return false;});ciclo(mail,a->true);
-        assertEquals(0,cantidad("p1_adjunto_correo"));assertTrue(mail.detalle.get("pdf-av").cuerpo().contains("rol requerido"));
+        assertEquals(0,cantidad("adjunto_correo"));assertTrue(mail.detalle.get("pdf-av").cuerpo().contains("rol requerido"));
     }
     @Test void cupoPdfAgotadoNoRetieneLaPrimeraPaginaDeLaBandeja()throws Exception{
         postulante();byte[] bytes=new byte[2*1024*1024];System.arraycopy("%PDF-".getBytes(java.nio.charset.StandardCharsets.US_ASCII),0,bytes,0,5);
@@ -60,7 +60,7 @@ class CicloCorreoPostgresTest {
         mail.entrada.add(new MensajeEntrada("legitimo-detras","otro@example.com","AYUDA[]"));
         for(int i=0;i<4;i++)ciclo(mail,a->true);
         assertTrue(repo.correoProcesado("legitimo-detras"));assertTrue(mail.detalle.get("exceso-a").cuerpo().contains("cupo temporal"));
-        assertEquals(4,cantidad("p1_adjunto_correo"));
+        assertEquals(4,cantidad("adjunto_correo"));
     }
     Respuesta enviar(CorreoFalso mail,String remitente,String asunto,List<AdjuntoPdf> adjuntos)throws Exception{
         String id="ensayo-"+UUID.randomUUID();mail.entrada.add(new MensajeEntrada(id,remitente,asunto,adjuntos));
@@ -100,12 +100,12 @@ class CicloCorreoPostgresTest {
         assertTrue(enviar(mail,"intruso@example.com","AUDCAL[\"ASIPLA\",\"1\"]",List.of()).cuerpo().contains("rol requerido"));
         orden(mail,"ensayo@example.com","INSPER","990900137","Ana","Ensayo","Estudiante",
                 "3330000","70000137","persona@example.com");
-        assertEquals(1,cantidad("p1_auditoria a join p1_postulacion p on p.id=a.postulacion_id " +
-                "join p1_correo_control c on c.mensaje_id=a.mensaje_id " +
-                "join p1_buzon b on b.protocolo=c.buzon_protocolo where a.accion='INSPOST' and b.protocolo='imap'"));
-        assertEquals(1,cantidad("p1_auditoria a join persona p on p.ci=a.persona_ci " +
-                "join p1_correo_control c on c.mensaje_id=a.mensaje_id where a.accion='INSPER' and p.ci='990900137'"));
-        assertEquals(1,cantidad("p1_expediente"));assertEquals(0,repo.correosPendientes(100).size());
+        assertEquals(1,cantidad("auditoria a join postulacion p on p.id=a.postulacion_id " +
+                "join correo_control c on c.mensaje_id=a.mensaje_id " +
+                "join buzon b on b.protocolo=c.buzon_protocolo where a.accion='INSPOST' and b.protocolo='imap'"));
+        assertEquals(1,cantidad("auditoria a join persona p on p.ci=a.persona_ci " +
+                "join correo_control c on c.mensaje_id=a.mensaje_id where a.accion='INSPER' and p.ci='990900137'"));
+        assertEquals(1,cantidad("expediente"));assertEquals(0,repo.correosPendientes(100).size());
     }
     @Test void noRespondeASusRespuestasNiReenviaLasQueYaEstabanEnCola()throws Exception{
         var mail=new CorreoFalso();
@@ -122,7 +122,7 @@ class CicloCorreoPostgresTest {
     @Test void respondeConLaCausaDelRechazoDelPdf()throws Exception {
         var mail=new CorreoFalso();mail.entrada.add(new MensajeEntrada("pdf-malo","a@example.com","ADJUNTO_RECHAZADO: Nombre de PDF inválido"));
         ciclo(mail);
-        try(var c=ds.getConnection();var s=c.createStatement();var r=s.executeQuery("select respuesta_cuerpo from p1_correo_control where mensaje_id='pdf-malo'")){
+        try(var c=ds.getConnection();var s=c.createStatement();var r=s.executeQuery("select respuesta_cuerpo from correo_control where mensaje_id='pdf-malo'")){
             assertTrue(r.next());assertEquals("Nombre de PDF inválido",r.getString(1));
         }
     }
@@ -153,10 +153,10 @@ class CicloCorreoPostgresTest {
     }
     @Test void envioFallidoConservaRespuestaYNoDuplicaElResultado()throws Exception{
         var mail=new CorreoFalso();mail.entrada.add(new MensajeEntrada("uno","a@example.com","LISCON[\"*\"]"));
-        ciclo(mail);assertEquals(1,cantidad("p1_correo_control where resultado_exito is not null"));assertTrue(mail.marcados.contains("uno"));
-        mail.fallaEnvio=true;ciclo(mail);assertFalse(repo.correoProcesado("uno"));assertEquals(1,cantidad("p1_correo_control"));
-        sql("update p1_correo_control set siguiente_intento=now()");mail.fallaEnvio=false;ciclo(mail);
-        assertTrue(repo.correoProcesado("uno"));assertEquals(1,mail.respuestas.size());assertEquals(1,cantidad("p1_correo_control where resultado_exito is not null"));assertEquals(3,mail.liberaciones);
+        ciclo(mail);assertEquals(1,cantidad("correo_control where resultado_exito is not null"));assertTrue(mail.marcados.contains("uno"));
+        mail.fallaEnvio=true;ciclo(mail);assertFalse(repo.correoProcesado("uno"));assertEquals(1,cantidad("correo_control"));
+        sql("update correo_control set siguiente_intento=now()");mail.fallaEnvio=false;ciclo(mail);
+        assertTrue(repo.correoProcesado("uno"));assertEquals(1,mail.respuestas.size());assertEquals(1,cantidad("correo_control where resultado_exito is not null"));assertEquals(3,mail.liberaciones);
     }
     @Test void errorEnUnMensajeNoBloqueaElSiguiente()throws Exception{
         var mail=new CorreoFalso();mail.entrada.add(new MensajeEntrada("malo","a@example.com","AYUDA["));mail.entrada.add(new MensajeEntrada("bueno","a@example.com","AYUDA[]"));
@@ -167,7 +167,7 @@ class CicloCorreoPostgresTest {
     }
     @Test void errorAlMarcarLeidoNoPierdeLaOrdenGuardada()throws Exception{
         var mail=new CorreoFalso();mail.fallaMarca=true;mail.entrada.add(new MensajeEntrada("persistido","a@example.com","AYUDA[]"));
-        ciclo(mail);assertEquals(1,cantidad("p1_correo_control"));mail.fallaMarca=false;ciclo(mail);assertTrue(repo.correoProcesado("persistido"));assertEquals(1,mail.respuestas.size());
+        ciclo(mail);assertEquals(1,cantidad("correo_control"));mail.fallaMarca=false;ciclo(mail);assertTrue(repo.correoProcesado("persistido"));assertEquals(1,mail.respuestas.size());
     }
     @Test void errorAlMarcarDespuesDelEnvioNoProgramaUnReintento() throws Exception {
         var mail = new CorreoFalso();
@@ -178,7 +178,7 @@ class CicloCorreoPostgresTest {
         ciclo(mail);
         assertTrue(repo.correoProcesado("envio-ok"));
         assertEquals(List.of("envio-ok"), mail.respuestas);
-        assertEquals(1, cantidad("p1_correo_control where intentos=0 and ultimo_error is null"));
+        assertEquals(1, cantidad("correo_control where intentos=0 and ultimo_error is null"));
     }
 
     @Test void conservaElCodigoDuranteLaCaidaYDaTiempoParaConfirmarAlEntregarlo() throws Exception {
@@ -189,26 +189,26 @@ class CicloCorreoPostgresTest {
         String pendiente = cuerpoRespuesta("reto");
         var codigo = java.util.regex.Pattern.compile("CONFIRMAR\\[\"[A-Za-z0-9_-]{43}\"\\]").matcher(pendiente);
         assertTrue(codigo.find());
-        sql("update p1_correo_control set vence_en=now()-interval '1 minute' where mensaje_id='reto'");
+        sql("update correo_control set vence_en=now()-interval '1 minute' where mensaje_id='reto'");
         mail.fallaEnvio = true;
         ciclo(mail);
         assertEquals(pendiente, cuerpoRespuesta("reto"));
-        assertEquals(1, cantidad("p1_correo_control where token_hash is not null and mensaje_id='reto' and vence_en<now()"));
-        sql("update p1_correo_control set siguiente_intento=now()");
+        assertEquals(1, cantidad("correo_control where token_hash is not null and mensaje_id='reto' and vence_en<now()"));
+        sql("update correo_control set siguiente_intento=now()");
         mail.fallaEnvio = false;
         ciclo(mail);
         assertEquals(pendiente, mail.detalle.get("reto").cuerpo());
         assertTrue(cuerpoRespuesta("reto").contains("CONFIRMAR[\"[OCULTO]\"]"));
         assertFalse(cuerpoRespuesta("reto").matches("(?s).*CONFIRMAR\\[\"[A-Za-z0-9_-]{43}\"\\].*"));
-        assertEquals(1, cantidad("p1_correo_control where mensaje_id='reto' and vence_en=actualizado_en+interval '30 minutes'"));
+        assertEquals(1, cantidad("correo_control where mensaje_id='reto' and vence_en=actualizado_en+interval '30 minutes'"));
         var confirmacion = enviar(mail, "admin@example.com", codigo.group(), List.of());
         assertEquals("ÉXITO - Orden procesada", confirmacion.asunto(), confirmacion.cuerpo());
-        assertEquals(1, cantidad("p1_usuario where correo='admin@example.com'"));
+        assertEquals(1, cantidad("usuario where correo='admin@example.com'"));
     }
 
     private String cuerpoRespuesta(String id) throws Exception {
         try (var c = ds.getConnection();
-             var q = c.prepareStatement("select respuesta_cuerpo from p1_correo_control where mensaje_id=?")) {
+             var q = c.prepareStatement("select respuesta_cuerpo from correo_control where mensaje_id=?")) {
             q.setString(1, id);
             try (var resultado = q.executeQuery()) {
                 assertTrue(resultado.next());

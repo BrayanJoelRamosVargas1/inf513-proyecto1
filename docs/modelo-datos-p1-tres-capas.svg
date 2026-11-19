@@ -26,234 +26,234 @@
 <path fill="#f8fafc" stroke="#fae6c8" d="M264.52,-973C264.52,-973 507.66,-973 507.66,-973 513.66,-973 519.66,-979 519.66,-985 519.66,-985 519.66,-1110 519.66,-1110 519.66,-1116 513.66,-1122 507.66,-1122 507.66,-1122 264.52,-1122 264.52,-1122 258.52,-1122 252.52,-1116 252.52,-1110 252.52,-1110 252.52,-985 252.52,-985 252.52,-979 258.52,-973 264.52,-973"/>
 <text xml:space="preserve" text-anchor="middle" x="341.68" y="-1105.4" font-family="DejaVu Sans" font-size="14.00" fill="#6e4d26">Ejemplo de la consigna</text>
 </g>
-<!-- p1_usuario -->
+<!-- usuario -->
 <g id="node1" class="node">
-<title>p1_usuario</title>
+<title>usuario</title>
 <polygon fill="white" stroke="none" points="669.04,-743 669.04,-823 826.26,-823 826.26,-743 669.04,-743"/>
 <polygon fill="none" stroke="#d6e5f8" points="669.04,-743 669.04,-823 826.26,-823 826.26,-743 669.04,-743"/>
 <polygon fill="#d6e5f8" stroke="none" points="670.04,-794.4 670.04,-822 825.26,-822 825.26,-794.4 670.04,-794.4"/>
-<text xml:space="preserve" text-anchor="start" x="676.04" y="-805.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">p1_usuario</text>
+<text xml:space="preserve" text-anchor="start" x="676.04" y="-805.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">usuario</text>
 <text xml:space="preserve" text-anchor="start" x="676.04" y="-777.4" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">PK id · UQ registro/correo</text>
 <text xml:space="preserve" text-anchor="start" x="676.04" y="-752.2" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">Rol y cuenta autorizada</text>
 </g>
-<!-- p1_convocatoria -->
+<!-- convocatoria -->
 <g id="node2" class="node">
-<title>p1_convocatoria</title>
+<title>convocatoria</title>
 <polygon fill="white" stroke="none" points="660.59,-555 660.59,-635 834.71,-635 834.71,-555 660.59,-555"/>
 <polygon fill="none" stroke="#d6e5f8" points="660.59,-555 660.59,-635 834.71,-635 834.71,-555 660.59,-555"/>
 <polygon fill="#d6e5f8" stroke="none" points="661.59,-606.4 661.59,-634 833.71,-634 833.71,-606.4 661.59,-606.4"/>
-<text xml:space="preserve" text-anchor="start" x="667.59" y="-617.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">p1_convocatoria</text>
+<text xml:space="preserve" text-anchor="start" x="667.59" y="-617.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">convocatoria</text>
 <text xml:space="preserve" text-anchor="start" x="667.59" y="-589.4" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">PK id · UQ codigo</text>
 <text xml:space="preserve" text-anchor="start" x="667.59" y="-564.2" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">Fechas, estado y cupo global</text>
 </g>
-<!-- p1_cargo -->
+<!-- cargo -->
 <g id="node3" class="node">
-<title>p1_cargo</title>
+<title>cargo</title>
 <polygon fill="white" stroke="none" points="670.94,-459 670.94,-539 824.36,-539 824.36,-459 670.94,-459"/>
 <polygon fill="none" stroke="#d6e5f8" points="670.94,-459 670.94,-539 824.36,-539 824.36,-459 670.94,-459"/>
 <polygon fill="#d6e5f8" stroke="none" points="671.94,-510.4 671.94,-538 823.36,-538 823.36,-510.4 671.94,-510.4"/>
-<text xml:space="preserve" text-anchor="start" x="677.94" y="-521.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">p1_cargo</text>
+<text xml:space="preserve" text-anchor="start" x="677.94" y="-521.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">cargo</text>
 <text xml:space="preserve" text-anchor="start" x="677.94" y="-493.4" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">PK id</text>
 <text xml:space="preserve" text-anchor="start" x="677.94" y="-468.2" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">Nombre, unidad y estado</text>
 </g>
-<!-- p1_oferta -->
+<!-- oferta -->
 <g id="node4" class="node">
-<title>p1_oferta</title>
+<title>oferta</title>
 <polygon fill="white" stroke="none" points="291.68,-453 291.68,-533 480.5,-533 480.5,-453 291.68,-453"/>
 <polygon fill="none" stroke="#d6e5f8" points="291.68,-453 291.68,-533 480.5,-533 480.5,-453 291.68,-453"/>
 <polygon fill="#d6e5f8" stroke="none" points="292.68,-504.4 292.68,-532 479.5,-532 479.5,-504.4 292.68,-504.4"/>
-<text xml:space="preserve" text-anchor="start" x="298.68" y="-515.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">p1_oferta</text>
+<text xml:space="preserve" text-anchor="start" x="298.68" y="-515.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">oferta</text>
 <text xml:space="preserve" text-anchor="start" x="298.68" y="-487.4" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">PK/FK convocatoria_id, cargo_id</text>
 <text xml:space="preserve" text-anchor="start" x="298.68" y="-462.2" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">Cupo por cargo</text>
 </g>
-<!-- p1_oferta&#45;&gt;p1_convocatoria -->
+<!-- oferta&#45;&gt;convocatoria -->
 <g id="edge15" class="edge">
-<title>p1_oferta&#45;&gt;p1_convocatoria</title>
+<title>oferta&#45;&gt;convocatoria</title>
 <path fill="none" stroke="#42566e" stroke-width="1.15" d="M480.48,-526.09C509.19,-536.22 534.23,-545 537.66,-546 575.06,-556.93 616.77,-567.11 653.04,-575.32"/>
 <polygon fill="#42566e" stroke="#42566e" stroke-width="1.15" points="652.15,-577.46 658.99,-576.66 653.15,-573.02 652.15,-577.46"/>
 </g>
-<!-- p1_oferta&#45;&gt;p1_cargo -->
+<!-- oferta&#45;&gt;cargo -->
 <g id="edge14" class="edge">
-<title>p1_oferta&#45;&gt;p1_cargo</title>
+<title>oferta&#45;&gt;cargo</title>
 <path fill="none" stroke="#42566e" stroke-width="1.15" d="M480.15,-494.55C536.77,-495.5 608.49,-496.69 663.26,-497.61"/>
 <polygon fill="#42566e" stroke="#42566e" stroke-width="1.15" points="662.93,-499.88 669.47,-497.71 663.01,-495.33 662.93,-499.88"/>
 </g>
-<!-- p1_area_examen -->
+<!-- area_examen -->
 <g id="node5" class="node">
-<title>p1_area_examen</title>
+<title>area_examen</title>
 <polygon fill="white" stroke="none" points="30.59,-187 30.59,-267 233.93,-267 233.93,-187 30.59,-187"/>
 <polygon fill="none" stroke="#d6e5f8" points="30.59,-187 30.59,-267 233.93,-267 233.93,-187 30.59,-187"/>
 <polygon fill="#d6e5f8" stroke="none" points="31.59,-238.4 31.59,-266 232.93,-266 232.93,-238.4 31.59,-238.4"/>
-<text xml:space="preserve" text-anchor="start" x="37.59" y="-249.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">p1_area_examen</text>
+<text xml:space="preserve" text-anchor="start" x="37.59" y="-249.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">area_examen</text>
 <text xml:space="preserve" text-anchor="start" x="37.59" y="-221.4" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">PK convocatoria_id, cargo_id, area</text>
 <text xml:space="preserve" text-anchor="start" x="37.59" y="-196.2" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">FK compuesta a oferta · peso</text>
 </g>
-<!-- p1_area_examen&#45;&gt;p1_oferta -->
+<!-- area_examen&#45;&gt;oferta -->
 <g id="edge2" class="edge">
-<title>p1_area_examen&#45;&gt;p1_oferta</title>
+<title>area_examen&#45;&gt;oferta</title>
 <path fill="none" stroke="#42566e" stroke-width="1.15" d="M225.22,-266.81C228.45,-269.1 231.56,-271.5 234.52,-274 291.68,-322.29 336.85,-397.29 362.27,-445.77"/>
 <polygon fill="#42566e" stroke="#42566e" stroke-width="1.15" points="360.22,-446.75 365.23,-451.48 364.26,-444.66 360.22,-446.75"/>
 </g>
-<!-- p1_postulacion -->
+<!-- postulacion -->
 <g id="node6" class="node">
-<title>p1_postulacion</title>
+<title>postulacion</title>
 <polygon fill="white" stroke="none" points="279.95,-546.4 279.95,-651.6 492.23,-651.6 492.23,-546.4 279.95,-546.4"/>
 <polygon fill="none" stroke="#d6e5f8" points="279.95,-546.4 279.95,-651.6 492.23,-651.6 492.23,-546.4 279.95,-546.4"/>
 <polygon fill="#d6e5f8" stroke="none" points="280.95,-623 280.95,-650.6 491.23,-650.6 491.23,-623 280.95,-623"/>
-<text xml:space="preserve" text-anchor="start" x="286.95" y="-633.9" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">p1_postulacion</text>
+<text xml:space="preserve" text-anchor="start" x="286.95" y="-633.9" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">postulacion</text>
 <text xml:space="preserve" text-anchor="start" x="286.95" y="-606" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">PK id</text>
 <text xml:space="preserve" text-anchor="start" x="286.95" y="-580.8" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">FK convocatoria, postulante y cargo</text>
 <text xml:space="preserve" text-anchor="start" x="286.95" y="-555.6" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">Estado, notas y plaza</text>
 </g>
-<!-- p1_postulacion&#45;&gt;p1_usuario -->
+<!-- postulacion&#45;&gt;usuario -->
 <g id="edge18" class="edge">
-<title>p1_postulacion&#45;&gt;p1_usuario</title>
+<title>postulacion&#45;&gt;usuario</title>
 <path fill="none" stroke="#42566e" stroke-width="1.15" d="M489.64,-651.48C544.16,-679.38 610.38,-713.26 661.94,-739.65"/>
 <polygon fill="#42566e" stroke="#42566e" stroke-width="1.15" points="660.75,-741.6 667.57,-742.53 662.82,-737.55 660.75,-741.6"/>
 </g>
-<!-- p1_postulacion&#45;&gt;p1_convocatoria -->
+<!-- postulacion&#45;&gt;convocatoria -->
 <g id="edge17" class="edge">
-<title>p1_postulacion&#45;&gt;p1_convocatoria</title>
+<title>postulacion&#45;&gt;convocatoria</title>
 <path fill="none" stroke="#42566e" stroke-width="1.15" d="M492.06,-597.83C542.81,-597.27 603.25,-596.6 652.51,-596.05"/>
 <polygon fill="#42566e" stroke="#42566e" stroke-width="1.15" points="652.41,-598.32 658.88,-595.98 652.36,-593.77 652.41,-598.32"/>
 </g>
-<!-- p1_postulacion&#45;&gt;p1_cargo -->
+<!-- postulacion&#45;&gt;cargo -->
 <g id="edge16" class="edge">
-<title>p1_postulacion&#45;&gt;p1_cargo</title>
+<title>postulacion&#45;&gt;cargo</title>
 <path fill="none" stroke="#42566e" stroke-width="1.15" d="M492.03,-562.87C507.28,-558 522.82,-553.23 537.66,-549 578.86,-537.25 625.16,-525.98 663.68,-517.13"/>
 <polygon fill="#42566e" stroke="#42566e" stroke-width="1.15" points="663.75,-519.44 669.58,-515.78 662.74,-515.01 663.75,-519.44"/>
 </g>
-<!-- p1_expediente -->
+<!-- expediente -->
 <g id="node7" class="node">
-<title>p1_expediente</title>
+<title>expediente</title>
 <polygon fill="white" stroke="none" points="56.62,-373 56.62,-453 207.9,-453 207.9,-373 56.62,-373"/>
 <polygon fill="none" stroke="#d6e5f8" points="56.62,-373 56.62,-453 207.9,-453 207.9,-373 56.62,-373"/>
 <polygon fill="#d6e5f8" stroke="none" points="57.62,-424.4 57.62,-452 206.9,-452 206.9,-424.4 57.62,-424.4"/>
-<text xml:space="preserve" text-anchor="start" x="63.62" y="-435.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">p1_expediente</text>
+<text xml:space="preserve" text-anchor="start" x="63.62" y="-435.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">expediente</text>
 <text xml:space="preserve" text-anchor="start" x="63.62" y="-407.4" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">PK id · FK postulacion_id</text>
 <text xml:space="preserve" text-anchor="start" x="63.62" y="-382.2" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">PDF, nombre y SHA&#45;256</text>
 </g>
-<!-- p1_expediente&#45;&gt;p1_postulacion -->
+<!-- expediente&#45;&gt;postulacion -->
 <g id="edge12" class="edge">
-<title>p1_expediente&#45;&gt;p1_postulacion</title>
+<title>expediente&#45;&gt;postulacion</title>
 <path fill="none" stroke="#42566e" stroke-width="1.15" d="M207.86,-437.7C217.94,-443.68 227.28,-451.02 234.52,-460 257.4,-488.37 229.42,-511.82 252.52,-540 258.57,-547.38 265.74,-553.87 273.55,-559.57"/>
 <polygon fill="#42566e" stroke="#42566e" stroke-width="1.15" points="272.18,-561.39 278.83,-563.19 274.75,-557.63 272.18,-561.39"/>
 </g>
-<!-- p1_evaluacion_requisito -->
+<!-- evaluacion_requisito -->
 <g id="node8" class="node">
-<title>p1_evaluacion_requisito</title>
-<polygon fill="white" stroke="none" points="37.35,-466 37.35,-546 227.18,-546 227.18,-466 37.35,-466"/>
-<polygon fill="none" stroke="#d6e5f8" points="37.35,-466 37.35,-546 227.18,-546 227.18,-466 37.35,-466"/>
-<polygon fill="#d6e5f8" stroke="none" points="38.35,-517.4 38.35,-545 226.18,-545 226.18,-517.4 38.35,-517.4"/>
-<text xml:space="preserve" text-anchor="start" x="44.35" y="-528.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">p1_evaluacion_requisito</text>
-<text xml:space="preserve" text-anchor="start" x="44.35" y="-500.4" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">PK id · FK postulacion_id</text>
-<text xml:space="preserve" text-anchor="start" x="44.35" y="-475.2" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">Cumplimiento y evaluador</text>
+<title>evaluacion_requisito</title>
+<polygon fill="white" stroke="none" points="49.77,-466 49.77,-546 214.75,-546 214.75,-466 49.77,-466"/>
+<polygon fill="none" stroke="#d6e5f8" points="49.77,-466 49.77,-546 214.75,-546 214.75,-466 49.77,-466"/>
+<polygon fill="#d6e5f8" stroke="none" points="50.77,-517.4 50.77,-545 213.75,-545 213.75,-517.4 50.77,-517.4"/>
+<text xml:space="preserve" text-anchor="start" x="56.77" y="-528.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">evaluacion_requisito</text>
+<text xml:space="preserve" text-anchor="start" x="56.77" y="-500.4" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">PK id · FK postulacion_id</text>
+<text xml:space="preserve" text-anchor="start" x="56.77" y="-475.2" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">Cumplimiento y evaluador</text>
 </g>
-<!-- p1_evaluacion_requisito&#45;&gt;p1_postulacion -->
+<!-- evaluacion_requisito&#45;&gt;postulacion -->
 <g id="edge10" class="edge">
-<title>p1_evaluacion_requisito&#45;&gt;p1_postulacion</title>
-<path fill="none" stroke="#42566e" stroke-width="1.15" d="M227.03,-540.63C241.94,-546.13 257.48,-551.87 272.76,-557.52"/>
-<polygon fill="#42566e" stroke="#42566e" stroke-width="1.15" points="271.71,-559.55 278.6,-559.67 273.29,-555.29 271.71,-559.55"/>
+<title>evaluacion_requisito&#45;&gt;postulacion</title>
+<path fill="none" stroke="#42566e" stroke-width="1.15" d="M214.68,-536.07C233.07,-542.86 252.92,-550.19 272.35,-557.36"/>
+<polygon fill="#42566e" stroke="#42566e" stroke-width="1.15" points="271.54,-559.49 278.42,-559.61 273.11,-555.22 271.54,-559.49"/>
 </g>
-<!-- p1_merito -->
+<!-- merito -->
 <g id="node9" class="node">
-<title>p1_merito</title>
+<title>merito</title>
 <polygon fill="white" stroke="none" points="56.62,-559 56.62,-639 207.9,-639 207.9,-559 56.62,-559"/>
 <polygon fill="none" stroke="#d6e5f8" points="56.62,-559 56.62,-639 207.9,-639 207.9,-559 56.62,-559"/>
 <polygon fill="#d6e5f8" stroke="none" points="57.62,-610.4 57.62,-638 206.9,-638 206.9,-610.4 57.62,-610.4"/>
-<text xml:space="preserve" text-anchor="start" x="63.62" y="-621.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">p1_merito</text>
+<text xml:space="preserve" text-anchor="start" x="63.62" y="-621.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">merito</text>
 <text xml:space="preserve" text-anchor="start" x="63.62" y="-593.4" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">PK id · FK postulacion_id</text>
 <text xml:space="preserve" text-anchor="start" x="63.62" y="-568.2" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">Criterio y puntaje</text>
 </g>
-<!-- p1_merito&#45;&gt;p1_postulacion -->
+<!-- merito&#45;&gt;postulacion -->
 <g id="edge13" class="edge">
-<title>p1_merito&#45;&gt;p1_postulacion</title>
+<title>merito&#45;&gt;postulacion</title>
 <path fill="none" stroke="#42566e" stroke-width="1.15" d="M207.8,-599C227.95,-599 250.22,-599 271.97,-599"/>
 <polygon fill="#42566e" stroke="#42566e" stroke-width="1.15" points="271.72,-601.28 278.22,-599 271.72,-596.73 271.72,-601.28"/>
 </g>
-<!-- p1_examen -->
+<!-- examen -->
 <g id="node10" class="node">
-<title>p1_examen</title>
+<title>examen</title>
 <polygon fill="white" stroke="none" points="56.62,-652 56.62,-732 207.9,-732 207.9,-652 56.62,-652"/>
 <polygon fill="none" stroke="#d6e5f8" points="56.62,-652 56.62,-732 207.9,-732 207.9,-652 56.62,-652"/>
 <polygon fill="#d6e5f8" stroke="none" points="57.62,-703.4 57.62,-731 206.9,-731 206.9,-703.4 57.62,-703.4"/>
-<text xml:space="preserve" text-anchor="start" x="63.62" y="-714.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">p1_examen</text>
+<text xml:space="preserve" text-anchor="start" x="63.62" y="-714.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">examen</text>
 <text xml:space="preserve" text-anchor="start" x="63.62" y="-686.4" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">PK id · FK postulacion_id</text>
 <text xml:space="preserve" text-anchor="start" x="63.62" y="-661.2" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">Puntaje y área</text>
 </g>
-<!-- p1_examen&#45;&gt;p1_postulacion -->
+<!-- examen&#45;&gt;postulacion -->
 <g id="edge11" class="edge">
-<title>p1_examen&#45;&gt;p1_postulacion</title>
+<title>examen&#45;&gt;postulacion</title>
 <path fill="none" stroke="#42566e" stroke-width="1.15" d="M207.8,-664.47C228.04,-657 250.41,-648.74 272.26,-640.67"/>
 <polygon fill="#42566e" stroke="#42566e" stroke-width="1.15" points="273.02,-642.81 278.33,-638.43 271.44,-638.55 273.02,-642.81"/>
 </g>
-<!-- p1_desempate -->
+<!-- desempate -->
 <g id="node11" class="node">
-<title>p1_desempate</title>
+<title>desempate</title>
 <polygon fill="white" stroke="none" points="60.94,-280 60.94,-360 203.58,-360 203.58,-280 60.94,-280"/>
 <polygon fill="none" stroke="#d6e5f8" points="60.94,-280 60.94,-360 203.58,-360 203.58,-280 60.94,-280"/>
 <polygon fill="#d6e5f8" stroke="none" points="61.94,-331.4 61.94,-359 202.58,-359 202.58,-331.4 61.94,-331.4"/>
-<text xml:space="preserve" text-anchor="start" x="67.94" y="-342.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">p1_desempate</text>
+<text xml:space="preserve" text-anchor="start" x="67.94" y="-342.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">desempate</text>
 <text xml:space="preserve" text-anchor="start" x="67.94" y="-314.4" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">PK/FK postulacion_id</text>
 <text xml:space="preserve" text-anchor="start" x="67.94" y="-289.2" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">Prioridad y justificación</text>
 </g>
-<!-- p1_desempate&#45;&gt;p1_postulacion -->
+<!-- desempate&#45;&gt;postulacion -->
 <g id="edge9" class="edge">
-<title>p1_desempate&#45;&gt;p1_postulacion</title>
+<title>desempate&#45;&gt;postulacion</title>
 <path fill="none" stroke="#42566e" stroke-width="1.15" d="M203.47,-340.89C215.5,-347.44 226.64,-355.96 234.52,-367 279.44,-429.92 207.11,-477.44 252.52,-540 258.42,-548.12 265.69,-555.15 273.77,-561.22"/>
 <polygon fill="#42566e" stroke="#42566e" stroke-width="1.15" points="272.05,-562.79 278.67,-564.67 274.67,-559.07 272.05,-562.79"/>
 </g>
-<!-- p1_asignacion_evaluador -->
+<!-- asignacion_evaluador -->
 <g id="node12" class="node">
-<title>p1_asignacion_evaluador</title>
+<title>asignacion_evaluador</title>
 <polygon fill="white" stroke="none" points="30,-838 30,-918 234.52,-918 234.52,-838 30,-838"/>
 <polygon fill="none" stroke="#d6e5f8" points="30,-838 30,-918 234.52,-918 234.52,-838 30,-838"/>
 <polygon fill="#d6e5f8" stroke="none" points="31,-889.4 31,-917 233.52,-917 233.52,-889.4 31,-889.4"/>
-<text xml:space="preserve" text-anchor="start" x="37" y="-900.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">p1_asignacion_evaluador</text>
+<text xml:space="preserve" text-anchor="start" x="37" y="-900.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">asignacion_evaluador</text>
 <text xml:space="preserve" text-anchor="start" x="37" y="-872.4" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">PK id · FK postulación y evaluador</text>
 <text xml:space="preserve" text-anchor="start" x="37" y="-847.2" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">Tipo de evaluación</text>
 </g>
-<!-- p1_asignacion_evaluador&#45;&gt;p1_usuario -->
+<!-- asignacion_evaluador&#45;&gt;usuario -->
 <g id="edge4" class="edge">
-<title>p1_asignacion_evaluador&#45;&gt;p1_usuario</title>
+<title>asignacion_evaluador&#45;&gt;usuario</title>
 <path fill="none" stroke="#42566e" stroke-width="1.15" d="M234.21,-862.37C353.43,-843.9 549.65,-813.51 661.52,-796.19"/>
 <polygon fill="#42566e" stroke="#42566e" stroke-width="1.15" points="661.63,-798.47 667.7,-795.23 660.93,-793.97 661.63,-798.47"/>
 </g>
-<!-- p1_asignacion_evaluador&#45;&gt;p1_postulacion -->
+<!-- asignacion_evaluador&#45;&gt;postulacion -->
 <g id="edge3" class="edge">
-<title>p1_asignacion_evaluador&#45;&gt;p1_postulacion</title>
+<title>asignacion_evaluador&#45;&gt;postulacion</title>
 <path fill="none" stroke="#42566e" stroke-width="1.15" d="M226.74,-838.19C229.44,-836.21 232.04,-834.14 234.52,-832 290.25,-783.93 333.1,-710.23 358.59,-658.62"/>
 <polygon fill="#42566e" stroke="#42566e" stroke-width="1.15" points="360.5,-659.89 361.3,-653.05 356.41,-657.9 360.5,-659.89"/>
 </g>
-<!-- p1_auditoria -->
+<!-- auditoria -->
 <g id="node13" class="node">
-<title>p1_auditoria</title>
+<title>auditoria</title>
 <polygon fill="white" stroke="none" points="34.71,-745 34.71,-825 229.82,-825 229.82,-745 34.71,-745"/>
 <polygon fill="none" stroke="#d6e5f8" points="34.71,-745 34.71,-825 229.82,-825 229.82,-745 34.71,-745"/>
 <polygon fill="#d6e5f8" stroke="none" points="35.71,-796.4 35.71,-824 228.82,-824 228.82,-796.4 35.71,-796.4"/>
-<text xml:space="preserve" text-anchor="start" x="41.71" y="-807.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">p1_auditoria</text>
+<text xml:space="preserve" text-anchor="start" x="41.71" y="-807.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#25496e">auditoria</text>
 <text xml:space="preserve" text-anchor="start" x="41.71" y="-779.4" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">PK id · entidad + entidad_id</text>
 <text xml:space="preserve" text-anchor="start" x="41.71" y="-754.2" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">FK correo, postulación o persona</text>
 </g>
-<!-- p1_auditoria&#45;&gt;p1_postulacion -->
-<g id="edge6" class="edge">
-<title>p1_auditoria&#45;&gt;p1_postulacion</title>
+<!-- auditoria&#45;&gt;postulacion -->
+<g id="edge7" class="edge">
+<title>auditoria&#45;&gt;postulacion</title>
 <path fill="none" stroke="#42566e" stroke-width="1.15" d="M224.83,-745.11C228.15,-743.12 231.39,-741.09 234.52,-739 269.47,-715.72 304.09,-684.27 331.3,-657.08"/>
 <polygon fill="#42566e" stroke="#42566e" stroke-width="1.15" points="332.81,-658.8 335.77,-652.58 329.58,-655.59 332.81,-658.8"/>
 </g>
-<!-- p1_correo_control -->
+<!-- correo_control -->
 <g id="node14" class="node">
-<title>p1_correo_control</title>
+<title>correo_control</title>
 <polygon fill="white" stroke="none" points="284.33,-30 284.33,-110 487.85,-110 487.85,-30 284.33,-30"/>
 <polygon fill="none" stroke="#d2eae0" points="284.33,-30 284.33,-110 487.85,-110 487.85,-30 284.33,-30"/>
 <polygon fill="#d2eae0" stroke="none" points="285.33,-81.4 285.33,-109 486.85,-109 486.85,-81.4 285.33,-81.4"/>
-<text xml:space="preserve" text-anchor="start" x="291.33" y="-92.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#1d554a">p1_correo_control</text>
+<text xml:space="preserve" text-anchor="start" x="291.33" y="-92.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#1d554a">correo_control</text>
 <text xml:space="preserve" text-anchor="start" x="291.33" y="-64.4" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">PK mensaje_id · FK buzón</text>
 <text xml:space="preserve" text-anchor="start" x="291.33" y="-39.2" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">Historial, confirmación y resultado</text>
 </g>
-<!-- p1_auditoria&#45;&gt;p1_correo_control -->
+<!-- auditoria&#45;&gt;correo_control -->
 <g id="edge5" class="edge">
-<title>p1_auditoria&#45;&gt;p1_correo_control</title>
+<title>auditoria&#45;&gt;correo_control</title>
 <path fill="none" stroke="#42566e" stroke-width="1.15" d="M229.63,-745.43C231.39,-743.39 233.02,-741.25 234.52,-739 270.09,-685.62 221.9,-218.36 252.52,-162 262.77,-143.15 278.75,-127.34 296.12,-114.44"/>
 <polygon fill="#42566e" stroke="#42566e" stroke-width="1.15" points="297.19,-116.47 301.15,-110.83 294.54,-112.77 297.19,-116.47"/>
 </g>
@@ -267,41 +267,41 @@
 <text xml:space="preserve" text-anchor="start" x="281.52" y="-1029.4" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">PK ci · UQ correo</text>
 <text xml:space="preserve" text-anchor="start" x="281.52" y="-1004.2" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">LISPER / INSPER · ejemplo de cátedra</text>
 </g>
-<!-- p1_auditoria&#45;&gt;persona -->
-<g id="edge7" class="edge">
-<title>p1_auditoria&#45;&gt;persona</title>
+<!-- auditoria&#45;&gt;persona -->
+<g id="edge6" class="edge">
+<title>auditoria&#45;&gt;persona</title>
 <path fill="none" stroke="#42566e" stroke-width="1.15" d="M228.54,-824.88C230.68,-827.13 232.69,-829.5 234.52,-832 270.64,-881.13 217.24,-918.28 252.52,-968 258.47,-976.38 265.78,-983.77 273.88,-990.29"/>
 <polygon fill="#42566e" stroke="#42566e" stroke-width="1.15" points="272.28,-991.93 278.83,-994.04 275.03,-988.3 272.28,-991.93"/>
 </g>
-<!-- p1_buzon -->
+<!-- buzon -->
 <g id="node16" class="node">
-<title>p1_buzon</title>
+<title>buzon</title>
 <polygon fill="white" stroke="none" points="676.24,-30 676.24,-110 819.06,-110 819.06,-30 676.24,-30"/>
 <polygon fill="none" stroke="#d2eae0" points="676.24,-30 676.24,-110 819.06,-110 819.06,-30 676.24,-30"/>
 <polygon fill="#d2eae0" stroke="none" points="677.24,-81.4 677.24,-109 818.06,-109 818.06,-81.4 677.24,-81.4"/>
-<text xml:space="preserve" text-anchor="start" x="683.24" y="-92.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#1d554a">p1_buzon</text>
+<text xml:space="preserve" text-anchor="start" x="683.24" y="-92.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#1d554a">buzon</text>
 <text xml:space="preserve" text-anchor="start" x="683.24" y="-64.4" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">PK protocolo</text>
 <text xml:space="preserve" text-anchor="start" x="683.24" y="-39.2" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">Estado de inicialización</text>
 </g>
-<!-- p1_correo_control&#45;&gt;p1_buzon -->
+<!-- correo_control&#45;&gt;buzon -->
 <g id="edge8" class="edge">
-<title>p1_correo_control&#45;&gt;p1_buzon</title>
+<title>correo_control&#45;&gt;buzon</title>
 <path fill="none" stroke="#42566e" stroke-width="1.15" d="M487.73,-70C544.84,-70 615.26,-70 668.23,-70"/>
 <polygon fill="#42566e" stroke="#42566e" stroke-width="1.15" points="668.01,-72.28 674.51,-70 668.01,-67.73 668.01,-72.28"/>
 </g>
-<!-- p1_adjunto_correo -->
+<!-- adjunto_correo -->
 <g id="node15" class="node">
-<title>p1_adjunto_correo</title>
+<title>adjunto_correo</title>
 <polygon fill="white" stroke="none" points="57.26,-30 57.26,-110 207.26,-110 207.26,-30 57.26,-30"/>
 <polygon fill="none" stroke="#d2eae0" points="57.26,-30 57.26,-110 207.26,-110 207.26,-30 57.26,-30"/>
 <polygon fill="#d2eae0" stroke="none" points="58.26,-81.4 58.26,-109 206.26,-109 206.26,-81.4 58.26,-81.4"/>
-<text xml:space="preserve" text-anchor="start" x="64.26" y="-92.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#1d554a">p1_adjunto_correo</text>
+<text xml:space="preserve" text-anchor="start" x="64.26" y="-92.3" font-family="DejaVu Sans" font-weight="bold" font-size="13.00" fill="#1d554a">adjunto_correo</text>
 <text xml:space="preserve" text-anchor="start" x="64.26" y="-64.4" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">PK/FK mensaje_id</text>
 <text xml:space="preserve" text-anchor="start" x="64.26" y="-39.2" font-family="DejaVu Sans" font-size="11.00" fill="#24344c">PDF temporal y SHA&#45;256</text>
 </g>
-<!-- p1_adjunto_correo&#45;&gt;p1_correo_control -->
+<!-- adjunto_correo&#45;&gt;correo_control -->
 <g id="edge1" class="edge">
-<title>p1_adjunto_correo&#45;&gt;p1_correo_control</title>
+<title>adjunto_correo&#45;&gt;correo_control</title>
 <path fill="none" stroke="#42566e" stroke-width="1.15" d="M207.12,-70C228.8,-70 252.98,-70 276.35,-70"/>
 <polygon fill="#42566e" stroke="#42566e" stroke-width="1.15" points="276.34,-72.28 282.84,-70 276.34,-67.73 276.34,-72.28"/>
 </g>
