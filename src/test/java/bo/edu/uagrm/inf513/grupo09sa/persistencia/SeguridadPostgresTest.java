@@ -481,13 +481,33 @@ class SeguridadPostgresTest {
         assertFalse(procesador.procesar("leer-roles-ajenos","luis@example.com",new Orden("LISUSU",List.of("*"))).exito());
         assertEquals(2,numero("select count(*) from postulacion"));
     }
+    @Test void unCambioDeCorreoConservaLaIdentidadYAplicaLaUltimaNota() throws Exception {
+        iniciarFlujo();
+        assertTrue(ordenar("eva@example.com","EVAREQ","1","Identidad","false","Pendiente").exito());
+        assertTrue(ordenar("eva@example.com","REGMER","1","Experiencia","50","Inicial").exito());
+        ejecutarSql("update usuario set correo='eva.nueva@example.com' where correo='eva@example.com'");
+        assertTrue(ordenar("eva.nueva@example.com","EVAREQ","1","Identidad","true","Verificada").exito());
+        assertTrue(ordenar("admin@example.com","HABPOS","1","HABILITADO","Verificado").exito());
+        assertTrue(ordenar("eva.nueva@example.com","REGMER","1","Experiencia","80","Corrección").exito());
+        assertTrue(ordenar("eva.nueva@example.com","REGEXA","1","85","Rindió").exito());
+        assertEquals(1,numero("select count(distinct evaluador_id) from merito where postulacion_id=1"));
+        assertEquals(83,numero("select puntaje_final::int from postulacion where id=1"));
+        assertFalse(ordenar("eva@example.com","REGMER","1","Experiencia","90","Correo anterior").exito());
+    }
     @Test void evaluadorNoCalificaOtraPostulacionAunqueConozcaSuId()throws Exception{
         iniciarFlujo();segundoPostulante();
         ejecutarSql("delete from asignacion_evaluador where postulacion_id=2");
         assertFalse(ordenar("eva@example.com","EVAREQ","2","Identidad","true","Intento sin asignación").exito());
         assertEquals(0,numero("select count(*) from evaluacion_requisito where postulacion_id=2"));
         // Estado elegible de ensayo: el rechazo debe depender de la asignación, no solo del estado.
-        ejecutarSql("insert into evaluacion_requisito(postulacion_id,requisito,cumple,evaluador_correo) values(2,'Identidad',true,'otro@example.com')");
+        ejecutarSql("""
+            insert into usuario(registro,nombres,apellidos,rol,correo)
+                values('799','Otra','Evaluadora','EVALUADOR','otro@example.com');
+            insert into asignacion_evaluador(postulacion_id,evaluador_id,tipo)
+                select 2,id,'EXAMEN' from usuario where registro='799';
+            insert into evaluacion_requisito(postulacion_id,requisito,cumple,evaluador_id)
+                select 2,'Identidad',true,id from usuario where registro='799';
+            """);
         ejecutarSql("update postulacion set estado='HABILITADO' where id=2");
         assertFalse(ordenar("eva@example.com","REGMER","2","Experiencia","100","Intento sin asignación").exito());
         assertFalse(ordenar("eva@example.com","REGEXA","2","100","Intento sin asignación").exito());
@@ -575,12 +595,12 @@ class SeguridadPostgresTest {
                 select 1,id,1,'HABILITADO',80,85,83 from usuario where id>3;
             insert into asignacion_evaluador(postulacion_id,evaluador_id,tipo)
                 select id,2,'MERITOS_Y_EXAMEN' from postulacion where id>1;
-            insert into evaluacion_requisito(postulacion_id,requisito,cumple,evaluador_correo)
-                select id,'Identidad',true,'eva@example.com' from postulacion where id>1;
-            insert into merito(postulacion_id,criterio,puntaje,evaluador_correo)
-                select id,'Experiencia',80,'eva@example.com' from postulacion where id>1;
-            insert into examen(postulacion_id,puntaje,evaluador_correo)
-                select id,85,'eva@example.com' from postulacion where id>1;
+            insert into evaluacion_requisito(postulacion_id,requisito,cumple,evaluador_id)
+                select id,'Identidad',true,2 from postulacion where id>1;
+            insert into merito(postulacion_id,criterio,puntaje,evaluador_id)
+                select id,'Experiencia',80,2 from postulacion where id>1;
+            insert into examen(postulacion_id,puntaje,evaluador_id)
+                select id,85,2 from postulacion where id>1;
             """);
 
         Resultado respuesta=ordenar("admin@example.com","REPEST","1");

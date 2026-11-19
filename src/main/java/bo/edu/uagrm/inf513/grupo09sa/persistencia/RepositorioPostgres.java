@@ -485,24 +485,24 @@ public final class RepositorioPostgres implements RepositorioProyecto, ColaCorre
     private static String patron(String filtro){return "%"+filtro.replace("\\","\\\\").replace("%","\\%").replace("_","\\_")+"%";}
     private Resultado evaluarRequisito(EvaluacionRequisito evaluacion) throws SQLException {
         return actualizar("""
-                insert into evaluacion_requisito(postulacion_id,requisito,cumple,observacion,evaluador_correo)
-                select ?,?,?,?,?
-                where exists(select 1 from asignacion_evaluador a join usuario u on u.id=a.evaluador_id
-                    where a.postulacion_id=? and lower(u.correo)=lower(?) and u.activo=true)
+                insert into evaluacion_requisito(postulacion_id,requisito,cumple,observacion,evaluador_id)
+                select ?,?,?,?,u.id from usuario u
+                where lower(u.correo)=lower(?) and u.activo and u.rol='EVALUADOR'
+                  and exists(select 1 from asignacion_evaluador a where a.postulacion_id=? and a.evaluador_id=u.id)
                 """, List.of(evaluacion.postulacionId(), evaluacion.requisito(), evaluacion.cumple(),
-                evaluacion.observacion(), evaluacion.evaluadorCorreo(), evaluacion.postulacionId(),
-                evaluacion.evaluadorCorreo()), "Requisito evaluado.");
+                evaluacion.observacion(), evaluacion.evaluadorCorreo(), evaluacion.postulacionId()), "Requisito evaluado.");
     }
-    private Resultado habilitar(List<String> p)throws SQLException{return actualizar("update postulacion p set estado=case when ?='HABILITADO' and plaza_asignada then 'GANADOR' else ? end,plaza_asignada=case when ?='INHABILITADO' then false else plaza_asignada end,observacion=? where p.id=?::bigint and (?<>'HABILITADO' or (exists(select 1 from evaluacion_requisito e where e.postulacion_id=p.id) and not exists(select 1 from (select distinct on (lower(btrim(requisito)),lower(evaluador_correo)) cumple from evaluacion_requisito e where e.postulacion_id=p.id order by lower(btrim(requisito)),lower(evaluador_correo),id desc) vigentes where not cumple)))",List.of(p.get(1),p.get(1),p.get(1),p.get(2),p.get(0),p.get(1)),"Estado de postulación actualizado.");}
+    private Resultado habilitar(List<String> p)throws SQLException{return actualizar("update postulacion p set estado=case when ?='HABILITADO' and plaza_asignada then 'GANADOR' else ? end,plaza_asignada=case when ?='INHABILITADO' then false else plaza_asignada end,observacion=? where p.id=?::bigint and (?<>'HABILITADO' or (exists(select 1 from evaluacion_requisito e where e.postulacion_id=p.id) and not exists(select 1 from (select distinct on (lower(btrim(requisito)),evaluador_id) cumple from evaluacion_requisito e where e.postulacion_id=p.id order by lower(btrim(requisito)),evaluador_id,id desc) vigentes where not cumple)))",List.of(p.get(1),p.get(1),p.get(1),p.get(2),p.get(0),p.get(1)),"Estado de postulación actualizado.");}
     private Resultado registrarMerito(Merito merito) throws SQLException {
         Resultado resultado=actualizar("""
-            insert into merito(postulacion_id,criterio,puntaje,observacion,evaluador_correo)
-            select ?::bigint,?,?::numeric,?,?
-            where exists(select 1 from asignacion_evaluador a join usuario u on u.id=a.evaluador_id
-                where a.postulacion_id=?::bigint and lower(u.correo)=lower(?) and u.activo
-                  and upper(a.tipo) in ('MERITOS','MERITOS_Y_EXAMEN'))
+            insert into merito(postulacion_id,criterio,puntaje,observacion,evaluador_id)
+            select ?,?,?,?,u.id from usuario u
+            where lower(u.correo)=lower(?) and u.activo and u.rol='EVALUADOR'
+              and exists(select 1 from asignacion_evaluador a
+                  where a.postulacion_id=? and a.evaluador_id=u.id
+                    and upper(a.tipo) in ('MERITOS','MERITOS_Y_EXAMEN'))
             """, List.of(merito.postulacionId(), merito.criterio(), merito.puntaje(), merito.observacion(),
-                merito.evaluadorCorreo(), merito.postulacionId(), merito.evaluadorCorreo()), "Mérito registrado.");
+                merito.evaluadorCorreo(), merito.postulacionId()), "Mérito registrado.");
         if(!resultado.exito())return Resultado.error("El evaluador no tiene asignación de méritos para esta postulación.");
         recalcularPuntaje(merito.postulacionId());
         return resultado;
@@ -511,15 +511,16 @@ public final class RepositorioPostgres implements RepositorioProyecto, ColaCorre
         if (categorias.tieneAreas(examen.postulacionId())) return Resultado.error("Esta categoría utiliza áreas ponderadas. Registre cada nota con REGAREA.");
         if (!requisitosVigentes(examen.postulacionId())) return Resultado.error("Los requisitos vigentes no permiten rendir el examen.");
         Resultado resultado=actualizar("""
-            insert into examen(postulacion_id,area,puntaje,evaluador_correo,observacion)
-            select ?::bigint,?,?::numeric,?,?
-            where exists(select 1 from asignacion_evaluador a join usuario u on u.id=a.evaluador_id
-                where a.postulacion_id=?::bigint and lower(u.correo)=lower(?) and u.activo
+            insert into examen(postulacion_id,area,puntaje,observacion,evaluador_id)
+            select ?,?,?,?,u.id from usuario u
+            where lower(u.correo)=lower(?) and u.activo and u.rol='EVALUADOR'
+              and exists(select 1 from asignacion_evaluador a
+                where a.postulacion_id=? and a.evaluador_id=u.id
                   and upper(a.tipo) in ('EXAMEN','MERITOS_Y_EXAMEN')
                   and exists(select 1 from postulacion p where p.id=a.postulacion_id
                       and p.estado in ('HABILITADO','GANADOR')))
-            """, List.of(examen.postulacionId(), examen.area(), examen.puntaje(), examen.evaluadorCorreo(),
-                examen.observacion(), examen.postulacionId(), examen.evaluadorCorreo()), "Examen registrado.");
+            """, List.of(examen.postulacionId(), examen.area(), examen.puntaje(), examen.observacion(),
+                examen.evaluadorCorreo(), examen.postulacionId()), "Examen registrado.");
         if(!resultado.exito())return Resultado.error("El examen requiere un evaluador asignado a examen y una postulación habilitada.");
         recalcularPuntaje(examen.postulacionId());
         return resultado;
@@ -612,9 +613,28 @@ public final class RepositorioPostgres implements RepositorioProyecto, ColaCorre
             }
         }
     }
-    private void recalcularPuntaje(long postulacion)throws SQLException{actualizar("update postulacion p set puntaje_meritos=least(100,coalesce((select sum(criterio.promedio) from (select ultimos.criterio,avg(ultimos.puntaje) promedio from (select distinct on (lower(btrim(m.criterio)),lower(m.evaluador_correo)) lower(btrim(m.criterio)) criterio,m.puntaje from merito m where m.postulacion_id=p.id order by lower(btrim(m.criterio)),lower(m.evaluador_correo),m.id desc) ultimos group by ultimos.criterio) criterio),0)),puntaje_examen=coalesce((select avg(e.puntaje) from (select distinct on (lower(evaluador_correo)) puntaje from examen where postulacion_id=p.id order by lower(evaluador_correo),id desc) e),0) where p.id=?::bigint",List.of(postulacion),"Puntaje recalculado");try(Connection c=conexion();PreparedStatement s=c.prepareStatement("update postulacion set puntaje_examen=?::numeric,puntaje_final=round(least(100,puntaje_meritos*0.4+?::numeric*0.6),2),evaluacion_version=evaluacion_version+1 where id=?::bigint")){s.setQueryTimeout(30);var nota=categorias.notaExamen(postulacion);s.setBigDecimal(1,nota);s.setBigDecimal(2,nota);s.setLong(3,postulacion);s.executeUpdate();}}
+    private void recalcularPuntaje(long postulacion) throws SQLException {
+        var notaExamen = categorias.notaExamen(postulacion);
+        actualizar("""
+                with ultimos as (
+                    select distinct on (lower(btrim(criterio)),evaluador_id)
+                        lower(btrim(criterio)) criterio,puntaje
+                    from merito where postulacion_id=?
+                    order by lower(btrim(criterio)),evaluador_id,id desc
+                ), criterios as (
+                    select avg(puntaje) promedio from ultimos group by criterio
+                ), nota as (
+                    select round(least(100,coalesce(sum(promedio),0)),2) meritos from criterios
+                )
+                update postulacion p
+                set puntaje_meritos=n.meritos, puntaje_examen=?,
+                    puntaje_final=round(least(100,n.meritos*0.4+?*0.6),2),
+                    evaluacion_version=evaluacion_version+1
+                from nota n where p.id=?
+                """, List.of(postulacion, notaExamen, notaExamen, postulacion), "Puntaje recalculado");
+    }
     private boolean requisitosVigentes(long post)throws SQLException{
-        String sql="select exists(select 1 from evaluacion_requisito where postulacion_id=?::bigint) and not exists(select 1 from (select distinct on (lower(btrim(requisito)),lower(evaluador_correo)) cumple from evaluacion_requisito where postulacion_id=?::bigint order by lower(btrim(requisito)),lower(evaluador_correo),id desc) vigentes where not cumple)";
+        String sql="select exists(select 1 from evaluacion_requisito where postulacion_id=?::bigint) and not exists(select 1 from (select distinct on (lower(btrim(requisito)),evaluador_id) cumple from evaluacion_requisito where postulacion_id=?::bigint order by lower(btrim(requisito)),evaluador_id,id desc) vigentes where not cumple)";
         try(Connection c=conexion();PreparedStatement q=c.prepareStatement(sql)){q.setLong(1,post);q.setLong(2,post);try(ResultSet r=q.executeQuery()){r.next();return r.getBoolean(1);}}
     }
     private void bloquearConvocatoria(Orden o)throws SQLException{

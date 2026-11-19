@@ -14,7 +14,7 @@ final class GestionCategorias {
     @FunctionalInterface interface Conexion { Connection abrir() throws SQLException; }
     private final Conexion conexiones;
     GestionCategorias(Conexion conexiones){this.conexiones=conexiones;}
-    private static final String REQUISITOS="exists(select 1 from evaluacion_requisito e where e.postulacion_id=p.id) and not exists(select 1 from (select distinct on(lower(btrim(requisito)),lower(evaluador_correo)) cumple from evaluacion_requisito where postulacion_id=p.id order by lower(btrim(requisito)),lower(evaluador_correo),id desc) vigentes where not cumple)";
+    private static final String REQUISITOS="exists(select 1 from evaluacion_requisito e where e.postulacion_id=p.id) and not exists(select 1 from (select distinct on(lower(btrim(requisito)),evaluador_id) cumple from evaluacion_requisito where postulacion_id=p.id order by lower(btrim(requisito)),evaluador_id,id desc) vigentes where not cumple)";
     private static final String COMPLETA="exists(select 1 from merito m where m.postulacion_id=p.id) and (case when exists(select 1 from area_examen a where a.convocatoria_id=p.convocatoria_id and a.cargo_id=p.cargo_id) then (select sum(a.peso) from area_examen a where a.convocatoria_id=p.convocatoria_id and a.cargo_id=p.cargo_id)=100 and not exists(select 1 from area_examen a where a.convocatoria_id=p.convocatoria_id and a.cargo_id=p.cargo_id and not exists(select 1 from examen e where e.postulacion_id=p.id and e.area=a.area)) else exists(select 1 from examen e where e.postulacion_id=p.id and e.area='general') end)";
     private static final String ELEGIBLE="p.estado in('HABILITADO','GANADOR') and "+REQUISITOS+" and "+COMPLETA;
     private PreparedStatement preparar(Connection c,String sql,Object... valores)throws SQLException {
@@ -96,20 +96,21 @@ final class GestionCategorias {
         if(!existe("select 1 from postulacion p where p.id=?::bigint and p.estado in('HABILITADO','GANADOR') and "+REQUISITOS,examen.postulacionId()))return Resultado.error("Se requieren habilitación y requisitos vigentes para rendir el examen.");
         if(!existe("select 1 from postulacion p join area_examen a on a.convocatoria_id=p.convocatoria_id and a.cargo_id=p.cargo_id where p.id=?::bigint and a.area=? and (select sum(peso) from area_examen x where x.convocatoria_id=p.convocatoria_id and x.cargo_id=p.cargo_id)=100",examen.postulacionId(),examen.area()))return Resultado.error("El área debe estar configurada y los porcentajes deben sumar exactamente 100.");
         try(var c=conexiones.abrir();var s=preparar(c,"""
-            insert into examen(postulacion_id,area,puntaje,observacion,evaluador_correo)
-            select ?::bigint,?,?::numeric,?,?
-            where exists(select 1 from asignacion_evaluador a join usuario u on u.id=a.evaluador_id
-                where a.postulacion_id=?::bigint and lower(u.correo)=lower(?) and u.activo
+            insert into examen(postulacion_id,area,puntaje,observacion,evaluador_id)
+            select ?,?,?,?,u.id from usuario u
+            where lower(u.correo)=lower(?) and u.activo and u.rol='EVALUADOR'
+              and exists(select 1 from asignacion_evaluador a
+                where a.postulacion_id=? and a.evaluador_id=u.id
                   and (upper(a.tipo) in ('MERITOS_Y_EXAMEN','EXAMEN')
                        or (upper(a.tipo)<>'MERITOS' and lower(a.tipo)=?)))
             """, examen.postulacionId(), examen.area(), examen.puntaje(), examen.observacion(),
-                examen.evaluadorCorreo(), examen.postulacionId(), examen.evaluadorCorreo(), examen.area())) {
+                examen.evaluadorCorreo(), examen.postulacionId(), examen.area())) {
             if(s.executeUpdate()!=1)return Resultado.error("El evaluador no está asignado a esta área del examen.");
         }
         return Resultado.ok("Nota de área registrada.");
     }
     BigDecimal notaExamen(long post)throws SQLException {
-        String sql="with ultimas as (select distinct on(area,lower(evaluador_correo)) area,puntaje from examen where postulacion_id=?::bigint order by area,lower(evaluador_correo),id desc), promedios as(select area,avg(puntaje) nota from ultimas group by area), areas as(select a.area,a.peso from area_examen a join postulacion p on p.convocatoria_id=a.convocatoria_id and p.cargo_id=a.cargo_id where p.id=?::bigint) select case when exists(select 1 from areas) then (select coalesce(sum(coalesce(p.nota,0)*a.peso/100),0) from areas a left join promedios p on p.area=a.area) else (select coalesce(avg(puntaje),0) from ultimas where area='general') end";
+        String sql="with ultimas as (select distinct on(area,evaluador_id) area,puntaje from examen where postulacion_id=?::bigint order by area,evaluador_id,id desc), promedios as(select area,avg(puntaje) nota from ultimas group by area), areas as(select a.area,a.peso from area_examen a join postulacion p on p.convocatoria_id=a.convocatoria_id and p.cargo_id=a.cargo_id where p.id=?::bigint) select case when exists(select 1 from areas) then (select coalesce(sum(coalesce(p.nota,0)*a.peso/100),0) from areas a left join promedios p on p.area=a.area) else (select coalesce(avg(puntaje),0) from ultimas where area='general') end";
         try(var c=conexiones.abrir();var s=preparar(c,sql,post,post);var r=s.executeQuery()){r.next();return r.getBigDecimal(1);}
     }
     private record Candidato(long id,BigDecimal puntaje,Integer prioridad){}
@@ -232,7 +233,7 @@ final class GestionCategorias {
             order by p.cargo_id,p.puntaje_final desc,p.id
             """;
     }
-    String sqlNotas(){return "select p.cargo_id,p.id postulacion,e.area,a.peso,avg(e.puntaje) promedio_area from postulacion p join lateral(select distinct on(area,lower(evaluador_correo)) area,puntaje from examen where postulacion_id=p.id order by area,lower(evaluador_correo),id desc)e on true left join area_examen a on a.convocatoria_id=p.convocatoria_id and a.cargo_id=p.cargo_id and a.area=e.area where p.convocatoria_id=?::bigint group by p.cargo_id,p.id,e.area,a.peso order by p.cargo_id,p.id,e.area";}
+    String sqlNotas(){return "select p.cargo_id,p.id postulacion,e.area,a.peso,avg(e.puntaje) promedio_area from postulacion p join lateral(select distinct on(area,evaluador_id) area,puntaje from examen where postulacion_id=p.id order by area,evaluador_id,id desc)e on true left join area_examen a on a.convocatoria_id=p.convocatoria_id and a.cargo_id=p.cargo_id and a.area=e.area where p.convocatoria_id=?::bigint group by p.cargo_id,p.id,e.area,a.peso order by p.cargo_id,p.id,e.area";}
     String sqlVacantes() {
         return CUPOS_DEL_REPORTE + """
             select d.cargo_id, coalesce(c.nombre,'Cupo global') nombre,

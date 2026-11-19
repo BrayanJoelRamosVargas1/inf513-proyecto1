@@ -31,6 +31,12 @@ class IntegridadEsquemaTest {
         sql(sqlEsquema);
     }
 
+    private void migrar() throws Exception {
+        var directorio = Path.of("database/migrations");
+        sql(Files.readString(directorio.resolve("001_preparar.sql")) + "\n" + sqlEsquema + "\n"
+                + Files.readString(directorio.resolve("002_migrar_historial.sql")));
+    }
+
     @AfterEach void limpiar() throws Exception {
         sql("drop schema " + esquema + " cascade");
     }
@@ -44,8 +50,8 @@ class IntegridadEsquemaTest {
             );
             insert into p1_correo_procesado values('historial','historico@local','BASELINE',true,now());
             """);
-        sql(sqlEsquema);
-        sql(sqlEsquema);
+        migrar();
+        migrar();
         var repo = new RepositorioPostgres(datos);
         assertTrue(repo.correoProcesado("historial"));
         assertEquals(1, numero("select count(*) from correo_control where mensaje_id='historial' and admitido_en is null"));
@@ -77,7 +83,7 @@ class IntegridadEsquemaTest {
                 ('confirmacion:'||encode(sha256(convert_to('consumida','UTF8')),'hex'),
                  false,'Error','Resultado de la confirmación anterior',now());
             """);
-        sql(sqlEsquema);
+        migrar();
 
         var repo = new RepositorioPostgres(datos);
         var anterior = repo.confirmarOrden("confirmada-antes","prueba@example.com","B".repeat(43),
@@ -88,7 +94,7 @@ class IntegridadEsquemaTest {
         var nueva = repo.confirmarOrden("confirmada-ahora","prueba@example.com","A".repeat(43),
                 (id,orden) -> Resultado.ok("Confirmada después de migrar"));
         assertTrue(nueva.exito());
-        sql(sqlEsquema);
+        migrar();
         assertEquals(nueva,repo.confirmarOrden("confirmada-ahora","prueba@example.com","A".repeat(43),
                 (id,orden) -> fail("La migración no debe reactivar un código consumido")));
         assertFalse(repo.confirmarOrden("otra-confirmacion","prueba@example.com","A".repeat(43),
@@ -99,7 +105,7 @@ class IntegridadEsquemaTest {
 
     @Test void todasLasTablasSeConectanYCadaMigracionConservaElBuzonAnterior() throws Exception {
         assertEquals(17, numero("select count(*) from pg_tables where schemaname=current_schema()"));
-        assertEquals(18, numero("select count(*) from pg_constraint where contype='f' and connamespace=current_schema()::regnamespace"));
+        assertEquals(21, numero("select count(*) from pg_constraint where contype='f' and connamespace=current_schema()::regnamespace"));
         assertEquals(17, numero("""
             with recursive uniones as (
                 select conrelid origen,confrelid destino from pg_constraint
@@ -125,8 +131,8 @@ class IntegridadEsquemaTest {
             insert into correo_control(mensaje_id,remitente,estado)
                  values ('roundcube:INBOX:1','prueba@example.com','RESPONDIDO');
             """);
-        sql(sqlEsquema);
-        sql(sqlEsquema);
+        migrar();
+        migrar();
         var repo = new RepositorioPostgres(datos);
         assertTrue(repo.servicioInicializado("pop3"));
         assertFalse(repo.servicioInicializado("roundcube"));
@@ -163,8 +169,8 @@ class IntegridadEsquemaTest {
             alter table merito rename to p1_merito;
             alter table oferta rename to p1_oferta;
             """);
-        sql(sqlEsquema);
-        sql(sqlEsquema);
+        migrar();
+        migrar();
         assertEquals(17, numero("select count(*) from pg_tables where schemaname=current_schema()"));
         assertEquals(1, numero("""
             select count(*) from postulacion p join usuario u on u.id=p.postulante_id
@@ -172,13 +178,13 @@ class IntegridadEsquemaTest {
             """));
         assertEquals(1, numero("select count(*) from correo_control c join buzon b on b.protocolo=c.buzon_protocolo where c.mensaje_id='antes' and c.estado='DIFERIDO'"));
         assertEquals(1, numero("select count(*) from expediente where ruta_archivo='postgres:expediente/1' and contenido=convert_to('%PDF-ensayo','UTF8')"));
-        assertEquals(18, numero("select count(*) from pg_constraint where contype='f' and connamespace=current_schema()::regnamespace"));
+        assertEquals(21, numero("select count(*) from pg_constraint where contype='f' and connamespace=current_schema()::regnamespace"));
     }
 
     @Test void moverElEsquemaSeDetieneSiYaExisteUnaTablaHomonima() throws Exception {
         sql("create table p1_usuario(id integer)");
         sql("insert into p1_usuario values(73)");
-        var fallo=assertThrows(SQLException.class,() -> sql(sqlEsquema));
+        var fallo=assertThrows(SQLException.class,this::migrar);
         assertTrue(fallo.getMessage().contains("nombres de destino"));
         assertEquals(73, numero("select id from p1_usuario"));
         assertEquals(0, numero("select count(*) from usuario"));
@@ -200,16 +206,25 @@ class IntegridadEsquemaTest {
         invalido("insert into area_examen values(1,1,'practica',70)");
         sql("insert into area_examen values(1,1,'practica',30)");
         sql("insert into asignacion_evaluador(postulacion_id,evaluador_id,tipo) values("+post+",2,'EXAMEN')");
-        String examen = "insert into examen(postulacion_id,area,puntaje,evaluador_correo) values("+post+",";
-        invalido(examen + "'inventada',85,'eva@example.com')");
-        invalido(examen + "'teoria',85,'sin-cuenta@example.com')");
-        sql(examen + "'teoria',85,'eva@example.com')");
+        String examen = "insert into examen(postulacion_id,area,puntaje,evaluador_id) values("+post+",";
+        invalido(examen + "'inventada',85,2)");
+        invalido(examen + "'teoria',85,999)");
+        sql(examen + "'teoria',85,2)");
         assertEquals(1, numero("select count(*) from examen"));
         invalido("update area_examen set peso=60 where area='teoria'");
         invalido("delete from area_examen where area='practica'");
         invalido("insert into area_examen values(1,1,'oral',10)");
         assertEquals(100, numero("select sum(peso) from area_examen"));
         assertEquals(70, numero("select peso from area_examen where area='teoria'"));
+        sql("update oferta set plazas=1 where convocatoria_id=1 and cargo_id=1");
+        sql("insert into oferta values (1,2,1)");
+        invalido("update postulacion set cargo_id=2 where id=" + post);
+        invalido("insert into merito(postulacion_id,criterio,puntaje,evaluador_id) values("
+                + post + ",'Experiencia',80,2)");
+        invalido("insert into evaluacion_requisito(postulacion_id,requisito,cumple,evaluador_id) values("
+                + post + ",'Identidad',true,1)");
+        invalido("insert into auditoria(actor,accion,entidad,entidad_id,postulacion_id)"
+                + " values('eva@example.com','REGEXA','REGEXA','999'," + post + ")");
     }
 
     @Test void unExamenGeneralImpideCambiarEsaCategoriaAExamenPonderado() throws Exception {
@@ -222,7 +237,7 @@ class IntegridadEsquemaTest {
             insert into asignacion_evaluador(postulacion_id,evaluador_id,tipo) values(1,2,'MERITOS');
             insert into area_examen values(1,2,'practica',100);
             """);
-        String notaGeneral="insert into examen(postulacion_id,puntaje,evaluador_correo) values(1,85,'eva@example.com')";
+        String notaGeneral="insert into examen(postulacion_id,puntaje,evaluador_id) values(1,85,2)";
         invalido(notaGeneral);
         sql("update asignacion_evaluador set tipo='EXAMEN' where postulacion_id=1");
         sql(notaGeneral);
