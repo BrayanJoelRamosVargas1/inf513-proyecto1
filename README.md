@@ -38,7 +38,7 @@ Copiá `config/application.example.properties` a `config/application.properties`
 
 Las órdenes se escriben en el asunto de correos nuevos. Enviá `LISPER["*"]` para consultar `persona`. La inserción `INSPER` recibe siete parámetros en este orden: CI, nombres, apellidos, ocupación, teléfono, celular y correo. Usá datos ficticios y comprobá el rechazo al repetir el mismo CI. Para probar el analizador, enviá `LISPER[*]`. Las órdenes con rol solicitan un código que se confirma desde la misma cuenta.
 
-Si falla temporalmente la consulta `LISPER`, el servicio prepara una respuesta de error para el remitente. Si PostgreSQL está completamente fuera de servicio, el procesamiento espera a que vuelva la cola. Las escrituras conservan sus reintentos para evitar resultados inciertos o duplicados. Revisá `logs/access.log` y `logs/error.log` en el equipo que ejecuta el JAR.
+Si falla una consulta `LISPER`, el servicio prepara una respuesta de error. Con POP3, si la conexión a PostgreSQL se pierde después de inicializar la bandeja, el servicio puede avisar por SMTP a las nuevas consultas mientras la base está caída. Guarda esos avisos en `logs/consultas-sin-postgres.tsv` y los incorpora al historial al reconectar. Las escrituras esperan a que vuelva PostgreSQL. Revisá `logs/access.log` y `logs/error.log` en el equipo que ejecuta el JAR.
 
 En una instalación existente, ejecutá la migración en una copia y respaldá la base antes de arrancar una versión nueva. Detené el JAR anterior antes de aplicar `database/schema.sql`. La migración reúne historial, resultados y confirmaciones en `correo_control` y conserva las tablas anteriores como respaldo si existen. El respaldo ejecutado antes de migrar es la referencia para una reversión.
 

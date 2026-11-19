@@ -54,6 +54,8 @@ Usá las cuentas de ensayo y los identificadores que devuelva la aplicación. Cu
 
 El recorrido automatizado de los ocho casos usa PostgreSQL y un buzón de ensayo. La prueba de protocolos ejecuta el JAR contra servicios POP3 y SMTP locales. La entrega institucional de correo, los permisos reales de las cuentas y la migración sobre los datos de TecnoWeb siguen pendientes.
 
+Con la bandeja POP3 ya inicializada, una interrupción de la conexión a PostgreSQL activa un aviso SMTP para nuevas consultas `LISPER`. El archivo local `consultas-sin-postgres.tsv` registra las respuestas enviadas para reincorporarlas al historial cuando vuelva la base. Las órdenes de escritura esperan en la bandeja hasta que PostgreSQL esté disponible.
+
 En `AUDCAL`, la referencia de `INSPOST` es el ID de convocatoria, la de `INSUSU` es el registro y la de `INSPER` es el CI. Los ceros iniciales de registros y CI forman parte del identificador. La columna `auditoria.entidad_id` admite hasta 160 caracteres para registrar el nombre completo de un cargo.
 
 ## Inventario de la base nueva
@@ -87,7 +89,7 @@ Esta revisión es local. Quedan pendientes la aplicación del esquema actualizad
 
 ## Verificación
 
-Una compilación limpia con Maven y JDK 17 ejecutó **142 pruebas con éxito** en PostgreSQL 15. En una base vacía se verificó el rechazo del primer decano inactivo, el alta posterior del decano activo y la posibilidad de registrar un evaluador inactivo una vez iniciado el sistema. El recorrido por correo cubrió los ocho casos y comprobó las relaciones de auditoría con el buzón, la postulación y el catálogo docente. Se verificó que un fallo transitorio en LISPER genere un error para el remitente cuando la cola sigue disponible. Una prueba con 231 postulaciones comprobó las cinco secciones del reporte. El ejecutable procesó una consulta válida y un asunto inválido por POP3 y SMTP contra servicios locales de ensayo y se recuperó de un conflicto con el bloqueo de instancia única. El cambio de nombre conservó las filas y las claves, y la migración abortó ante un nombre de destino ocupado. El SQL se aplicó dos veces sobre una copia del esquema anterior y el laboratorio arrancó desde una extracción limpia.
+Una compilación limpia con Maven y JDK 17 ejecutó **143 pruebas con éxito** en PostgreSQL 15. En una base vacía se verificó el rechazo del primer decano inactivo, el alta posterior del decano activo y la posibilidad de registrar un evaluador inactivo una vez iniciado el sistema. El recorrido por correo cubrió los ocho casos y comprobó las relaciones de auditoría con el buzón, la postulación y el catálogo docente. Se verificó que un fallo transitorio en LISPER genere un error para el remitente cuando la cola sigue disponible. Una prueba con 231 postulaciones comprobó las cinco secciones del reporte. El ejecutable procesó una consulta válida y un asunto inválido por POP3 y SMTP contra servicios locales de ensayo y se recuperó de un conflicto con el bloqueo de instancia única. El cambio de nombre conservó las filas y las claves, y la migración abortó ante un nombre de destino ocupado. El SQL se aplicó dos veces sobre una copia del esquema anterior y el laboratorio arrancó desde una extracción limpia.
 
 
 ## Depuración del paquete local

@@ -28,8 +28,8 @@ public final class ProcesadorOrden {
             }
             CatalogoComandos.Definicion def=catalogo.buscar(orden.comando());
             if(def==null)return Resultado.error("El comando " + orden.comando() + " no existe. Use AYUDA[].");
-            if(orden.parametros().size()!=def.parametros())return Resultado.error("Cantidad incorrecta de parámetros para " + orden.comando()+". Esperados: "+def.parametros()+"; recibidos: "+orden.parametros().size()+".");
-            String validacion=validar(orden);if(validacion!=null)return Resultado.error(validacion);
+            if(orden.parametros().size()!=def.parametros())return errorDatos(orden, "Cantidad incorrecta de parámetros para " + orden.comando()+". Esperados: "+def.parametros()+"; recibidos: "+orden.parametros().size()+".");
+            String validacion=validar(orden);if(validacion!=null)return errorDatos(orden, validacion);
             boolean bootstrap=orden.comando().equals("INSUSU")&&!repo.hayUsuarios()&&orden.parametros().get(3).equals("DECANO")&&!bootstrapAdminEmail.isBlank()&&remitente.equalsIgnoreCase(bootstrapAdminEmail)&&orden.parametros().get(5).equalsIgnoreCase(remitente);
             if(bootstrap&&!Boolean.parseBoolean(orden.parametros().get(6)))return Resultado.error("El primer DECANO debe quedar activo.");
             if(!bootstrap&&!def.rol().equals("PUBLICO")&&!repo.autorizado(remitente,def.rol()))return Resultado.error("El remitente no tiene el rol requerido: "+def.rol()+".");
@@ -43,9 +43,12 @@ public final class ProcesadorOrden {
                 return Resultado.error("No se pudo completar la consulta de personas por un problema temporal con PostgreSQL. Volvé a enviar la orden más tarde.");
             }
             bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivos.sistema().error("EXCEPCION_ORDEN",mensajeId,ex);
-            if(ex instanceof SQLException s)return Resultado.error((orden.comando().equals("INSPER")?"Error: ":"")+mensajeSqlSeguro(s));
+            if(ex instanceof SQLException s)return errorDatos(orden, mensajeSqlSeguro(s));
             return Resultado.error("No se pudo ejecutar la orden: "+mensajeSeguro(ex));
         }
+    }
+    private static Resultado errorDatos(Orden orden, String mensaje) {
+        return Resultado.error(orden.comando().equals("INSPER") ? "Error: " + mensaje : mensaje);
     }
     private String validar(Orden o){
         try{

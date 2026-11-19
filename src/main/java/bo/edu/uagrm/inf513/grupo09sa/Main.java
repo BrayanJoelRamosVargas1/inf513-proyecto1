@@ -6,10 +6,12 @@ import bo.edu.uagrm.inf513.grupo09sa.email.*;
 import bo.edu.uagrm.inf513.grupo09sa.persistencia.RepositorioPostgres;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import java.nio.file.Path;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.SQLTransientConnectionException;
 import bo.edu.uagrm.inf513.grupo09sa.presentacion.ControladorCorreo;
 
 public final class Main {
@@ -32,13 +34,32 @@ public final class Main {
             AnalizadorOrden parser=new AnalizadorOrden();RepositorioPostgres repo=new RepositorioPostgres(ds,cfg.inboundProtocol());ProcesadorOrden processor=new ProcesadorOrden(new CatalogoComandos(),repo,cfg.bootstrapAdminEmail());
             ControladorCorreo controlador=new ControladorCorreo(cfg.inboundProtocol(),cfg.maxMessagesPerCycle(),
                     cfg.retryMaxSeconds(),mail,repo,processor,parser,AntivirusPdf.desdeEntorno());
+            Path logs = Path.of(System.getProperty("app.log.dir", System.getenv().getOrDefault("LOG_DIR", "logs")));
+            controlador.habilitarAvisosConsulta(logs.resolve("consultas-sin-postgres.tsv"));
             int fallosConsecutivos=0;
             Connection bloqueoInstancia=null;
             System.out.println("INF513 Grupo 09 SA - servicio resiliente iniciado. Ctrl+C para detener.");
             while(activo.get()){
                 try{bloqueoInstancia=asegurarInstanciaUnica(ds,bloqueoInstancia);controlador.ejecutarCiclo();fallosConsecutivos=0;dormir(activo,cfg.pollSeconds());}
                 catch(InterruptedException ex){Thread.currentThread().interrupt();break;}
-                catch(Exception ex){BitacoraArchivos.sistema().error("REINTENTO_SERVICIO","-",ex);if(bloqueoInstancia!=null&&!valida(bloqueoInstancia)){try{bloqueoInstancia.close();}catch(SQLException cierre){ex.addSuppressed(cierre);}bloqueoInstancia=null;}fallosConsecutivos++;long espera=esperaReintento(fallosConsecutivos,cfg.pollSeconds(),cfg.retryMaxSeconds());System.err.println("Servicio temporalmente no disponible. Reintento "+fallosConsecutivos+" en "+espera+" s: "+seguro(ex));dormir(activo,espera);}
+                catch(Exception ex){
+                    BitacoraArchivos.sistema().error("REINTENTO_SERVICIO","-",ex);
+                    if(bloqueoInstancia!=null&&!valida(bloqueoInstancia)){try{bloqueoInstancia.close();}catch(SQLException cierre){ex.addSuppressed(cierre);}bloqueoInstancia=null;}
+                    if (conexionPostgresCaida(ex)) {
+                        try {
+                            controlador.responderConsultasSinPostgres();
+                        } catch (InterruptedException interrumpido) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        } catch (Exception aviso) {
+                            BitacoraArchivos.sistema().error("AVISO_CONSULTA_PENDIENTE", "-", aviso);
+                        }
+                    }
+                    fallosConsecutivos++;
+                    long espera=esperaReintento(fallosConsecutivos,cfg.pollSeconds(),cfg.retryMaxSeconds());
+                    System.err.println("Servicio temporalmente no disponible. Reintento "+fallosConsecutivos+" en "+espera+" s: "+seguro(ex));
+                    dormir(activo,espera);
+                }
             }
             if(bloqueoInstancia!=null)bloqueoInstancia.close();
         }
@@ -47,6 +68,17 @@ public final class Main {
     }
 
     static long esperaReintento(int fallos,int base,int max){long exp=Math.min(max,Math.max(base,1L<<Math.min(fallos,8)));long jitter=ThreadLocalRandom.current().nextLong(Math.max(1,exp/4+1));return Math.min(max,exp+jitter);}
+    private static boolean conexionPostgresCaida(Throwable fallo) {
+        for (Throwable causa = fallo; causa != null; causa = causa.getCause()) {
+            if (causa instanceof SQLException sql) {
+                String estado = sql.getSQLState();
+                if (estado == null ? sql instanceof SQLTransientConnectionException
+                        : estado.startsWith("08") || "57P01".equals(estado)
+                        || "57P02".equals(estado) || "57P03".equals(estado)) return true;
+            }
+        }
+        return false;
+    }
     private static Connection asegurarInstanciaUnica(HikariDataSource ds, Connection actual) throws SQLException {
         if (valida(actual)) return actual;
         if (actual != null) actual.close();

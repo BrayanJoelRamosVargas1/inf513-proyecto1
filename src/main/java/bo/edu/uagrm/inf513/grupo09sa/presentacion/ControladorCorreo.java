@@ -8,6 +8,11 @@ import bo.edu.uagrm.inf513.grupo09sa.comandos.Resultado;
 import bo.edu.uagrm.inf513.grupo09sa.email.InspectorPdf;
 import bo.edu.uagrm.inf513.grupo09sa.email.MensajeEntrada;
 import bo.edu.uagrm.inf513.grupo09sa.email.PasarelaCorreo;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /** Recibe órdenes, invoca la aplicación y entrega sus respuestas por correo. */
@@ -22,6 +27,7 @@ public final class ControladorCorreo {
     private final ProcesadorOrden procesador;
     private final AnalizadorOrden analizador;
     private final InspectorPdf inspector;
+    private AvisosConsulta avisos;
 
     public ControladorCorreo(String protocolo, int maxMensajes, int maxReintento,
             PasarelaCorreo mail, ColaCorreo cola, ProcesadorOrden procesador,
@@ -36,13 +42,23 @@ public final class ControladorCorreo {
         this.inspector = inspector;
     }
 
+    public void habilitarAvisosConsulta(Path archivo) throws IOException {
+        if (protocolo.equals("pop3")) avisos = new AvisosConsulta(archivo);
+    }
+
+    public void responderConsultasSinPostgres() throws Exception {
+        if (avisos != null) avisos.responder(mail, analizador);
+    }
+
     public void ejecutarCiclo() throws Exception {
         if(!cola.servicioInicializado(protocolo)){
             var ids=mail.identificadores();for(String id:ids)cola.registrarCorreoProcesado(id,"historico@local","BASELINE",true);
             cola.marcarServicioInicializado(protocolo);
+            if (avisos != null) avisos.observar(new HashSet<>(ids));
             System.out.println("Bandeja inicializada: "+ids.size()+" mensajes históricos omitidos.");return;
         }
-        try{for(MensajeEntrada recibido:mail.noProcesados(cola::correosConocidos)){
+        if (avisos != null) avisos.reconciliar(cola);
+        try{for(MensajeEntrada recibido:recibir()){
             MensajeEntrada msg=recibido;
             if(!idSeguro(msg.id())){
                 BitacoraArchivos.sistema().error("ID_INVALIDO","-",null);
@@ -76,7 +92,11 @@ public final class ControladorCorreo {
                 if("RECIBIDO".equals(pendiente.estado())){
                     Resultado resultado;
                     if(pendiente.asunto()!=null&&pendiente.asunto().startsWith("ADJUNTO_RECHAZADO: "))resultado=Resultado.error(pendiente.asunto().substring("ADJUNTO_RECHAZADO: ".length()));
-                    else try{resultado=procesador.procesar(pendiente.id(),pendiente.remitente(),analizador.analizar(pendiente.asunto()));}catch(OrdenInvalidaException ex){resultado=Resultado.error(ex.getMessage());}
+                    else try{resultado=procesador.procesar(pendiente.id(),pendiente.remitente(),analizador.analizar(pendiente.asunto()));}
+                    catch(OrdenInvalidaException ex){
+                        String prefijo = comandoSeguro(pendiente.asunto()).equals("INSPER") ? "Error: " : "";
+                        resultado = Resultado.error(prefijo + ex.getMessage());
+                    }
                     BitacoraArchivos.sistema().acceso("PROCESADO",pendiente.id(),pendiente.remitente(),comandoSeguro(pendiente.asunto()),resultado.exito());
                     if(!resultado.exito()&&!resultado.asunto().startsWith("CONFIRMACIÓN REQUERIDA"))BitacoraArchivos.sistema().error("ORDEN_RECHAZADA",pendiente.id(),null);
                     cola.guardarRespuesta(pendiente.id(),resultado);continue;
@@ -101,6 +121,16 @@ public final class ControladorCorreo {
                 System.err.println("Correo "+pendiente.id()+" pendiente de reintento: "+seguro(ex));
             }
         }
+    }
+    private List<MensajeEntrada> recibir() throws Exception {
+        if (avisos == null) return mail.noProcesados(cola::correosConocidos);
+        Set<String> idsObservados = new HashSet<>();
+        var mensajes = mail.noProcesados(ids -> {
+            idsObservados.addAll(ids);
+            return cola.correosConocidos(ids);
+        });
+        avisos.observar(idsObservados);
+        return mensajes;
     }
     static String comandoSeguro(String asunto){if(asunto==null)return "INVALIDO";var m=Pattern.compile("^\\s*([A-Za-z][A-Za-z0-9_]{0,30})\\s*\\[").matcher(asunto);return m.find()?m.group(1).toUpperCase(java.util.Locale.ROOT):"INVALIDO";}
     static boolean idSeguro(String id){return id!=null&&!id.isBlank()&&id.length()<=255&&id.chars().noneMatch(Character::isISOControl);}

@@ -158,6 +158,36 @@ class CicloCorreoPostgresTest {
         sql("update correo_control set siguiente_intento=now()");mail.fallaEnvio=false;ciclo(mail);
         assertTrue(repo.correoProcesado("uno"));assertEquals(1,mail.respuestas.size());assertEquals(1,cantidad("correo_control where resultado_exito is not null"));assertEquals(3,mail.liberaciones);
     }
+    @Test void pop3AvisaSinPostgresYRecuperaElHistorialTrasReinicio(
+            @org.junit.jupiter.api.io.TempDir Path temporal) throws Exception {
+        var repoPop = new RepositorioPostgres(ds, "pop3");
+        var mail = new CorreoFalso();
+        mail.entrada.add(new MensajeEntrada("historico", "a@example.com", "LISPER[\"*\"]"));
+        Path archivo = temporal.resolve("consultas-sin-postgres.tsv");
+        var controlador = new ControladorCorreo("pop3", 25, 300, mail, repoPop, processor,
+                new AnalizadorOrden(), a -> true);
+        controlador.habilitarAvisosConsulta(archivo);
+        controlador.ejecutarCiclo();
+        mail.entrada.add(new MensajeEntrada("consulta-nueva", "a@example.com", "LISPER[\"*\"]"));
+        mail.entrada.add(new MensajeEntrada("alta-diferida", "a@example.com",
+                "INSPER[\"10001\",\"Ana\",\"Prueba\",\"Estudiante\",\"123\",\"456\",\"a@example.com\"]"));
+        controlador.responderConsultasSinPostgres();
+        controlador.responderConsultasSinPostgres();
+        assertEquals(List.of("consulta-nueva"), mail.respuestas);
+        assertTrue(mail.detalle.get("consulta-nueva").cuerpo().contains("PostgreSQL no está disponible"));
+        assertEquals(0, cantidad("persona"));
+        assertTrue(Files.isRegularFile(archivo));
+
+        var reiniciado = new ControladorCorreo("pop3", 25, 300, mail, repoPop, processor,
+                new AnalizadorOrden(), a -> true);
+        reiniciado.habilitarAvisosConsulta(archivo);
+        reiniciado.ejecutarCiclo();
+        reiniciado.ejecutarCiclo();
+        assertEquals(List.of("consulta-nueva", "alta-diferida"), mail.respuestas);
+        assertEquals(1, cantidad("persona"));
+        assertEquals(1, cantidad("correo_control where mensaje_id='consulta-nueva' and estado='RESPONDIDO' and not exito"));
+        assertFalse(Files.exists(archivo));
+    }
     @Test void errorEnUnMensajeNoBloqueaElSiguiente()throws Exception{
         var mail=new CorreoFalso();mail.entrada.add(new MensajeEntrada("malo","a@example.com","AYUDA["));mail.entrada.add(new MensajeEntrada("bueno","a@example.com","AYUDA[]"));
         ciclo(mail);ciclo(mail);assertEquals(2,mail.respuestas.size());assertTrue(repo.correoProcesado("malo"));assertTrue(repo.correoProcesado("bueno"));
