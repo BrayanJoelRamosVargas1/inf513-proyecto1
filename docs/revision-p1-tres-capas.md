@@ -85,7 +85,7 @@ Esta revisión es local. Quedan pendientes la aplicación del esquema actualizad
 
 ## Verificación
 
-Una compilación limpia con Maven y JDK 17 ejecutó **137 pruebas con éxito** en PostgreSQL 15. En una base vacía se verificó el rechazo del primer decano inactivo, el alta posterior del decano activo y la posibilidad de registrar un evaluador inactivo una vez iniciado el sistema. El recorrido por correo cubrió los ocho casos. Una prueba con 231 postulaciones comprobó las cinco secciones del reporte. El ejecutable procesó una consulta válida y un asunto inválido por POP3 y SMTP contra servicios locales de ensayo y se recuperó de un conflicto con el bloqueo de instancia única. El SQL se aplicó dos veces sobre una copia del esquema anterior y el laboratorio arrancó desde una extracción limpia.
+Una compilación limpia con Maven y JDK 17 ejecutó **138 pruebas con éxito** en PostgreSQL 15. En una base vacía se verificó el rechazo del primer decano inactivo, el alta posterior del decano activo y la posibilidad de registrar un evaluador inactivo una vez iniciado el sistema. El recorrido por correo cubrió los ocho casos. Se verificó que un fallo transitorio en LISPER genere un error para el remitente cuando la cola sigue disponible. Una prueba con 231 postulaciones comprobó las cinco secciones del reporte. El ejecutable procesó una consulta válida y un asunto inválido por POP3 y SMTP contra servicios locales de ensayo y se recuperó de un conflicto con el bloqueo de instancia única. El SQL se aplicó dos veces sobre una copia del esquema anterior y el laboratorio arrancó desde una extracción limpia.
 
 
 ## Depuración del paquete local

@@ -37,7 +37,11 @@ public final class ProcesadorOrden {
             if(orden.comando().equals("AYUDA"))return Resultado.ok(catalogo.todos().entrySet().stream().map(e->e.getKey()+" - "+e.getValue().descripcion()+" ("+e.getValue().parametros()+" parámetros)").sorted().collect(Collectors.joining("\n")));
             return mensajeId==null?repo.ejecutar(remitente,orden):repo.ejecutarIdempotente(mensajeId,remitente,orden);
         }catch(Exception ex){
-            if(esFalloTemporal(ex))throw new InfraestructuraException("Servicio de datos temporalmente no disponible",ex);
+            if(esFalloTemporal(ex)){
+                if(!orden.comando().equals("LISPER"))throw new InfraestructuraException("Servicio de datos temporalmente no disponible",ex);
+                bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivos.sistema().error("CONSULTA_PERSONA_TEMPORAL",mensajeId,ex);
+                return Resultado.error("No se pudo completar la consulta de personas por un problema temporal con PostgreSQL. Volvé a enviar la orden más tarde.");
+            }
             bo.edu.uagrm.inf513.grupo09sa.BitacoraArchivos.sistema().error("EXCEPCION_ORDEN",mensajeId,ex);
             if(ex instanceof SQLException s)return Resultado.error((orden.comando().equals("INSPER")?"Error: ":"")+mensajeSqlSeguro(s));
             return Resultado.error("No se pudo ejecutar la orden: "+mensajeSeguro(ex));

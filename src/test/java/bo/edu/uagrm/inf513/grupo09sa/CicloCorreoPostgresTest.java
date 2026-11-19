@@ -119,6 +119,31 @@ class CicloCorreoPostgresTest {
             assertTrue(r.next());assertEquals("Nombre de PDF inválido",r.getString(1));
         }
     }
+    @Test void lisperConFalloTransitorioDeConsultaEnviaUnErrorAlRemitente() throws Exception {
+        var consultas = new java.util.concurrent.atomic.AtomicInteger();
+        var repositorioConFallo = new RepositorioProyecto() {
+            @Override public boolean autorizado(String remitente, String rol) { return false; }
+            @Override public boolean hayUsuarios() { return false; }
+            @Override public Resultado ejecutar(String remitente, Orden orden) throws java.sql.SQLException {
+                assertEquals("LISPER", orden.comando());
+                consultas.incrementAndGet();
+                throw new java.sql.SQLTransientConnectionException("detalle privado de ensayo", "08006");
+            }
+        };
+        processor = new ProcesadorOrden(new CatalogoComandos(), repositorioConFallo);
+        var mail = new CorreoFalso();
+        mail.entrada.add(new MensajeEntrada("consulta-interrumpida", "a@example.com", "LISPER[\"*\"]"));
+        ciclo(mail);
+        ciclo(mail);
+        ciclo(mail);
+        assertEquals(List.of("consulta-interrumpida"), mail.respuestas);
+        var respuesta = mail.detalle.get("consulta-interrumpida");
+        assertEquals("ERROR - Orden no procesada", respuesta.asunto());
+        assertTrue(respuesta.cuerpo().contains("problema temporal con PostgreSQL"));
+        assertFalse(respuesta.cuerpo().contains("detalle privado"));
+        assertEquals(1, consultas.get());
+        assertTrue(repo.correoProcesado("consulta-interrumpida"));
+    }
     @Test void envioFallidoConservaRespuestaYNoDuplicaElResultado()throws Exception{
         var mail=new CorreoFalso();mail.entrada.add(new MensajeEntrada("uno","a@example.com","LISCON[\"*\"]"));
         ciclo(mail);assertEquals(1,cantidad("p1_resultado_orden"));assertTrue(mail.marcados.contains("uno"));

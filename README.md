@@ -36,7 +36,7 @@ Copiá `config/application.example.properties` a `config/application.properties`
 
 Las órdenes se escriben en el asunto de correos nuevos. Enviá `LISPER["*"]` para consultar `persona`. La inserción `INSPER` recibe siete parámetros en este orden: CI, nombres, apellidos, ocupación, teléfono, celular y correo. Usá datos ficticios y comprobá el rechazo al repetir el mismo CI. Para probar el analizador, enviá `LISPER[*]`. Las órdenes con rol solicitan un código que se confirma desde la misma cuenta.
 
-Un problema transitorio de PostgreSQL se registra y se reintenta. La respuesta puede quedar demorada hasta que se recupere la base. Revisá `logs/access.log` y `logs/error.log` en el equipo que ejecuta el JAR.
+Si falla temporalmente la consulta `LISPER`, el servicio prepara una respuesta de error para el remitente. Si PostgreSQL está completamente fuera de servicio, el procesamiento espera a que vuelva la cola. Las escrituras conservan sus reintentos para evitar resultados inciertos o duplicados. Revisá `logs/access.log` y `logs/error.log` en el equipo que ejecuta el JAR.
 
 En una instalación existente, ejecutá la migración en una copia y respaldá la base antes de arrancar una versión nueva. El nuevo JAR lee los históricos de `p1_correo_control` luego de aplicar `database/schema.sql`. El esquema conserva una tabla histórica antigua si ya existía para facilitar la reversión.
 
