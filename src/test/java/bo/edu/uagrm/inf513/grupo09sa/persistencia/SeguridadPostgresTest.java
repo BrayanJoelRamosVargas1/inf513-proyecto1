@@ -651,6 +651,30 @@ class SeguridadPostgresTest {
         assertTrue(ordenar("admin@example.com","ASIPLA","2","true").exito());
         assertEquals(1,numero("select count(*) from auditoria where accion='DESEMP' and detalle like '%Acta de autoridad%'"));
     }
+    @Test void unPuestoSeguroNoCongelaLaConvocatoriaConUnEmpateEnElCorte() throws Exception {
+        iniciarFlujo();
+        ejecutarSql("update convocatoria set plazas=3");
+        assertTrue(ordenar("admin@example.com","ASIOFE","1","1","2").exito());
+        assertTrue(ordenar("admin@example.com","INSCAR","Segundo cargo","Facultad","true").exito());
+        assertTrue(ordenar("admin@example.com","ASIOFE","1","2","1").exito());
+        segundoPostulante();
+        assertTrue(ordenar("admin@example.com","INSUSU","7","Mario","Prueba","POSTULANTE","70000007","mario@example.com","true").exito());
+        assertTrue(ordenar("mario@example.com","INSPOST","1","1","https://example.com/mario.pdf").exito());
+        assertTrue(ordenar("admin@example.com","ASIEVA","3","2","MERITOS_Y_EXAMEN").exito());
+        assertTrue(ordenar("luis@example.com","INSPOST","1","2","https://example.com/segundo.pdf").exito());
+        assertTrue(ordenar("admin@example.com","ASIEVA","4","2","MERITOS_Y_EXAMEN").exito());
+        habilitarYCalificar("1","95");
+        habilitarYCalificar("2","80");
+        habilitarYCalificar("3","80");
+        habilitarYCalificar("4","86");
+
+        assertTrue(ordenar("admin@example.com","ASIPLA","1","true").cuerpo().contains("Empate pendiente"));
+        assertEquals(0,numero("select count(*) from postulacion where plaza_asignada"));
+        assertTrue(ordenar("admin@example.com","ASIPLA","4","true").exito());
+        assertTrue(ordenar("admin@example.com","DESEMP","1","1","3,2","Acta de desempate del segundo lugar").exito());
+        assertTrue(ordenar("admin@example.com","ASIPLA","1","true").exito());
+        assertTrue(ordenar("admin@example.com","ASIPLA","3","true").exito());
+    }
     @Test void rankingDejaPendienteATodoElEmpateSiSeSumaOtroCandidato()throws Exception{
         iniciarFlujo();segundoPostulante();habilitarYCalificar("1","80");habilitarYCalificar("2","80");
         assertTrue(ordenar("admin@example.com","DESEMP","1","1","2,1","Acta para dos candidatos").exito());

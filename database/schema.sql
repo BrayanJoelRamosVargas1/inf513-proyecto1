@@ -7,7 +7,7 @@ create table if not exists persona (
     ocupacion varchar(80) not null,
     telefono varchar(30) not null check(telefono ~ '^[0-9]+$'),
     celular varchar(30) not null check(celular ~ '^[0-9]+$'),
-    correo varchar(160) not null unique
+    correo varchar(160) not null
 );
 
 create table if not exists usuario (
@@ -52,9 +52,10 @@ create table if not exists oferta (
 create table if not exists area_examen (
     convocatoria_id bigint not null,
     cargo_id bigint not null,
-    area varchar(80) not null check(area=lower(btrim(area)) and length(area)>0 and area<>'general'),
+    area varchar(80) not null check(area=lower(btrim(area)) and length(area)>0),
     peso numeric(5,2) not null check(peso>0 and peso<=100),
     primary key(convocatoria_id,cargo_id,area),
+    constraint area_nombre_reservado_ck check (area not in ('general','meritos','examen','meritos_y_examen')),
     foreign key(convocatoria_id,cargo_id) references oferta(convocatoria_id,cargo_id)
 );
 
@@ -65,9 +66,9 @@ create table if not exists postulacion (
     cargo_id bigint not null,
     estado varchar(30) not null default 'REGISTRADA',
     observacion text,
-    puntaje_meritos numeric(7,2) default 0,
-    puntaje_examen numeric(7,2) default 0,
-    puntaje_final numeric(7,2) default 0,
+    puntaje_meritos numeric(7,2) not null default 0,
+    puntaje_examen numeric(7,2) not null default 0,
+    puntaje_final numeric(7,2) not null default 0,
     plaza_asignada boolean not null default false,
     creado_en timestamptz not null default now(),
     unique(convocatoria_id,postulante_id,cargo_id),
@@ -88,7 +89,11 @@ create table if not exists expediente (
     creado_en timestamptz not null default now(),
     nombre_archivo varchar(180),
     contenido bytea,
-    sha256 char(64)
+    sha256 char(64),
+    constraint expediente_contenido_ck check (contenido is null or (
+        octet_length(contenido) between 5 and 2097152
+        and sha256 is not distinct from encode(pg_catalog.sha256(contenido),'hex')
+    ))
 );
 
 create table if not exists evaluacion_requisito (
@@ -160,6 +165,7 @@ create table if not exists correo_control (
     siguiente_intento timestamptz not null default now(),
     creado_en timestamptz not null default now(),
     actualizado_en timestamptz not null default now(),
+    constraint correo_intentos_ck check (intentos>=0),
     constraint correo_control_estado_check check (estado in('DIFERIDO','RECIBIDO','RESPUESTA_PENDIENTE','RESPONDIDO','INTERNO')),
     token_hash varchar(64),
     orden_json text,
@@ -179,7 +185,8 @@ create table if not exists adjunto_correo (
     nombre varchar(180) not null,
     contenido bytea not null check(octet_length(contenido) between 5 and 2097152),
     sha256 char(64) not null,
-    creado_en timestamptz not null default now()
+    creado_en timestamptz not null default now(),
+    constraint adjunto_correo_sha256_ck check (sha256=encode(pg_catalog.sha256(contenido),'hex'))
 );
 
 create table if not exists auditoria (
@@ -206,12 +213,16 @@ on conflict(protocolo) do nothing;
 
 create unique index if not exists uq_correo_confirmacion on correo_control(token_hash) where token_hash is not null;
 create index if not exists idx_correo_admitido on correo_control(admitido_en,lower(remitente));
+create unique index if not exists uq_persona_correo_ci on persona(lower(correo));
 create unique index if not exists uq_usuario_correo_ci on usuario(lower(correo));
 create index if not exists idx_postulacion_oferta on postulacion(convocatoria_id,cargo_id);
 create index if not exists idx_auditoria_entidad on auditoria(entidad,entidad_id,fecha desc);
 create index if not exists idx_correo_control_pendiente on correo_control(estado,siguiente_intento);
 create index if not exists idx_correo_control_remitente_fecha on correo_control(lower(remitente),creado_en desc);
 create index if not exists idx_correo_control_fecha on correo_control(creado_en desc);
+create index if not exists idx_evaluacion_requisito_postulacion on evaluacion_requisito(postulacion_id);
+create index if not exists idx_merito_postulacion on merito(postulacion_id);
+create index if not exists idx_examen_postulacion on examen(postulacion_id);
 create index if not exists idx_evaluacion_requisito_evaluador on evaluacion_requisito(evaluador_id);
 create index if not exists idx_merito_evaluador on merito(evaluador_id);
 create index if not exists idx_examen_evaluador on examen(evaluador_id);
@@ -276,8 +287,12 @@ begin
         or (old.convocatoria_id,old.cargo_id) is distinct from (new.convocatoria_id,new.cargo_id);
     if tg_op = 'UPDATE' and cambia_oferta then
         perform 1 from convocatoria where id in (old.convocatoria_id,new.convocatoria_id) order by id for update;
-        if old.plaza_asignada or exists (select 1 from examen where postulacion_id=old.id) then
-            raise exception 'La oferta no puede cambiar después de asignar una plaza o registrar un examen'
+        if old.plaza_asignada
+           or exists (select 1 from asignacion_evaluador where postulacion_id=old.id)
+           or exists (select 1 from evaluacion_requisito where postulacion_id=old.id)
+           or exists (select 1 from merito where postulacion_id=old.id)
+           or exists (select 1 from examen where postulacion_id=old.id) then
+            raise exception 'La oferta no puede cambiar después de registrar una asignación o evaluación'
                 using errcode='23514';
         end if;
     elsif cambia_oferta then
@@ -286,6 +301,10 @@ begin
     if new.plaza_asignada then
         -- Comparte el bloqueo de cupo con las ediciones de oferta y otros ganadores.
         update convocatoria set plazas=plazas where id=new.convocatoria_id;
+        if not inf513_requisitos_vigentes(new.id) or not inf513_evaluacion_completa(new.id) then
+            raise exception 'La plaza requiere requisitos aprobados y una evaluación completa'
+                using errcode='23514';
+        end if;
     end if;
     if cambia_oferta or new.plaza_asignada then
         select plazas into cupo from oferta
@@ -338,6 +357,14 @@ begin
         raise exception 'No se pueden cambiar las ponderaciones después de registrar exámenes'
             using errcode = '23514';
     end if;
+    if tg_op <> 'INSERT' and (tg_op = 'DELETE' or
+       (old.convocatoria_id,old.cargo_id,old.area) is distinct from (new.convocatoria_id,new.cargo_id,new.area))
+       and exists (
+           select 1 from postulacion p join asignacion_evaluador a on a.postulacion_id=p.id
+           where (p.convocatoria_id,p.cargo_id,a.tipo)=(old.convocatoria_id,old.cargo_id,old.area)
+       ) then
+        raise exception 'El área tiene asignaciones de evaluadores' using errcode='23514';
+    end if;
     if tg_op = 'DELETE' then
         return old;
     end if;
@@ -361,6 +388,55 @@ create or replace trigger area_total_trg
 before insert or update or delete on area_examen
 for each row execute function inf513_validar_total_areas();
 
+create or replace function inf513_validar_asignacion()
+returns trigger language plpgsql as $$
+begin
+    perform 1 from convocatoria c join postulacion p on p.convocatoria_id=c.id
+    where p.id=new.postulacion_id for update of c;
+    if not exists (select 1 from usuario where id=new.evaluador_id and activo and rol='EVALUADOR') then
+        raise exception 'La asignación requiere un evaluador activo' using errcode='23514';
+    end if;
+    if new.tipo not in ('MERITOS','EXAMEN','MERITOS_Y_EXAMEN') and not exists (
+        select 1 from postulacion p join area_examen a using(convocatoria_id,cargo_id)
+        where p.id=new.postulacion_id and a.area=new.tipo
+    ) then
+        raise exception 'La asignación debe corresponder a un área configurada' using errcode='23514';
+    end if;
+    return new;
+end
+$$;
+
+create or replace trigger asignacion_evaluador_trg
+before insert or update of postulacion_id, evaluador_id, tipo on asignacion_evaluador
+for each row execute function inf513_validar_asignacion();
+
+create or replace function inf513_requisitos_vigentes(id_postulacion bigint)
+returns boolean language sql stable as $$
+    select coalesce(bool_and(cumple),false)
+    from (
+        select distinct on (lower(btrim(requisito)),evaluador_id) cumple
+        from evaluacion_requisito where postulacion_id=id_postulacion
+        order by lower(btrim(requisito)),evaluador_id,id desc
+    ) vigentes
+$$;
+
+create or replace function inf513_evaluacion_completa(id_postulacion bigint)
+returns boolean language sql stable as $$
+    with areas as (
+        select a.area,a.peso from postulacion p join area_examen a using(convocatoria_id,cargo_id)
+        where p.id=id_postulacion
+    )
+    select exists(select 1 from merito where postulacion_id=id_postulacion)
+        and case when exists(select 1 from areas) then
+            (select sum(peso) from areas)=100
+            and not exists(
+                select 1 from areas a where not exists(
+                    select 1 from examen e where e.postulacion_id=id_postulacion and e.area=a.area
+                )
+            )
+        else exists(select 1 from examen where postulacion_id=id_postulacion and area='general') end
+$$;
+
 create or replace function inf513_validar_examen()
 returns trigger language plpgsql as $$
 declare
@@ -373,6 +449,13 @@ begin
     from postulacion p where p.id = new.postulacion_id;
     if not found then return new; end if;
     update convocatoria set plazas = plazas where id = id_convocatoria_examen;
+    if not exists (
+        select 1 from postulacion p where p.id=new.postulacion_id
+        and p.estado in ('HABILITADO','GANADOR') and inf513_requisitos_vigentes(p.id)
+    ) then
+        raise exception 'El examen requiere una postulación habilitada con requisitos vigentes'
+            using errcode='23514';
+    end if;
     select sum(a.peso), coalesce(bool_or(a.area = new.area), false)
     into peso_total, area_valida
     from area_examen a where a.convocatoria_id = id_convocatoria_examen and a.cargo_id = id_cargo_examen;
@@ -397,7 +480,7 @@ end
 $$;
 
 create or replace trigger examen_configuracion_trg
-before insert or update of postulacion_id, area, evaluador_id on examen
+before insert or update of postulacion_id, area, evaluador_id, puntaje on examen
 for each row execute function inf513_validar_examen();
 
 create or replace function inf513_validar_evaluador()
@@ -423,3 +506,83 @@ for each row execute function inf513_validar_evaluador();
 create or replace trigger merito_evaluador_trg
 before insert or update of postulacion_id, evaluador_id on merito
 for each row execute function inf513_validar_evaluador();
+
+create or replace function inf513_calcular_puntajes(id_postulacion bigint)
+returns table(meritos numeric, examen numeric, final numeric) language sql stable as $$
+    with meritos_recientes as (
+        select distinct on (lower(btrim(m.criterio)),m.evaluador_id)
+            lower(btrim(m.criterio)) criterio,m.puntaje
+        from merito m where m.postulacion_id=id_postulacion
+        order by lower(btrim(m.criterio)),m.evaluador_id,m.id desc
+    ), promedios_meritos as (
+        select avg(puntaje) nota from meritos_recientes group by criterio
+    ), examenes_recientes as (
+        select distinct on (e.area,e.evaluador_id) e.area,e.puntaje
+        from examen e where e.postulacion_id=id_postulacion
+        order by e.area,e.evaluador_id,e.id desc
+    ), promedios_examen as (
+        select area,avg(puntaje) nota from examenes_recientes group by area
+    ), areas as (
+        select a.area,a.peso from area_examen a join postulacion p
+            on p.convocatoria_id=a.convocatoria_id and p.cargo_id=a.cargo_id
+        where p.id=id_postulacion
+    ), notas as (
+        select round(least(100,coalesce((select sum(nota) from promedios_meritos),0)),2) meritos,
+            coalesce(
+                (select sum(coalesce(e.nota,0)*a.peso/100) from areas a
+                    left join promedios_examen e using(area)),
+                (select nota from promedios_examen where area='general'),0
+            ) examen
+    )
+    select meritos,round(examen,2),round(meritos*0.4+examen*0.6,2) from notas
+$$;
+
+create or replace function inf513_derivar_puntajes()
+returns trigger language plpgsql as $$
+begin
+    select meritos,examen,final into new.puntaje_meritos,new.puntaje_examen,new.puntaje_final
+    from inf513_calcular_puntajes(new.id);
+    return new;
+end
+$$;
+
+create or replace trigger postulacion_puntajes_trg
+before insert or update of puntaje_meritos, puntaje_examen, puntaje_final, evaluacion_version on postulacion
+for each row execute function inf513_derivar_puntajes();
+
+create or replace function inf513_recalcular_evaluacion()
+returns trigger language plpgsql as $$
+declare
+    anterior bigint;
+    actual bigint;
+    post bigint;
+    convocatoria_evaluada bigint;
+begin
+    if tg_op <> 'INSERT' then anterior := old.postulacion_id; end if;
+    if tg_op <> 'DELETE' then actual := new.postulacion_id; end if;
+    for convocatoria_evaluada in
+        select distinct convocatoria_id from postulacion where id in (anterior,actual) order by convocatoria_id
+    loop
+        perform 1 from convocatoria where id=convocatoria_evaluada for update;
+        if exists (select 1 from postulacion where convocatoria_id=convocatoria_evaluada and plaza_asignada) then
+            raise exception 'Retire primero las plazas asignadas antes de modificar evaluaciones' using errcode='23514';
+        end if;
+    end loop;
+    for post in select id from postulacion where id in (anterior,actual) order by id loop
+        update postulacion set evaluacion_version=evaluacion_version+1 where id=post;
+    end loop;
+    return null;
+end
+$$;
+
+create or replace trigger merito_puntajes_trg
+after insert or update of postulacion_id, criterio, evaluador_id, puntaje or delete on merito
+for each row execute function inf513_recalcular_evaluacion();
+
+create or replace trigger requisito_version_trg
+after insert or update of postulacion_id, requisito, evaluador_id, cumple or delete on evaluacion_requisito
+for each row execute function inf513_recalcular_evaluacion();
+
+create or replace trigger examen_puntajes_trg
+after insert or update of postulacion_id, area, evaluador_id, puntaje or delete on examen
+for each row execute function inf513_recalcular_evaluacion();

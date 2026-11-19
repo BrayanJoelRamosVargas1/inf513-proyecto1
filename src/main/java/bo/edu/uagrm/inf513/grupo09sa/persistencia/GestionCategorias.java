@@ -14,8 +14,8 @@ final class GestionCategorias {
     @FunctionalInterface interface Conexion { Connection abrir() throws SQLException; }
     private final Conexion conexiones;
     GestionCategorias(Conexion conexiones){this.conexiones=conexiones;}
-    private static final String REQUISITOS="exists(select 1 from evaluacion_requisito e where e.postulacion_id=p.id) and not exists(select 1 from (select distinct on(lower(btrim(requisito)),evaluador_id) cumple from evaluacion_requisito where postulacion_id=p.id order by lower(btrim(requisito)),evaluador_id,id desc) vigentes where not cumple)";
-    private static final String COMPLETA="exists(select 1 from merito m where m.postulacion_id=p.id) and (case when exists(select 1 from area_examen a where a.convocatoria_id=p.convocatoria_id and a.cargo_id=p.cargo_id) then (select sum(a.peso) from area_examen a where a.convocatoria_id=p.convocatoria_id and a.cargo_id=p.cargo_id)=100 and not exists(select 1 from area_examen a where a.convocatoria_id=p.convocatoria_id and a.cargo_id=p.cargo_id and not exists(select 1 from examen e where e.postulacion_id=p.id and e.area=a.area)) else exists(select 1 from examen e where e.postulacion_id=p.id and e.area='general') end)";
+    private static final String REQUISITOS="inf513_requisitos_vigentes(p.id)";
+    private static final String COMPLETA="inf513_evaluacion_completa(p.id)";
     private static final String ELEGIBLE="p.estado in('HABILITADO','GANADOR') and "+REQUISITOS+" and "+COMPLETA;
     private PreparedStatement preparar(Connection c,String sql,Object... valores)throws SQLException {
         PreparedStatement s=c.prepareStatement(sql);
@@ -108,10 +108,6 @@ final class GestionCategorias {
         }
         return Resultado.ok("Nota de área registrada.");
     }
-    BigDecimal notaExamen(long post)throws SQLException {
-        String sql="with ultimas as (select distinct on(area,evaluador_id) area,puntaje from examen where postulacion_id=?::bigint order by area,evaluador_id,id desc), promedios as(select area,avg(puntaje) nota from ultimas group by area), areas as(select a.area,a.peso from area_examen a join postulacion p on p.convocatoria_id=a.convocatoria_id and p.cargo_id=a.cargo_id where p.id=?::bigint) select case when exists(select 1 from areas) then (select coalesce(sum(coalesce(p.nota,0)*a.peso/100),0) from areas a left join promedios p on p.area=a.area) else (select coalesce(avg(puntaje),0) from ultimas where area='general') end";
-        try(var c=conexiones.abrir();var s=preparar(c,sql,post,post);var r=s.executeQuery()){r.next();return r.getBigDecimal(1);}
-    }
     private record Candidato(long id,BigDecimal puntaje,Integer prioridad){}
     private List<Candidato> candidatos(long conv,long cargo)throws SQLException {
         var salida=new ArrayList<Candidato>();
@@ -123,9 +119,12 @@ final class GestionCategorias {
         return salida;
     }
     Resultado resolver(String actor,List<String> p)throws SQLException {
-        if(existe("select 1 from postulacion where convocatoria_id=?::bigint and plaza_asignada",p.get(0)))return Resultado.error("Retire primero las plazas asignadas antes de resolver un empate.");
+        long convocatoria=Long.parseLong(p.get(0)), cargo=Long.parseLong(p.get(1));
+        if (existe("select 1 from postulacion where convocatoria_id=? and cargo_id=? and plaza_asignada",
+                convocatoria,cargo))
+            return Resultado.error("Retire primero las plazas asignadas de este cargo antes de resolver un empate.");
         List<Long> ids=Arrays.stream(p.get(2).split(",")).map(Long::parseLong).toList();
-        List<Candidato> todos=candidatos(Long.parseLong(p.get(0)),Long.parseLong(p.get(1)));
+        List<Candidato> todos=candidatos(convocatoria,cargo);
         Candidato primero=todos.stream().filter(c->c.id()==ids.get(0)).findFirst().orElse(null);
         if(primero==null)return Resultado.error("Las postulaciones deben tener evaluación completa y requisitos vigentes.");
         var empatados=todos.stream().filter(c->c.puntaje().compareTo(primero.puntaje())==0).map(Candidato::id).collect(java.util.stream.Collectors.toSet());
@@ -159,11 +158,12 @@ final class GestionCategorias {
                 r.next();if(r.getInt(1)>=plazas)return Resultado.error("No quedan plazas disponibles en este cargo.");
             }
             List<Candidato> lista=candidatos(conv,cargo);
-            Candidato objetivo=lista.stream().filter(x->x.id()==post).findFirst().orElse(null);
-            if(objetivo==null)return Resultado.error("Se requieren requisitos vigentes, méritos y examen completo antes de asignar una plaza.");
+            if(lista.stream().noneMatch(x->x.id()==post))
+                return Resultado.error("Se requieren requisitos vigentes, méritos y examen completo antes de asignar una plaza.");
             int corte=Math.min(plazas,lista.size());
             BigDecimal notaCorte=lista.get(corte-1).puntaje();
-            if(objetivo.puntaje().compareTo(notaCorte)==0&&lista.size()>corte&&lista.get(corte).puntaje().compareTo(notaCorte)==0) {
+            // Antes del primer ganador se resuelve cualquier empate que cruce el corte.
+            if(lista.size()>corte&&lista.get(corte).puntaje().compareTo(notaCorte)==0) {
                 var empate=lista.stream().filter(x->x.puntaje().compareTo(notaCorte)==0).toList();
                 var prioridades=new HashSet<Integer>();
                 if(empate.stream().anyMatch(x->x.prioridad()==null||!prioridades.add(x.prioridad())))return Resultado.error("Empate pendiente que afecta una plaza. La autoridad debe resolverlo con DESEMP y justificación.");

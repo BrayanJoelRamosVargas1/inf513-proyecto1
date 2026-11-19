@@ -36,12 +36,14 @@ class IntegridadEsquemaTest {
         String preparacion = Files.readString(directorio.resolve("001_preparar.sql"));
         String historial = Files.readString(directorio.resolve("002_migrar_historial.sql"));
         String ofertas = Files.readString(directorio.resolve("003_postulacion_oferta.sql"));
+        String evaluaciones = Files.readString(directorio.resolve("004_integridad_evaluacion.sql"));
         try (var c = datos.getConnection(); var q = c.createStatement()) {
             c.setAutoCommit(false);
             q.execute(preparacion);
             q.execute(sqlEsquema);
             q.execute(historial);
             q.execute(ofertas);
+            q.execute(evaluaciones);
             c.commit();
         }
     }
@@ -162,8 +164,9 @@ class IntegridadEsquemaTest {
             alter table postulacion disable trigger postulacion_oferta_trg;
             insert into postulacion(convocatoria_id,postulante_id,cargo_id) values(1,1,1);
             alter table postulacion enable trigger postulacion_oferta_trg;
-            insert into expediente(postulacion_id,descripcion,ruta_archivo,contenido)
-                values(1,'Ensayo','postgres:p1_expediente/1',convert_to('%PDF-ensayo','UTF8'));
+            insert into expediente(postulacion_id,descripcion,ruta_archivo,contenido,sha256)
+                values(1,'Ensayo','postgres:p1_expediente/1',convert_to('%PDF-ensayo','UTF8'),
+                       encode(sha256(convert_to('%PDF-ensayo','UTF8')),'hex'));
             insert into correo_control(mensaje_id,remitente,asunto,estado,buzon_protocolo)
                 values('antes','ana@example.com','AYUDA[]','DIFERIDO','pop3');
             alter table postulacion rename to p1_postulacion;
@@ -221,8 +224,16 @@ class IntegridadEsquemaTest {
         sql("insert into area_examen values(1,1,'teoria',70)");
         invalido("insert into area_examen values(1,1,'practica',70)");
         sql("insert into area_examen values(1,1,'practica',30)");
+        invalido("insert into asignacion_evaluador(postulacion_id,evaluador_id,tipo) values("+post+",1,'EXAMEN')");
+        invalido("insert into asignacion_evaluador(postulacion_id,evaluador_id,tipo) values("+post+",2,'inventada')");
+        sql("insert into asignacion_evaluador(postulacion_id,evaluador_id,tipo) values("+post+",2,'teoria')");
+        invalido("delete from area_examen where area='teoria'");
         sql("insert into asignacion_evaluador(postulacion_id,evaluador_id,tipo) values("+post+",2,'EXAMEN')");
         String examen = "insert into examen(postulacion_id,area,puntaje,evaluador_id) values("+post+",";
+        invalido(examen + "'teoria',85,2)");
+        sql("insert into evaluacion_requisito(postulacion_id,requisito,cumple,evaluador_id) values("
+                + post + ",'Identidad',true,2)");
+        sql("update postulacion set estado='HABILITADO' where id=" + post);
         invalido(examen + "'inventada',85,2)");
         invalido(examen + "'teoria',85,999)");
         sql(examen + "'teoria',85,2)");
@@ -248,7 +259,8 @@ class IntegridadEsquemaTest {
         sql("""
             insert into usuario(registro,nombres,apellidos,rol,correo) values
                 ('1','Ana','Ensayo','POSTULANTE','ana@example.com'),
-                ('2','Luis','Ensayo','POSTULANTE','luis@example.com');
+                ('2','Luis','Ensayo','POSTULANTE','luis@example.com'),
+                ('3','Eva','Ensayo','EVALUADOR','eva@example.com');
             """);
         String postular = "insert into postulacion(convocatoria_id,postulante_id,cargo_id) values(1,1,1)";
         assertEquals("23503", assertThrows(SQLException.class, () -> sql(postular)).getSQLState());
@@ -260,6 +272,18 @@ class IntegridadEsquemaTest {
         assertEquals("23503", assertThrows(SQLException.class, () -> sql("delete from oferta where cargo_id=1")).getSQLState());
 
         invalido("update postulacion set estado='GANADOR' where postulante_id=1");
+        invalido("update postulacion set estado='GANADOR', plaza_asignada=true where postulante_id=1");
+        sql("""
+            insert into asignacion_evaluador(postulacion_id,evaluador_id,tipo)
+                select id,3,'MERITOS_Y_EXAMEN' from postulacion;
+            insert into evaluacion_requisito(postulacion_id,requisito,cumple,evaluador_id)
+                select id,'Identidad',true,3 from postulacion;
+            update postulacion set estado='HABILITADO';
+            insert into merito(postulacion_id,criterio,puntaje,evaluador_id)
+                select id,'Experiencia',75,3 from postulacion;
+            insert into examen(postulacion_id,puntaje,evaluador_id)
+                select id,75,3 from postulacion;
+            """);
         sql("update postulacion set estado='GANADOR', plaza_asignada=true where postulante_id=1");
         invalido("update postulacion set estado='GANADOR', plaza_asignada=true where postulante_id=2");
         invalido("update postulacion set cargo_id=2 where postulante_id=1");
@@ -297,6 +321,9 @@ class IntegridadEsquemaTest {
             insert into oferta values(1,1,1),(1,2,1);
             insert into postulacion(convocatoria_id,postulante_id,cargo_id) values(1,1,1);
             insert into asignacion_evaluador(postulacion_id,evaluador_id,tipo) values(1,2,'MERITOS');
+            insert into evaluacion_requisito(postulacion_id,requisito,cumple,evaluador_id)
+                values(1,'Identidad',true,2);
+            update postulacion set estado='HABILITADO' where id=1;
             insert into area_examen values(1,2,'practica',100);
             """);
         String notaGeneral="insert into examen(postulacion_id,puntaje,evaluador_id) values(1,85,2)";
@@ -306,6 +333,58 @@ class IntegridadEsquemaTest {
         invalido("insert into area_examen values(1,1,'teoria',100)");
         invalido("update area_examen set cargo_id=1 where cargo_id=2");
         assertEquals(1, numero("select count(*) from area_examen where cargo_id=2"));
+    }
+
+    @Test void calculaLosPuntajesConEscriturasSqlYProtegeLosValoresDerivados() throws Exception {
+        prepararOfertas();
+        sql("""
+            insert into usuario(registro,nombres,apellidos,rol,correo) values
+                ('1','Ana','Ensayo','POSTULANTE','ana@example.com'),
+                ('2','Eva','Ensayo','EVALUADOR','eva@example.com');
+            insert into oferta values(1,1,1);
+            insert into postulacion(convocatoria_id,postulante_id,cargo_id) values(1,1,1);
+            insert into asignacion_evaluador(postulacion_id,evaluador_id,tipo) values(1,2,'MERITOS_Y_EXAMEN');
+            insert into evaluacion_requisito(postulacion_id,requisito,cumple,evaluador_id)
+                values(1,'Identidad',true,2);
+            update postulacion set estado='HABILITADO' where id=1;
+            insert into merito(postulacion_id,criterio,puntaje,evaluador_id) values(1,'Experiencia',80,2);
+            insert into examen(postulacion_id,puntaje,evaluador_id) values(1,85,2);
+            """);
+        assertEquals(83, numero("select puntaje_final from postulacion where id=1"));
+        assertEquals(3, numero("select evaluacion_version from postulacion where id=1"));
+
+        sql("update postulacion set puntaje_final=100 where id=1");
+        assertEquals(83, numero("select puntaje_final from postulacion where id=1"));
+        sql("update examen set puntaje=90");
+        assertEquals(86, numero("select puntaje_final from postulacion where id=1"));
+        sql("update postulacion set estado='GANADOR',plaza_asignada=true where id=1");
+        invalido("delete from examen");
+        sql("update postulacion set estado='HABILITADO',plaza_asignada=false where id=1");
+        sql("delete from examen");
+        assertEquals(32, numero("select puntaje_final from postulacion where id=1"));
+        assertEquals(5, numero("select evaluacion_version from postulacion where id=1"));
+        invalido("insert into area_examen values (1,1,'meritos',100)");
+    }
+
+    @Test void validaCorreoDePersonaYLaHuellaDelAdjuntoGuardado() throws Exception {
+        sql("""
+            insert into persona values ('501','Ana','Test','Estudiante','30001','70001','persona@example.com');
+            insert into correo_control(mensaje_id,remitente,estado) values('pdf','persona@example.com','DIFERIDO');
+            """);
+        assertEquals("23505", assertThrows(SQLException.class, () ->
+                sql("insert into persona values ('502','Luis','Test','Estudiante','30002','70002','PERSONA@example.com')"))
+                .getSQLState());
+        invalido("update correo_control set intentos=-1");
+        invalido("""
+            insert into adjunto_correo(mensaje_id,nombre,contenido,sha256)
+                values('pdf','archivo.pdf',convert_to('%PDF-ensayo','UTF8'),repeat('0',64))
+            """);
+        sql("""
+            insert into adjunto_correo(mensaje_id,nombre,contenido,sha256)
+                select 'pdf','archivo.pdf',bytes,encode(sha256(bytes),'hex')
+                from (select convert_to('%PDF-ensayo','UTF8') bytes) b
+            """);
+        assertEquals(1, numero("select count(*) from adjunto_correo"));
     }
 
     @Test void validaLosCuposAlEditarOfertasYConvocatoriasDirectamente() throws Exception {

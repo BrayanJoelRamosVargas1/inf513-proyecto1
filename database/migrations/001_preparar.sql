@@ -45,8 +45,20 @@ $$;
 -- Se preparan las tablas anteriores para el esquema vigente.
 alter table if exists examen add column if not exists area varchar(80) not null default 'general';
 alter table if exists postulacion add column if not exists evaluacion_version bigint not null default 0;
-alter table if exists asignacion_evaluador alter column tipo type varchar(80);
-alter table if exists auditoria alter column entidad_id type varchar(160);
+do $$
+begin
+    if exists (select 1 from information_schema.columns
+               where table_schema=current_schema() and table_name='asignacion_evaluador'
+                 and column_name='tipo' and character_maximum_length is distinct from 80) then
+        alter table asignacion_evaluador alter column tipo type varchar(80);
+    end if;
+    if exists (select 1 from information_schema.columns
+               where table_schema=current_schema() and table_name='auditoria'
+                 and column_name='entidad_id' and character_maximum_length is distinct from 160) then
+        alter table auditoria alter column entidad_id type varchar(160);
+    end if;
+end
+$$;
 alter table if exists expediente
     add column if not exists nombre_archivo varchar(180),
     add column if not exists contenido bytea,

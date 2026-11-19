@@ -374,9 +374,7 @@ public final class RepositorioPostgres implements RepositorioProyecto, ColaCorre
             case "REGAREA" -> {
                 Examen examen = new Examen(Long.parseLong(p.get(0)), p.get(1).toLowerCase(Locale.ROOT),
                         new BigDecimal(p.get(2)), p.get(3), remitente);
-                Resultado nota = categorias.registrarArea(examen);
-                if (nota.exito()) recalcularPuntaje(examen.postulacionId());
-                yield nota;
+                yield categorias.registrarArea(examen);
             }
             case "INSCAR" -> insertarCargo(new Cargo(p.get(0), p.get(1), leerBooleano(p.get(2))));
             case "LISCAR" -> listarCargos(p.get(0));
@@ -492,7 +490,7 @@ public final class RepositorioPostgres implements RepositorioProyecto, ColaCorre
                 """, List.of(evaluacion.postulacionId(), evaluacion.requisito(), evaluacion.cumple(),
                 evaluacion.observacion(), evaluacion.evaluadorCorreo(), evaluacion.postulacionId()), "Requisito evaluado.");
     }
-    private Resultado habilitar(List<String> p)throws SQLException{return actualizar("update postulacion p set estado=case when ?='HABILITADO' and plaza_asignada then 'GANADOR' else ? end,plaza_asignada=case when ?='INHABILITADO' then false else plaza_asignada end,observacion=? where p.id=?::bigint and (?<>'HABILITADO' or (exists(select 1 from evaluacion_requisito e where e.postulacion_id=p.id) and not exists(select 1 from (select distinct on (lower(btrim(requisito)),evaluador_id) cumple from evaluacion_requisito e where e.postulacion_id=p.id order by lower(btrim(requisito)),evaluador_id,id desc) vigentes where not cumple)))",List.of(p.get(1),p.get(1),p.get(1),p.get(2),p.get(0),p.get(1)),"Estado de postulación actualizado.");}
+    private Resultado habilitar(List<String> p)throws SQLException{return actualizar("update postulacion p set estado=case when ?='HABILITADO' and plaza_asignada then 'GANADOR' else ? end,plaza_asignada=case when ?='INHABILITADO' then false else plaza_asignada end,observacion=? where p.id=?::bigint and (?<>'HABILITADO' or inf513_requisitos_vigentes(p.id))",List.of(p.get(1),p.get(1),p.get(1),p.get(2),p.get(0),p.get(1)),"Estado de postulación actualizado.");}
     private Resultado registrarMerito(Merito merito) throws SQLException {
         Resultado resultado=actualizar("""
             insert into merito(postulacion_id,criterio,puntaje,observacion,evaluador_id)
@@ -504,7 +502,6 @@ public final class RepositorioPostgres implements RepositorioProyecto, ColaCorre
             """, List.of(merito.postulacionId(), merito.criterio(), merito.puntaje(), merito.observacion(),
                 merito.evaluadorCorreo(), merito.postulacionId()), "Mérito registrado.");
         if(!resultado.exito())return Resultado.error("El evaluador no tiene asignación de méritos para esta postulación.");
-        recalcularPuntaje(merito.postulacionId());
         return resultado;
     }
     private Resultado registrarExamen(Examen examen) throws SQLException {
@@ -522,7 +519,6 @@ public final class RepositorioPostgres implements RepositorioProyecto, ColaCorre
             """, List.of(examen.postulacionId(), examen.area(), examen.puntaje(), examen.observacion(),
                 examen.evaluadorCorreo(), examen.postulacionId()), "Examen registrado.");
         if(!resultado.exito())return Resultado.error("El examen requiere un evaluador asignado a examen y una postulación habilitada.");
-        recalcularPuntaje(examen.postulacionId());
         return resultado;
     }
     private Resultado asignarEvaluador(AsignacionEvaluador asignacion) throws SQLException {
@@ -613,29 +609,14 @@ public final class RepositorioPostgres implements RepositorioProyecto, ColaCorre
             }
         }
     }
-    private void recalcularPuntaje(long postulacion) throws SQLException {
-        var notaExamen = categorias.notaExamen(postulacion);
-        actualizar("""
-                with ultimos as (
-                    select distinct on (lower(btrim(criterio)),evaluador_id)
-                        lower(btrim(criterio)) criterio,puntaje
-                    from merito where postulacion_id=?
-                    order by lower(btrim(criterio)),evaluador_id,id desc
-                ), criterios as (
-                    select avg(puntaje) promedio from ultimos group by criterio
-                ), nota as (
-                    select round(least(100,coalesce(sum(promedio),0)),2) meritos from criterios
-                )
-                update postulacion p
-                set puntaje_meritos=n.meritos, puntaje_examen=?,
-                    puntaje_final=round(least(100,n.meritos*0.4+?*0.6),2),
-                    evaluacion_version=evaluacion_version+1
-                from nota n where p.id=?
-                """, List.of(postulacion, notaExamen, notaExamen, postulacion), "Puntaje recalculado");
-    }
-    private boolean requisitosVigentes(long post)throws SQLException{
-        String sql="select exists(select 1 from evaluacion_requisito where postulacion_id=?::bigint) and not exists(select 1 from (select distinct on (lower(btrim(requisito)),evaluador_id) cumple from evaluacion_requisito where postulacion_id=?::bigint order by lower(btrim(requisito)),evaluador_id,id desc) vigentes where not cumple)";
-        try(Connection c=conexion();PreparedStatement q=c.prepareStatement(sql)){q.setLong(1,post);q.setLong(2,post);try(ResultSet r=q.executeQuery()){r.next();return r.getBoolean(1);}}
+    private boolean requisitosVigentes(long postulacion) throws SQLException {
+        try (Connection c = conexion(); PreparedStatement q = c.prepareStatement("select inf513_requisitos_vigentes(?)")) {
+            q.setLong(1, postulacion);
+            try (ResultSet r = q.executeQuery()) {
+                r.next();
+                return r.getBoolean(1);
+            }
+        }
     }
     private void bloquearConvocatoria(Orden o)throws SQLException{
         if(Set.of("ASIOFE","CFGARE","DESEMP").contains(o.comando())){
