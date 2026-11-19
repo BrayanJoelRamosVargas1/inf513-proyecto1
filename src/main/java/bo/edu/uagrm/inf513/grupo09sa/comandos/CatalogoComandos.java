@@ -18,9 +18,9 @@ public final class CatalogoComandos {
         registrar("EVAREQ",4,"EVALUADOR","Evaluar requisito"); registrar("HABPOS",3,"DECANO","Habilitar o inhabilitar postulante");
         registrar("REGMER",4,"EVALUADOR","Registrar mérito"); registrar("REGEXA",3,"EVALUADOR","Registrar examen");
         registrar("REGAREA",4,"EVALUADOR","Registrar nota de un área del examen (CU5)");
-        registrar("ASIEVA",3,"DECANO","Asignar evaluador"); registrar("GENRAN",1,"DECANO","Generar ranking");
+        registrar("ASIEVA",3,"DECANO","Asignar evaluador"); registrar("GENRAN",1,"DECANO","Generar ranking. Segundo parámetro opcional: cantidad de filas que se omiten");
         registrar("ASIPLA",2,"DECANO","Asignar plaza"); registrar("AUDCAL",2,"DECANO","Consultar auditoría");
-        registrar("DESEMP",4,"DECANO","Resolver empate: convocatoria, cargo, IDs ordenados, justificación (CU6)");
+        registrar("DESEMP",4,"DECANO","Resolver empate: convocatoria, cargo, IDs ordenados, justificación. Para tandas, agregue INICIAR o CONTINUAR como quinto parámetro (CU6)");
         registrar("REPEST",1,"DECANO","Generar estadísticas"); registrar("AYUDA",0,"PUBLICO","Mostrar comandos disponibles");
     }
     private void registrar(String c,int p,String r,String d){comandos.put(c,new Definicion(p,r,d));}

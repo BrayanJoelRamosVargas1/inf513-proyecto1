@@ -28,7 +28,9 @@ public final class ProcesadorOrden {
             }
             CatalogoComandos.Definicion def=catalogo.buscar(orden.comando());
             if(def==null)return Resultado.error("El comando " + orden.comando() + " no existe. Use AYUDA[].");
-            if(orden.parametros().size()!=def.parametros())return errorDatos(orden, "Cantidad incorrecta de parámetros para " + orden.comando()+". Esperados: "+def.parametros()+"; recibidos: "+orden.parametros().size()+".");
+            boolean admiteParametroOpcional = Set.of("DESEMP", "GENRAN").contains(orden.comando());
+            int cantidad = orden.parametros().size();
+            if(cantidad!=def.parametros() && !(admiteParametroOpcional && cantidad==def.parametros()+1))return errorDatos(orden, "Cantidad incorrecta de parámetros para " + orden.comando()+". Esperados: "+def.parametros()+"; recibidos: "+orden.parametros().size()+".");
             String validacion=validar(orden);if(validacion!=null)return errorDatos(orden, validacion);
             boolean bootstrap=orden.comando().equals("INSUSU")&&!repo.hayUsuarios()&&orden.parametros().get(3).equals("DECANO")&&!bootstrapAdminEmail.isBlank()&&remitente.equalsIgnoreCase(bootstrapAdminEmail)&&orden.parametros().get(5).equalsIgnoreCase(remitente);
             if(bootstrap&&!Boolean.parseBoolean(orden.parametros().get(6)))return Resultado.error("El primer DECANO debe quedar activo.");
@@ -64,7 +66,24 @@ public final class ProcesadorOrden {
                 case "INSCAR"->{max(o,160,160,5);booleanActivo(o.parametros().get(2));}
                 case "ASIOFE"->{max(o,19,19,9);enteroPositivo(o.parametros().get(0));enteroPositivo(o.parametros().get(1));enteroNoNegativo(o.parametros().get(2));}
                 case "CFGARE"->{max(o,19,19,80,6);enteroPositivo(o.parametros().get(0));enteroPositivo(o.parametros().get(1));puntaje(o.parametros().get(3));if(new BigDecimal(o.parametros().get(3)).signum()==0)return "El porcentaje debe ser mayor que cero.";if(Set.of("GENERAL","MERITOS","EXAMEN","MERITOS_Y_EXAMEN").contains(o.parametros().get(2).toUpperCase(Locale.ROOT)))return "El nombre del área está reservado.";}
-                case "DESEMP"->{max(o,19,19,2000,500);enteroPositivo(o.parametros().get(0));enteroPositivo(o.parametros().get(1));String[] ids=o.parametros().get(2).split(",",-1);if(ids.length<2||ids.length>100)return "Indique entre 2 y 100 postulaciones empatadas.";var unicos=new java.util.HashSet<String>();for(String id:ids){enteroPositivo(id);if(!unicos.add(Long.toString(Long.parseLong(id))))return "Las postulaciones no pueden repetirse.";}if(o.parametros().get(3).length()<10)return "Justifique la resolución del empate con al menos 10 caracteres.";}
+                case "DESEMP" -> {
+                    var p = o.parametros();
+                    max(o,19,19,500,500);
+                    enteroPositivo(p.get(0));
+                    enteroPositivo(p.get(1));
+                    boolean enTandas = p.size()==5;
+                    if (enTandas && !Set.of("INICIAR","CONTINUAR").contains(p.get(4)))
+                        return "El quinto parámetro debe ser INICIAR o CONTINUAR.";
+                    String[] ids = p.get(2).split(",",-1);
+                    if (ids.length < (enTandas ? 1 : 2) || ids.length > 100)
+                        return "Indique hasta 100 postulaciones por mensaje. Para varias tandas use INICIAR y CONTINUAR.";
+                    var unicos = new java.util.HashSet<Long>();
+                    for (String id : ids) {
+                        enteroPositivo(id);
+                        if (!unicos.add(Long.parseLong(id))) return "Las postulaciones no pueden repetirse.";
+                    }
+                    if (p.get(3).length()<10) return "Justifique la resolución del empate con al menos 10 caracteres.";
+                }
                 case "INSPOST"->{max(o,19,19,500);enteroPositivo(o.parametros().get(0));enteroPositivo(o.parametros().get(1));}
                 case "ASIEVA"->{max(o,19,19,80);enteroPositivo(o.parametros().get(0));enteroPositivo(o.parametros().get(1));}
                 case "EVAREQ"->{max(o,19,200,5,500);enteroPositivo(o.parametros().get(0));booleanActivo(o.parametros().get(2));}
@@ -72,7 +91,11 @@ public final class ProcesadorOrden {
                 case "REGMER"->{max(o,19,200,8,500);enteroPositivo(o.parametros().get(0));puntaje(o.parametros().get(2));}
                 case "REGEXA"->{max(o,19,8,500);enteroPositivo(o.parametros().get(0));puntaje(o.parametros().get(1));}
                 case "REGAREA"->{max(o,19,80,8,500);enteroPositivo(o.parametros().get(0));puntaje(o.parametros().get(2));}
-                case "GENRAN","REPEST","LISCFG"->enteroPositivo(o.parametros().get(0));
+                case "GENRAN" -> {
+                    enteroPositivo(o.parametros().get(0));
+                    if (o.parametros().size()==2) enteroNoNegativo(o.parametros().get(1));
+                }
+                case "REPEST","LISCFG"->enteroPositivo(o.parametros().get(0));
                 case "AUDCAL"->{
                     String referencia=o.parametros().get(1);
                     switch(o.parametros().get(0)){

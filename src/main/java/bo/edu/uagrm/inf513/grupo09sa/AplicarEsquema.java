@@ -17,6 +17,7 @@ public final class AplicarEsquema {
         String historial = Files.readString(database.resolve("migrations/002_migrar_historial.sql"));
         String ofertas = Files.readString(database.resolve("migrations/003_postulacion_oferta.sql"));
         String evaluaciones = Files.readString(database.resolve("migrations/004_integridad_evaluacion.sql"));
+        String desempates = Files.readString(database.resolve("migrations/005_desempates.sql"));
         try (var conexion = DriverManager.getConnection(cfg.dbUrl(), cfg.dbUser(), cfg.dbPassword());
              var consulta = conexion.createStatement()) {
             conexion.setAutoCommit(false);
@@ -32,6 +33,7 @@ public final class AplicarEsquema {
                 consulta.execute(historial);
                 consulta.execute(ofertas);
                 consulta.execute(evaluaciones);
+                consulta.execute(desempates);
                 conexion.commit();
                 System.out.println("SCHEMA_OK");
             } catch (SQLException fallo) {

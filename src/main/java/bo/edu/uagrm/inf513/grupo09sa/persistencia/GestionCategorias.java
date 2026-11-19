@@ -16,7 +16,6 @@ final class GestionCategorias {
     GestionCategorias(Conexion conexiones){this.conexiones=conexiones;}
     private static final String REQUISITOS="inf513_requisitos_vigentes(p.id)";
     private static final String COMPLETA="inf513_evaluacion_completa(p.id)";
-    private static final String ELEGIBLE="p.estado in('HABILITADO','GANADOR') and "+REQUISITOS+" and "+COMPLETA;
     private PreparedStatement preparar(Connection c,String sql,Object... valores)throws SQLException {
         PreparedStatement s=c.prepareStatement(sql);
         try {
@@ -108,38 +107,93 @@ final class GestionCategorias {
         }
         return Resultado.ok("Nota de área registrada.");
     }
-    private record Candidato(long id,BigDecimal puntaje,Integer prioridad){}
-    private List<Candidato> candidatos(long conv,long cargo)throws SQLException {
-        var salida=new ArrayList<Candidato>();
-        String sql="select p.id,p.puntaje_final,d.prioridad from postulacion p left join desempate d on d.postulacion_id=p.id and d.evaluacion_version=p.evaluacion_version and d.puntaje=p.puntaje_final where p.convocatoria_id=?::bigint and p.cargo_id=?::bigint and "+ELEGIBLE+" order by p.puntaje_final desc,d.prioridad nulls last,p.id";
-        try(var c=conexiones.abrir();var s=preparar(c,sql,Long.toString(conv),Long.toString(cargo))) {
-            s.setMaxRows(5001);try(var r=s.executeQuery()){while(r.next())salida.add(new Candidato(r.getLong(1),r.getBigDecimal(2),(Integer)r.getObject(3)));}
+    private record Candidato(long id, BigDecimal puntaje, Integer prioridad, String grupo, String actor,
+                             String justificacion) {}
+    private List<Candidato> candidatos(long convocatoria, long cargo) throws SQLException {
+        var salida = new ArrayList<Candidato>();
+        String sql = """
+                select c.id,c.puntaje_final,d.prioridad,c.grupo_hash,d.actor,d.justificacion
+                from inf513_candidatos(?,?) c
+                left join desempate d on d.postulacion_id=c.id and d.grupo_hash=c.grupo_hash
+                     and d.evaluacion_version=c.evaluacion_version and d.puntaje=c.puntaje_final
+                order by c.puntaje_final desc,d.prioridad nulls last,c.id
+                """;
+        try (var c = conexiones.abrir(); var s = preparar(c, sql, convocatoria, cargo)) {
+            s.setMaxRows(5001);
+            try (var r = s.executeQuery()) {
+                while (r.next()) salida.add(new Candidato(r.getLong(1),r.getBigDecimal(2),r.getObject(3,Integer.class),
+                        r.getString(4),r.getString(5),r.getString(6)));
+            }
         }
-        if(salida.size()>5000)throw new SQLException("Demasiados candidatos para una categoría","54000");
+        if (salida.size()>5000) throw new SQLException("Demasiados candidatos para una categoría","54000");
         return salida;
     }
-    Resultado resolver(String actor,List<String> p)throws SQLException {
+
+    Resultado resolver(String actor,List<String> p) throws SQLException {
         long convocatoria=Long.parseLong(p.get(0)), cargo=Long.parseLong(p.get(1));
         if (existe("select 1 from postulacion where convocatoria_id=? and cargo_id=? and plaza_asignada",
                 convocatoria,cargo))
             return Resultado.error("Retire primero las plazas asignadas de este cargo antes de resolver un empate.");
-        List<Long> ids=Arrays.stream(p.get(2).split(",")).map(Long::parseLong).toList();
-        List<Candidato> todos=candidatos(convocatoria,cargo);
-        Candidato primero=todos.stream().filter(c->c.id()==ids.get(0)).findFirst().orElse(null);
-        if(primero==null)return Resultado.error("Las postulaciones deben tener evaluación completa y requisitos vigentes.");
-        var empatados=todos.stream().filter(c->c.puntaje().compareTo(primero.puntaje())==0).map(Candidato::id).collect(java.util.stream.Collectors.toSet());
-        if(empatados.size()<2||ids.size()!=empatados.size()||!new HashSet<>(ids).equals(empatados))return Resultado.error("Incluya exactamente todas las postulaciones del mismo empate, sin repetir ni mezclar categorías.");
-        String sql="insert into desempate(postulacion_id,evaluacion_version,puntaje,prioridad,justificacion,actor) select id,evaluacion_version,puntaje_final,?::int,?,? from postulacion where id=?::bigint on conflict(postulacion_id) do update set evaluacion_version=excluded.evaluacion_version,puntaje=excluded.puntaje,prioridad=excluded.prioridad,justificacion=excluded.justificacion,actor=excluded.actor,fecha=now()";
-        try (var c = conexiones.abrir()) {
-            for (int i = 0; i < ids.size(); i++) {
-                Desempate desempate = new Desempate(ids.get(i), i + 1, p.get(3), actor);
-                try (var s = preparar(c, sql, desempate.prioridad(), desempate.justificacion(),
-                        desempate.actor(), desempate.postulacionId())) {
-                    s.executeUpdate();
-                }
+        List<Long> ids = Arrays.stream(p.get(2).split(",")).map(Long::parseLong).toList();
+        List<Candidato> todos = candidatos(convocatoria,cargo);
+        Candidato primero = todos.stream().filter(c -> c.id()==ids.get(0)).findFirst().orElse(null);
+        if (primero==null) return Resultado.error("Las postulaciones deben tener evaluación completa y requisitos vigentes.");
+        List<Candidato> empatados = todos.stream().filter(c -> c.grupo().equals(primero.grupo())).toList();
+        Set<Long> integrantes = new HashSet<>();
+        for (var candidato : empatados) integrantes.add(candidato.id());
+        if (empatados.size()<2 || new HashSet<>(ids).size()!=ids.size() || !integrantes.containsAll(ids))
+            return Resultado.error("Las postulaciones deben pertenecer al mismo empate y no pueden repetirse.");
+
+        String justificacion = p.get(3);
+        int inicio = 0;
+        boolean porTandas = p.size()==5;
+        if (!porTandas && ids.size()!=empatados.size())
+            return Resultado.error("Incluya todas las postulaciones. Para varias tandas use INICIAR y CONTINUAR.");
+        if (porTandas && p.get(4).equals("CONTINUAR")) {
+            Set<Long> guardados = new HashSet<>();
+            for (var candidato : empatados) {
+                if (candidato.prioridad()==null) continue;
+                if (!actor.equalsIgnoreCase(candidato.actor()) || !justificacion.equals(candidato.justificacion()))
+                    return Resultado.error("Continúe con la misma cuenta y justificación de la primera tanda.");
+                guardados.add(candidato.id());
+                inicio = Math.max(inicio,candidato.prioridad());
+            }
+            if (guardados.isEmpty())
+                return Resultado.error("No hay una primera tanda vigente. Vuelva a enviar DESEMP con INICIAR.");
+            if (!Collections.disjoint(guardados,ids))
+                return Resultado.error("La tanda incluye postulaciones que ya tienen prioridad.");
+        } else if (porTandas) {
+            try (var c = conexiones.abrir();
+                 var s = preparar(c,"delete from desempate where grupo_hash=?",primero.grupo())) {
+                s.executeUpdate();
             }
         }
-        return Resultado.ok("Empate resuelto por la autoridad con justificación y auditoría. Una modificación de notas invalida la resolución correspondiente.");
+
+        String sql = """
+                insert into desempate(postulacion_id,evaluacion_version,puntaje,prioridad,justificacion,actor,grupo_hash)
+                select id,evaluacion_version,puntaje_final,?,?,?,? from postulacion where id=?
+                on conflict(postulacion_id) do update set evaluacion_version=excluded.evaluacion_version,
+                    puntaje=excluded.puntaje,prioridad=excluded.prioridad,justificacion=excluded.justificacion,
+                    actor=excluded.actor,grupo_hash=excluded.grupo_hash,fecha=now()
+                """;
+        try (var c = conexiones.abrir(); var s = c.prepareStatement(sql)) {
+            s.setQueryTimeout(30);
+            for (int i = 0; i < ids.size(); i++) {
+                Desempate desempate = new Desempate(ids.get(i),inicio+i+1,justificacion,actor);
+                s.setInt(1,desempate.prioridad());
+                s.setString(2,desempate.justificacion());
+                s.setString(3,desempate.actor());
+                s.setString(4,primero.grupo());
+                s.setLong(5,desempate.postulacionId());
+                s.addBatch();
+            }
+            s.executeBatch();
+        }
+        int registrados = inicio+ids.size();
+        if (registrados<empatados.size())
+            return Resultado.ok("Tanda guardada: "+registrados+" de "+empatados.size()
+                    +" prioridades. Envíe la siguiente con CONTINUAR y la misma justificación.");
+        return Resultado.ok("Empate resuelto por la autoridad con justificación y auditoría.");
     }
     Resultado asignar(List<String> p)throws SQLException {
         long post=Long.parseLong(p.get(0));boolean asignar=Boolean.parseBoolean(p.get(1));
@@ -178,9 +232,9 @@ final class GestionCategorias {
         return """
             with elegibles as (
                 select p.cargo_id,p.id,p.postulante_id,p.puntaje_final,d.prioridad
-                from postulacion p left join desempate d on d.postulacion_id=p.id
+                from inf513_candidatos(?::bigint,null) p left join desempate d on d.postulacion_id=p.id
                     and d.evaluacion_version=p.evaluacion_version and d.puntaje=p.puntaje_final
-                where p.convocatoria_id=?::bigint and %s
+                    and d.grupo_hash=p.grupo_hash
             ), grupos as (
                 select cargo_id,puntaje_final,count(*) cantidad,count(distinct prioridad)=count(*) resuelto
                 from elegibles group by cargo_id,puntaje_final
@@ -198,7 +252,7 @@ final class GestionCategorias {
                    p.empate,p.prioridad
             from posiciones p join usuario u on u.id=p.postulante_id join cargo ca on ca.id=p.cargo_id
             order by p.cargo_id,posicion,p.id
-            """.formatted(ELEGIBLE);
+            """;
     }
     String sqlConfiguracion(){return "select o.cargo_id,c.nombre,o.plazas,a.area,a.peso,sum(a.peso) over(partition by o.cargo_id) porcentaje_total from oferta o join cargo c on c.id=o.cargo_id left join area_examen a on a.convocatoria_id=o.convocatoria_id and a.cargo_id=o.cargo_id where o.convocatoria_id=?::bigint order by o.cargo_id,a.area";}
     private static final String CUPOS_DEL_REPORTE = """

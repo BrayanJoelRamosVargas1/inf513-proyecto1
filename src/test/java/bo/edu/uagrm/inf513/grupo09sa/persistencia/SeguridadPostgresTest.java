@@ -693,6 +693,56 @@ class SeguridadPostgresTest {
         assertEquals(3,actualizado.lines().filter(fila->fila.contains("RESOLUCION_REGISTRADA")).count(),actualizado);
         assertTrue(ordenar("admin@example.com","ASIPLA","3","true").exito());
     }
+    @Test void retirarYRehabilitarUnCandidatoNoReviveElDesempateAnterior() throws Exception {
+        iniciarFlujo(); segundoPostulante();
+        assertTrue(ordenar("admin@example.com","INSUSU","7","Mario","Prueba","POSTULANTE","70000007","mario@example.com","true").exito());
+        assertTrue(ordenar("mario@example.com","INSPOST","1","1","https://example.com/mario.pdf").exito());
+        assertTrue(ordenar("admin@example.com","ASIEVA","3","2","MERITOS_Y_EXAMEN").exito());
+        habilitarYCalificar("1","80"); habilitarYCalificar("2","80"); habilitarYCalificar("3","80");
+        String acta = "Acta original para los tres candidatos";
+        assertTrue(ordenar("admin@example.com","DESEMP","1","1","1,2,3",acta).exito());
+        assertTrue(ordenar("admin@example.com","HABPOS","3","INHABILITADO","Revisar").exito());
+        assertTrue(ordenar("admin@example.com","GENRAN","1").cuerpo().contains("EMPATE_PENDIENTE"));
+        assertTrue(ordenar("admin@example.com","HABPOS","3","HABILITADO","Revisado").exito());
+        assertTrue(ordenar("admin@example.com","ASIPLA","1","true").cuerpo().contains("Empate pendiente"));
+        assertFalse(ordenar("admin@example.com","DESEMP","1","1","1",acta,"CONTINUAR").exito());
+    }
+
+    @Test void unEmpateDeMasDeCienSeResuelveEnTandasSinAplicarPrioridadesParciales() throws Exception {
+        iniciarFlujo();
+        habilitarYCalificar("1","80");
+        ejecutarSql("""
+            insert into usuario(registro,nombres,apellidos,rol,correo)
+                select n::text,'Nombres','Apellidos','POSTULANTE','p'||n||'@example.com'
+                from generate_series(10,119) n;
+            insert into postulacion(convocatoria_id,postulante_id,cargo_id,estado)
+                select 1,id,1,'HABILITADO' from usuario where id>3;
+            insert into asignacion_evaluador(postulacion_id,evaluador_id,tipo)
+                select id,2,'MERITOS_Y_EXAMEN' from postulacion where id>1;
+            insert into evaluacion_requisito(postulacion_id,requisito,cumple,evaluador_id)
+                select id,'Identidad',true,2 from postulacion where id>1;
+            insert into merito(postulacion_id,criterio,puntaje,evaluador_id)
+                select id,'Experiencia',80,2 from postulacion where id>1;
+            insert into examen(postulacion_id,puntaje,evaluador_id)
+                select id,80,2 from postulacion where id>1;
+            """);
+        String primera = java.util.stream.IntStream.rangeClosed(12,111)
+                .map(i -> 123-i).mapToObj(Integer::toString).collect(java.util.stream.Collectors.joining(","));
+        String ultima = "11,10,9,8,7,6,5,4,3,2,1";
+        String acta = "Acta completa aprobada por la autoridad";
+        assertTrue(new AnalizadorOrden().analizar("DESEMP[\"1\",\"1\",\""+primera+"\",\""+acta+"\",\"INICIAR\"]")
+                .parametros().size()==5);
+        assertFalse(ordenar("admin@example.com","DESEMP","1","1",primera+","+ultima,acta).exito());
+        Resultado parcial = ordenar("admin@example.com","DESEMP","1","1",primera,acta,"INICIAR");
+        assertTrue(parcial.exito() && parcial.cuerpo().contains("100 de 111"),parcial.cuerpo());
+        assertTrue(ordenar("admin@example.com","GENRAN","1","100").cuerpo().contains("EMPATE_PENDIENTE"));
+        assertFalse(ordenar("admin@example.com","DESEMP","1","1","111",acta,"CONTINUAR").exito());
+        assertTrue(ordenar("admin@example.com","ASIPLA","111","true").cuerpo().contains("Empate pendiente"));
+        assertTrue(ordenar("admin@example.com","DESEMP","1","1",ultima,acta,"CONTINUAR").exito());
+        assertEquals(111,numero("select count(*) from desempate"));
+        assertTrue(ordenar("admin@example.com","ASIPLA","111","true").exito());
+    }
+
     @Test void corregirUnaNotaInvalidaLaResolucionDelEmpateAunqueConserveElPuntaje()throws Exception{
         iniciarFlujo();segundoPostulante();habilitarYCalificar("1","80");habilitarYCalificar("2","80");
         assertTrue(ordenar("admin@example.com","DESEMP","1","1","2,1","Acta ficticia para prueba de versión").exito());

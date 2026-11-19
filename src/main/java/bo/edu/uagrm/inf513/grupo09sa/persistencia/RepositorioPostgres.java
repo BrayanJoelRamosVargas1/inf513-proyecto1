@@ -390,7 +390,7 @@ public final class RepositorioPostgres implements RepositorioProyecto, ColaCorre
                     new BigDecimal(p.get(1)), p.get(2), remitente));
             case "ASIEVA" -> asignarEvaluador(new AsignacionEvaluador(Long.parseLong(p.get(0)),
                     Long.parseLong(p.get(1)), p.get(2)));
-            case "GENRAN" -> generarRanking(p.get(0));
+            case "GENRAN" -> generarRanking(p);
             case "ASIPLA"->asignarPlaza(o.parametros()); case "AUDCAL"->auditoriaProyecto(o.parametros());
             case "REPEST"->estadisticas(o.parametros().get(0)); default->Resultado.error("Comando sin implementación.");};
         if(resultado.exito()&&java.util.Set.of("INSPER","INSUSU","INSCON","INSCAR","INSPOST","EVAREQ","HABPOS","REGMER","REGEXA","REGAREA","ASIEVA","ASIPLA","ASIOFE","CFGARE","DESEMP").contains(o.comando()))registrarAuditoria(remitente,o,anterior,estadoAuditable(o,false));
@@ -536,7 +536,10 @@ public final class RepositorioPostgres implements RepositorioProyecto, ColaCorre
                 "Evaluador asignado.");
         return resultado.exito()?resultado:Resultado.error("Verifique la postulación, el evaluador activo y el tipo de asignación o área configurada para el cargo.");
     }
-    private Resultado generarRanking(String convocatoria)throws SQLException{return consultar(categorias.sqlRanking(),List.of(convocatoria));}
+    private Resultado generarRanking(List<String> parametros) throws SQLException {
+        if (parametros.size()==1) return consultar(categorias.sqlRanking(), parametros);
+        return consultar(categorias.sqlRanking() + " offset ?::integer", parametros);
+    }
     private Resultado asignarPlaza(List<String> p)throws SQLException{return categorias.asignar(p);}
     private Resultado auditoriaProyecto(List<String> p)throws SQLException{
         String entidad=p.get(0);

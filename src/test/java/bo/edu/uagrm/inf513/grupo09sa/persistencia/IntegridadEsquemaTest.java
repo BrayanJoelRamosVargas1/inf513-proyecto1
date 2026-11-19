@@ -37,6 +37,7 @@ class IntegridadEsquemaTest {
         String historial = Files.readString(directorio.resolve("002_migrar_historial.sql"));
         String ofertas = Files.readString(directorio.resolve("003_postulacion_oferta.sql"));
         String evaluaciones = Files.readString(directorio.resolve("004_integridad_evaluacion.sql"));
+        String desempates = Files.readString(directorio.resolve("005_desempates.sql"));
         try (var c = datos.getConnection(); var q = c.createStatement()) {
             c.setAutoCommit(false);
             q.execute(preparacion);
@@ -44,6 +45,7 @@ class IntegridadEsquemaTest {
             q.execute(historial);
             q.execute(ofertas);
             q.execute(evaluaciones);
+            q.execute(desempates);
             c.commit();
         }
     }
@@ -351,7 +353,7 @@ class IntegridadEsquemaTest {
             insert into examen(postulacion_id,puntaje,evaluador_id) values(1,85,2);
             """);
         assertEquals(83, numero("select puntaje_final from postulacion where id=1"));
-        assertEquals(3, numero("select evaluacion_version from postulacion where id=1"));
+        assertEquals(4, numero("select evaluacion_version from postulacion where id=1"));
 
         sql("update postulacion set puntaje_final=100 where id=1");
         assertEquals(83, numero("select puntaje_final from postulacion where id=1"));
@@ -362,7 +364,7 @@ class IntegridadEsquemaTest {
         sql("update postulacion set estado='HABILITADO',plaza_asignada=false where id=1");
         sql("delete from examen");
         assertEquals(32, numero("select puntaje_final from postulacion where id=1"));
-        assertEquals(5, numero("select evaluacion_version from postulacion where id=1"));
+        assertEquals(6, numero("select evaluacion_version from postulacion where id=1"));
         invalido("insert into area_examen values (1,1,'meritos',100)");
     }
 

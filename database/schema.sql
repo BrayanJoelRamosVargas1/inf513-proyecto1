@@ -135,6 +135,7 @@ create table if not exists desempate (
     prioridad integer not null check(prioridad>0),
     justificacion varchar(500) not null check(length(btrim(justificacion))>=10),
     actor varchar(160) not null,
+    grupo_hash char(64),
     fecha timestamptz not null default now()
 );
 
@@ -437,6 +438,27 @@ returns boolean language sql stable as $$
         else exists(select 1 from examen where postulacion_id=id_postulacion and area='general') end
 $$;
 
+create or replace function inf513_candidatos(id_convocatoria bigint, id_cargo bigint)
+returns table(id bigint,cargo_id bigint,postulante_id bigint,puntaje_final numeric,
+              evaluacion_version bigint,cantidad bigint,grupo_hash text)
+language sql stable as $$
+    with elegibles as (
+        select p.id,p.cargo_id,p.postulante_id,p.puntaje_final,p.evaluacion_version
+        from postulacion p
+        where p.convocatoria_id=id_convocatoria and (id_cargo is null or p.cargo_id=id_cargo)
+          and p.estado in ('HABILITADO','GANADOR')
+          and inf513_requisitos_vigentes(p.id) and inf513_evaluacion_completa(p.id)
+    ), grupos as (
+        select e.cargo_id,e.puntaje_final,count(*) cantidad,
+               encode(pg_catalog.sha256(convert_to(
+                   string_agg(e.id::text||':'||e.evaluacion_version::text,',' order by e.id),
+                   'UTF8')),'hex') grupo_hash
+        from elegibles e group by e.cargo_id,e.puntaje_final
+    )
+    select e.id,e.cargo_id,e.postulante_id,e.puntaje_final,e.evaluacion_version,g.cantidad,g.grupo_hash
+    from elegibles e join grupos g using(cargo_id,puntaje_final)
+$$;
+
 create or replace function inf513_validar_examen()
 returns trigger language plpgsql as $$
 declare
@@ -540,6 +562,10 @@ $$;
 create or replace function inf513_derivar_puntajes()
 returns trigger language plpgsql as $$
 begin
+    if tg_op='UPDATE' and
+       (old.estado in ('HABILITADO','GANADOR')) is distinct from (new.estado in ('HABILITADO','GANADOR')) then
+        new.evaluacion_version := greatest(new.evaluacion_version,old.evaluacion_version+1);
+    end if;
     select meritos,examen,final into new.puntaje_meritos,new.puntaje_examen,new.puntaje_final
     from inf513_calcular_puntajes(new.id);
     return new;
@@ -547,7 +573,7 @@ end
 $$;
 
 create or replace trigger postulacion_puntajes_trg
-before insert or update of puntaje_meritos, puntaje_examen, puntaje_final, evaluacion_version on postulacion
+before insert or update of puntaje_meritos, puntaje_examen, puntaje_final, evaluacion_version, estado on postulacion
 for each row execute function inf513_derivar_puntajes();
 
 create or replace function inf513_recalcular_evaluacion()
