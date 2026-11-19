@@ -14,7 +14,6 @@ public interface ColaCorreo {
                          String respuestaAsunto, String respuestaCuerpo, Boolean exito, int intentos) {}
 
     boolean servicioInicializado(String protocolo) throws Exception;
-    void marcarServicioInicializado() throws Exception;
     void marcarServicioInicializado(String protocolo) throws Exception;
     void registrarCorreoProcesado(String id, String remitente, String asunto, boolean exito) throws Exception;
     Set<String> correosConocidos(Collection<String> candidatos) throws Exception;

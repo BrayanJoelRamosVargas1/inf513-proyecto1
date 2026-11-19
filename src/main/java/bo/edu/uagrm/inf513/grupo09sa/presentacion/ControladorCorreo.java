@@ -38,7 +38,7 @@ public final class ControladorCorreo {
 
     public void ejecutarCiclo() throws Exception {
         if(!cola.servicioInicializado(protocolo)){
-            var ids=mail.identificadores();for(String id:ids)cola.registrarCorreoProcesado(id,"historico@local","BASELINE",true);cola.marcarServicioInicializado();
+            var ids=mail.identificadores();for(String id:ids)cola.registrarCorreoProcesado(id,"historico@local","BASELINE",true);
             cola.marcarServicioInicializado(protocolo);
             System.out.println("Bandeja inicializada: "+ids.size()+" mensajes históricos omitidos.");return;
         }

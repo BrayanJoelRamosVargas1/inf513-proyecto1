@@ -20,7 +20,7 @@ class CicloCorreoPostgresTest {
         ds=new PGSimpleDataSource();ds.setURL(System.getenv("TEST_DB_URL"));ds.setUser(System.getenv().getOrDefault("TEST_DB_USER","audit"));ds.setPassword(System.getenv().getOrDefault("TEST_DB_PASSWORD",""));
         schema="audit_ciclo_"+UUID.randomUUID().toString().replace("-","");
         sql("create schema "+schema);ds.setCurrentSchema(schema);sql(Files.readString(Path.of("database/schema.sql")));
-        repo=new RepositorioPostgres(ds);repo.marcarServicioInicializado("imap");processor=new ProcesadorOrden(new CatalogoComandos(),repo,"admin@example.com");
+        repo=new RepositorioPostgres(ds,"imap");repo.marcarServicioInicializado("imap");processor=new ProcesadorOrden(new CatalogoComandos(),repo,"admin@example.com");
     }
     @AfterEach void limpiar()throws Exception{if(schema!=null)sql("drop schema "+schema+" cascade");}
     void sql(String sql)throws Exception{try(var c=ds.getConnection();var s=c.createStatement()){s.execute(sql);}}
@@ -98,6 +98,13 @@ class CicloCorreoPostgresTest {
         assertTrue(reporte.lines().anyMatch("NULL | Cupo global | 1 | 1 | 1 | 0"::equals),reporte);
         assertTrue(orden(mail,"luis@example.com","LISPOST","*").cuerpo().contains("GANADOR"));
         assertTrue(enviar(mail,"intruso@example.com","AUDCAL[\"ASIPLA\",\"1\"]",List.of()).cuerpo().contains("rol requerido"));
+        orden(mail,"ensayo@example.com","INSPER","990900137","Ana","Ensayo","Estudiante",
+                "3330000","70000137","persona@example.com");
+        assertEquals(1,cantidad("p1_auditoria a join p1_postulacion p on p.id=a.postulacion_id " +
+                "join p1_correo_control c on c.mensaje_id=a.mensaje_id " +
+                "join p1_buzon b on b.protocolo=c.buzon_protocolo where a.accion='INSPOST' and b.protocolo='imap'"));
+        assertEquals(1,cantidad("p1_auditoria a join persona p on p.ci=a.persona_ci " +
+                "join p1_correo_control c on c.mensaje_id=a.mensaje_id where a.accion='INSPER' and p.ci='990900137'"));
         assertEquals(1,cantidad("p1_expediente"));assertEquals(0,repo.correosPendientes(100).size());
     }
     @Test void noRespondeASusRespuestasNiReenviaLasQueYaEstabanEnCola()throws Exception{

@@ -29,7 +29,7 @@ public final class Main {
         hc.addDataSourceProperty("connectTimeout",cfg.connectSeconds());hc.addDataSourceProperty("socketTimeout",cfg.readSeconds());hc.addDataSourceProperty("tcpKeepAlive",true);
 
         try(HikariDataSource ds=new HikariDataSource(hc);PasarelaCorreo mail=new PasarelaJakartaMail(cfg)){
-            AnalizadorOrden parser=new AnalizadorOrden();RepositorioPostgres repo=new RepositorioPostgres(ds);ProcesadorOrden processor=new ProcesadorOrden(new CatalogoComandos(),repo,cfg.bootstrapAdminEmail());
+            AnalizadorOrden parser=new AnalizadorOrden();RepositorioPostgres repo=new RepositorioPostgres(ds,cfg.inboundProtocol());ProcesadorOrden processor=new ProcesadorOrden(new CatalogoComandos(),repo,cfg.bootstrapAdminEmail());
             ControladorCorreo controlador=new ControladorCorreo(cfg.inboundProtocol(),cfg.maxMessagesPerCycle(),
                     cfg.retryMaxSeconds(),mail,repo,processor,parser,AntivirusPdf.desdeEntorno());
             int fallosConsecutivos=0;

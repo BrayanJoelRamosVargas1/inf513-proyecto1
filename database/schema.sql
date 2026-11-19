@@ -211,11 +211,44 @@ begin
     end if;
 end
 $$;
-create table if not exists p1_servicio_estado (
-    clave varchar(80) primary key,
-    valor text not null,
+create table if not exists p1_buzon (
+    protocolo varchar(80) primary key,
+    inicializado boolean not null default false,
     actualizado_en timestamptz not null default now()
 );
+insert into p1_buzon(protocolo) values ('pop3'),('imap'),('imaps'),('roundcube')
+on conflict(protocolo) do nothing;
+
+-- Conserva el estado anterior del buzón para que una actualización no inicialice de nuevo el historial.
+do $$
+begin
+    if to_regclass(format('%I.p1_servicio_estado', current_schema())) is not null then
+        insert into p1_buzon(protocolo,inicializado,actualizado_en)
+        select substring(clave from length('bandeja_inicializada_')+1),true,actualizado_en
+        from p1_servicio_estado
+        where starts_with(clave,'bandeja_inicializada_') and valor='true'
+          and length(clave)>length('bandeja_inicializada_')
+        on conflict(protocolo) do update set inicializado=true,actualizado_en=excluded.actualizado_en
+        where not p1_buzon.inicializado;
+    end if;
+end
+$$;
+
+alter table p1_correo_control add column if not exists buzon_protocolo varchar(80) references p1_buzon(protocolo);
+update p1_correo_control set buzon_protocolo='roundcube'
+where buzon_protocolo is null and starts_with(mensaje_id,'roundcube:INBOX:');
+
+alter table p1_auditoria
+    add column if not exists mensaje_id varchar(255) references p1_correo_control(mensaje_id) on delete set null,
+    add column if not exists postulacion_id bigint references p1_postulacion(id) on delete set null,
+    add column if not exists persona_ci varchar(20) references persona(ci) on delete set null;
+update p1_auditoria a set postulacion_id=p.id
+from p1_postulacion p
+where a.postulacion_id is null and a.entidad in ('EVAREQ','HABPOS','REGMER','REGEXA','REGAREA','ASIEVA','ASIPLA')
+  and p.id::text=ltrim(ltrim(a.entidad_id,'+'),'0');
+update p1_auditoria a set persona_ci=p.ci
+from persona p
+where a.persona_ci is null and a.entidad='INSPER' and p.ci=a.entidad_id;
 
 -- Non-destructive migration for actual PDF upload, separate from legacy file references.
 alter table p1_expediente add column if not exists nombre_archivo varchar(180);

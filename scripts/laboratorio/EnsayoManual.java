@@ -53,7 +53,7 @@ public class EnsayoManual {
         try (var conexion = datos.getConnection(); var sql = conexion.createStatement()) {
             sql.execute(Files.readString(Path.of("database/schema.sql")));
         }
-        repositorio = new RepositorioPostgres(datos);
+        repositorio = new RepositorioPostgres(datos, config.inboundProtocol());
         var procesador = new ProcesadorOrden(new CatalogoComandos(), repositorio, DECANO);
         controlador = new ControladorCorreo(config.inboundProtocol(), config.maxMessagesPerCycle(),
                 config.retryMaxSeconds(), bandeja, repositorio, procesador, analizador, AntivirusPdf.desdeEntorno());

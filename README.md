@@ -6,7 +6,7 @@ Sistema de gestión de convocatorias de auxiliaturas por correo electrónico con
 
 ![Arquitectura de tres capas](docs/diagramas/arquitectura.png)
 
-Presentación recibe y analiza el correo. Aplicación valida parámetros y roles y coordina el caso de uso. Datos aplica transacciones, mantiene la cola y ejecuta consultas preparadas en PostgreSQL. El [modelo de datos](docs/modelo-datos-p1-tres-capas.svg) muestra las 17 tablas y las 14 claves foráneas de una instalación limpia. El [inventario tabla por tabla](database/README.md) explica su uso y cómo contrastarlas con el catálogo de TecnoWeb.
+Presentación recibe y analiza el correo. Aplicación valida parámetros y roles y coordina el caso de uso. Datos aplica transacciones, mantiene la cola y ejecuta consultas preparadas en PostgreSQL. El [modelo de datos](docs/modelo-datos-p1-tres-capas.svg) muestra las 17 tablas y las 18 claves foráneas de una instalación limpia. El [inventario tabla por tabla](database/README.md) explica su uso y cómo contrastarlas con el catálogo de TecnoWeb.
 
 ## Flujo del analizador
 

@@ -97,6 +97,43 @@ class IntegridadEsquemaTest {
         assertEquals(0,repo.promoverDiferidos(25));
     }
 
+    @Test void todasLasTablasSeConectanYCadaMigracionConservaElBuzonAnterior() throws Exception {
+        assertEquals(17, numero("select count(*) from pg_tables where schemaname=current_schema()"));
+        assertEquals(18, numero("select count(*) from pg_constraint where contype='f' and connamespace=current_schema()::regnamespace"));
+        assertEquals(17, numero("""
+            with recursive uniones as (
+                select conrelid origen,confrelid destino from pg_constraint
+                where contype='f' and connamespace=current_schema()::regnamespace
+                union all
+                select confrelid,conrelid from pg_constraint
+                where contype='f' and connamespace=current_schema()::regnamespace
+            ), conectadas(tabla) as (
+                select 'p1_buzon'::regclass::oid
+                union
+                select u.destino from conectadas c join uniones u on u.origen=c.tabla
+            )
+            select count(*) from conectadas
+            """));
+        sql("""
+            create table p1_servicio_estado (
+                clave text primary key, valor text not null, actualizado_en timestamptz not null default now()
+            );
+            insert into p1_servicio_estado values ('bandeja_inicializada_pop3','true',now());
+            insert into persona values ('501','Ana','Test','Estudiante','30001','70001','persona@example.com');
+            insert into p1_auditoria(actor,accion,entidad,entidad_id)
+                 values ('prueba@example.com','INSPER','INSPER','501');
+            insert into p1_correo_control(mensaje_id,remitente,estado)
+                 values ('roundcube:INBOX:1','prueba@example.com','RESPONDIDO');
+            """);
+        sql(sqlEsquema);
+        sql(sqlEsquema);
+        var repo = new RepositorioPostgres(datos);
+        assertTrue(repo.servicioInicializado("pop3"));
+        assertFalse(repo.servicioInicializado("roundcube"));
+        assertEquals(1, numero("select count(*) from p1_correo_control where buzon_protocolo='roundcube'"));
+        assertEquals(1, numero("select count(*) from p1_auditoria where persona_ci='501' and mensaje_id is null"));
+    }
+
     @Test void postgresValidaOfertaAreasYAsignacionDelEvaluador() throws Exception {
         sql("""
             insert into p1_usuario(registro,nombres,apellidos,rol,correo) values

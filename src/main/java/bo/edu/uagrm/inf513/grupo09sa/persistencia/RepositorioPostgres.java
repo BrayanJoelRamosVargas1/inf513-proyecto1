@@ -21,12 +21,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public final class RepositorioPostgres implements RepositorioProyecto, ColaCorreo {
     private final DataSource ds;
+    private final String buzonProtocolo;
     private final ThreadLocal<Connection> transaccion=new ThreadLocal<>();
     private final ThreadLocal<String> mensajeActual=new ThreadLocal<>();
     private static final ObjectMapper JSON=new ObjectMapper();
     private static final SecureRandom ALEATORIO=new SecureRandom();
     private final GestionCategorias categorias=new GestionCategorias(this::conexion);
-    public RepositorioPostgres(DataSource ds){this.ds=ds;}
+    public RepositorioPostgres(DataSource ds){this(ds,null);}
+    public RepositorioPostgres(DataSource ds,String buzonProtocolo){
+        this.ds=ds;
+        this.buzonProtocolo=buzonProtocolo;
+    }
 
     /** Consulta por lotes sólo los IDs presentes en la página actual; el historial total nunca se carga en memoria. */
     public Set<String> correosConocidos(Collection<String> candidatos)throws SQLException{
@@ -43,11 +48,11 @@ public final class RepositorioPostgres implements RepositorioProyecto, ColaCorre
     }
     public Admision registrarEntrada(String id,String remitente,String asunto,List<bo.edu.uagrm.inf513.grupo09sa.email.AdjuntoPdf> adjuntos)throws SQLException{
         if(adjuntos.size()>1)throw new IllegalArgumentException("Se admite un PDF por orden");
-        String sql="insert into p1_correo_control(mensaje_id,remitente,asunto,estado,admitido_en) select ?,?,?,'DIFERIDO',null where (select count(*) from p1_correo_control where estado in ('DIFERIDO','RECIBIDO','RESPUESTA_PENDIENTE'))<10000 on conflict(mensaje_id) do nothing";
+        String sql="insert into p1_correo_control(mensaje_id,remitente,asunto,buzon_protocolo,estado,admitido_en) select ?,?,?,?,'DIFERIDO',null where (select count(*) from p1_correo_control where estado in ('DIFERIDO','RECIBIDO','RESPUESTA_PENDIENTE'))<10000 on conflict(mensaje_id) do nothing";
         try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement(sql)){
             c.setAutoCommit(false);
             try{
-            p.setString(1,id);p.setString(2,remitente);p.setString(3,asunto);
+            p.setString(1,id);p.setString(2,remitente);p.setString(3,asunto);p.setString(4,buzonProtocolo);
             if(p.executeUpdate()==1){
                 // Unknown or inactive senders still receive a rejection, without retaining binary data.
                 boolean autorizado=false;
@@ -289,10 +294,29 @@ public final class RepositorioPostgres implements RepositorioProyecto, ColaCorre
     }
     @Override public boolean hayUsuarios()throws SQLException{try(Connection c=ds.getConnection();Statement s=c.createStatement();ResultSet r=s.executeQuery("select 1 from p1_usuario limit 1")){return r.next();}}
     public boolean correoProcesado(String id)throws SQLException{try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement("select 1 from p1_correo_control where mensaje_id=? and estado='RESPONDIDO'")){p.setString(1,id);return p.executeQuery().next();}}
-    public boolean servicioInicializado(String canal)throws SQLException{try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement("select 1 from p1_servicio_estado where clave=? and valor='true'")){p.setString(1,"bandeja_inicializada_"+canal.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]","_"));return p.executeQuery().next();}}
-    @Override public void marcarServicioInicializado()throws SQLException{try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement("insert into p1_servicio_estado(clave,valor) values('bandeja_inicializada','true') on conflict(clave) do update set valor=excluded.valor,actualizado_en=now()")){p.executeUpdate();}}
-    public void marcarServicioInicializado(String canal)throws SQLException{try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement("insert into p1_servicio_estado(clave,valor) values(?,'true') on conflict(clave) do update set valor=excluded.valor,actualizado_en=now()")){p.setString(1,"bandeja_inicializada_"+canal.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]","_"));p.executeUpdate();}}
-    @Override public void registrarCorreoProcesado(String id,String remitente,String asunto,boolean exito)throws SQLException{try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement("insert into p1_correo_control(mensaje_id,remitente,asunto,exito,estado) values(?,?,?,?,'RESPONDIDO') on conflict(mensaje_id) do nothing")){p.setString(1,id);p.setString(2,remitente);p.setString(3,asunto);p.setBoolean(4,exito);p.executeUpdate();}}
+    @Override public boolean servicioInicializado(String canal)throws SQLException{
+        try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement("select 1 from p1_buzon where protocolo=? and inicializado")){
+            p.setString(1,canal);
+            try(ResultSet r=p.executeQuery()){return r.next();}
+        }
+    }
+    @Override public void marcarServicioInicializado(String canal)throws SQLException{
+        try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement("""
+                insert into p1_buzon(protocolo,inicializado) values(?,true)
+                on conflict(protocolo) do update set inicializado=true,actualizado_en=now()
+                """)){
+            p.setString(1,canal);p.executeUpdate();
+        }
+    }
+    @Override public void registrarCorreoProcesado(String id,String remitente,String asunto,boolean exito)throws SQLException{
+        try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement("""
+                insert into p1_correo_control(mensaje_id,remitente,asunto,exito,buzon_protocolo,estado)
+                values(?,?,?,?,?,'RESPONDIDO') on conflict(mensaje_id) do nothing
+                """)){
+            p.setString(1,id);p.setString(2,remitente);p.setString(3,asunto);
+            p.setBoolean(4,exito);p.setString(5,buzonProtocolo);p.executeUpdate();
+        }
+    }
     @Override public Resultado ejecutar(String remitente,Orden o)throws Exception{
         if(transaccion.get()!=null)return ejecutarNegocio(remitente,o);
         try(Connection c=ds.getConnection()){
@@ -519,10 +543,24 @@ private Resultado listarUsuarios(String filtro)throws SQLException{return consul
             datos.put("parametros",o.parametros());datos.put("anterior",anterior==null?null:JSON.readTree(anterior));datos.put("posterior",posterior==null?null:JSON.readTree(posterior));
             detalle=JSON.writeValueAsString(datos);
         }
-        try(Connection c=conexion();PreparedStatement s=c.prepareStatement("insert into p1_auditoria(actor,accion,entidad,entidad_id,detalle) values(?,?,?,?,?)")){
+        try(Connection c=conexion();PreparedStatement s=c.prepareStatement("""
+                insert into p1_auditoria(actor,accion,entidad,entidad_id,detalle,mensaje_id,postulacion_id,persona_ci)
+                values(?,?,?,?,?,
+                    (select mensaje_id from p1_correo_control where mensaje_id=? and estado<>'INTERNO'),
+                    coalesce(?::bigint,(select p.id from p1_postulacion p join p1_usuario u on u.id=p.postulante_id
+                        where p.convocatoria_id=?::bigint and p.cargo_id=?::bigint and lower(u.correo)=lower(?))),
+                    ?)
+                """)){
             String referencia=o.parametros().get(0);
             if(auditoriaConIdNumerico(o.comando()))referencia=Long.toString(Long.parseLong(referencia));
-            s.setString(1,actor);s.setString(2,o.comando());s.setString(3,o.comando());s.setString(4,referencia);s.setString(5,detalle);s.executeUpdate();
+            boolean altaPostulacion=o.comando().equals("INSPOST");
+            s.setString(1,actor);s.setString(2,o.comando());s.setString(3,o.comando());s.setString(4,referencia);
+            s.setString(5,detalle);s.setString(6,mensajeActual.get());
+            s.setString(7,CAMBIOS_POSTULACION.contains(o.comando())?referencia:null);
+            s.setString(8,altaPostulacion?referencia:null);
+            s.setString(9,altaPostulacion?o.parametros().get(1):null);
+            s.setString(10,actor);s.setString(11,o.comando().equals("INSPER")?referencia:null);
+            s.executeUpdate();
         }
     }
 }

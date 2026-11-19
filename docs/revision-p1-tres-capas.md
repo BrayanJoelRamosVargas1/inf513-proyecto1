@@ -61,7 +61,7 @@ En `AUDCAL`, la referencia de `INSPOST` es el ID de convocatoria, la de `INSUSU`
 | Auxiliaturas y auditoría | 13 | Usuarios, convocatorias, cargos, ofertas, áreas, postulaciones, expedientes, requisitos, méritos, exámenes, desempates, asignaciones y auditoría. `AUDCAL` sigue consultando `p1_auditoria`. |
 | Recepción de correo | 3 | Control del mensaje, adjunto temporal y estado del buzón. Confirmación y resultado se guardan en el correo original. |
 | Ejemplo de la consigna | 1 | `persona` sigue sirviendo a `LISPER` e `INSPER` con datos ficticios. |
-| **Total** | **17** | **14 claves foráneas** declaradas y vínculos lógicos indicados con líneas discontinuas. |
+| **Total** | **17** | **18 claves foráneas** declaradas. Las 17 tablas forman un solo conjunto conectado. |
 
 La instalación anterior guardaba cada respuesta exitosa o fallida en dos tablas. Esta versión usa `p1_correo_control` también para el historial y reconoce los mensajes ya procesados por el estado `RESPONDIDO`. En una base nueva, `p1_correo_procesado` ya no se crea. En una base anterior, el esquema importa los históricos que faltan sin cambiar las filas de la cola. Conserva la tabla antigua como respaldo para compatibilidad. La confirmación y el resultado de negocio quedan en la fila del mensaje original, en campos distintos de la respuesta SMTP. El resultado se guarda en la misma transacción que el negocio para evitar repetir operaciones si falla el envío.
 
@@ -85,7 +85,7 @@ Esta revisión es local. Quedan pendientes la aplicación del esquema actualizad
 
 ## Verificación
 
-Una compilación limpia con Maven y JDK 17 ejecutó **139 pruebas con éxito** en PostgreSQL 15. En una base vacía se verificó el rechazo del primer decano inactivo, el alta posterior del decano activo y la posibilidad de registrar un evaluador inactivo una vez iniciado el sistema. El recorrido por correo cubrió los ocho casos. Se verificó que un fallo transitorio en LISPER genere un error para el remitente cuando la cola sigue disponible. Una prueba con 231 postulaciones comprobó las cinco secciones del reporte. El ejecutable procesó una consulta válida y un asunto inválido por POP3 y SMTP contra servicios locales de ensayo y se recuperó de un conflicto con el bloqueo de instancia única. El SQL se aplicó dos veces sobre una copia del esquema anterior y el laboratorio arrancó desde una extracción limpia.
+Una compilación limpia con Maven y JDK 17 ejecutó **140 pruebas con éxito** en PostgreSQL 15. En una base vacía se verificó el rechazo del primer decano inactivo, el alta posterior del decano activo y la posibilidad de registrar un evaluador inactivo una vez iniciado el sistema. El recorrido por correo cubrió los ocho casos y comprobó las relaciones de auditoría con el buzón, la postulación y el catálogo docente. Se verificó que un fallo transitorio en LISPER genere un error para el remitente cuando la cola sigue disponible. Una prueba con 231 postulaciones comprobó las cinco secciones del reporte. El ejecutable procesó una consulta válida y un asunto inválido por POP3 y SMTP contra servicios locales de ensayo y se recuperó de un conflicto con el bloqueo de instancia única. El SQL se aplicó dos veces sobre una copia del esquema anterior y el laboratorio arrancó desde una extracción limpia.
 
 
 ## Depuración del paquete local

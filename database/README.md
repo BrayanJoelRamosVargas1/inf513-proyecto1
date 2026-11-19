@@ -1,6 +1,6 @@
 # Base de datos del Parcial 1
 
-El esquema ejecutable está en [schema.sql](schema.sql). Una instalación limpia contiene **17 tablas y 14 claves foráneas**. El [modelo de datos](../docs/modelo-datos-p1-tres-capas.svg) distingue las claves foráneas de los vínculos que mantiene la aplicación. El código Java accede a PostgreSQL mediante JDBC. Las consultas residen en `persistencia/RepositorioPostgres.java` y `persistencia/GestionCategorias.java`.
+El esquema ejecutable está en [schema.sql](schema.sql). Una instalación limpia contiene **17 tablas y 18 claves foráneas**. El [modelo de datos](../docs/modelo-datos-p1-tres-capas.svg) muestra cómo las claves foráneas conectan las 17 tablas. El código Java accede a PostgreSQL mediante JDBC. Las consultas residen en `persistencia/RepositorioPostgres.java` y `persistencia/GestionCategorias.java`.
 
 ## Auxiliaturas
 
@@ -18,20 +18,20 @@ El esquema ejecutable está en [schema.sql](schema.sql). Una instalación limpia
 | `p1_examen` | Historial de notas generales o por área | Clave foránea a la postulación. |
 | `p1_desempate` | Decisión justificada, prioridad y versión de evaluación | Clave foránea a la postulación. |
 | `p1_asignacion_evaluador` | Evaluador y tarea asignada | Claves foráneas a la postulación y al usuario evaluador. |
-| `p1_auditoria` | Historial de altas y cambios que consulta `AUDCAL` en el CU7 | Referencia lógica por operación y su identificador. Según la operación se guarda un ID, un código, un registro, un CI o un nombre. |
+| `p1_auditoria` | Historial de altas y cambios que consulta `AUDCAL` en el CU7 | Claves foráneas al correo, la postulación y la persona cuando corresponde. La referencia de la operación conserva el ID, código, registro, CI o nombre para AUDCAL. |
 
 ## Correo y ejemplo docente
 
 | Tabla | Uso | Relación principal |
 |---|---|---|
-| `p1_correo_control` | Recepción, cola, historial, confirmación y resultado definitivo | Conserva el hash, el vencimiento y el resultado de negocio junto al correo original. El adjunto apunta a este mensaje por clave foránea. |
+| `p1_correo_control` | Recepción, cola, historial, confirmación y resultado definitivo | Conserva el hash, el vencimiento y el resultado de negocio junto al correo original. El mensaje apunta al buzón y el adjunto apunta al mensaje por claves foráneas. |
 | `p1_adjunto_correo` | PDF temporal hasta confirmar y crear el expediente | Clave foránea al mensaje original. |
-| `p1_servicio_estado` | Marca que indica si ya se inicializó el buzón para el protocolo usado | Estado general del servicio. Permite distinguir la primera lectura y evitar responder a los correos históricos. |
-| `persona` | Catálogo requerido para `LISPER` e `INSPER` | Catálogo independiente de las cuentas de auxiliaturas. |
+| `p1_buzon` | Estado de inicialización del buzón por protocolo | Los correos leídos por el servicio apuntan a su protocolo. Permite distinguir la primera lectura y evitar responder a los correos históricos. |
+| `persona` | Catálogo requerido para `LISPER` e `INSPER` | La auditoría de INSPER apunta a la persona registrada. Los datos de esta tabla corresponden al ejemplo del docente. |
 
 ## Comparar con un esquema anterior
 
-En un esquema nuevo, `p1_correo_procesado` ya no se crea. Si existe en la base anterior, la migración importa los mensajes históricos a `p1_correo_control` como `RESPONDIDO` y conserva la tabla anterior. Al comparar con TecnoWeb, esa tabla puede aparecer como legado. La migración también incorpora las confirmaciones y los resultados de `p1_confirmacion` y `p1_resultado_orden`. Si esas tablas existen, quedan como respaldo. El código actualizado trabaja con la fila de `p1_correo_control`. Ejecutá la migración con el servicio anterior detenido y verificá una copia antes de programar el cambio.
+En un esquema nuevo, `p1_correo_procesado` ya no se crea. Si existe en la base anterior, la migración importa los mensajes históricos a `p1_correo_control` como `RESPONDIDO` y conserva la tabla anterior. Al comparar con TecnoWeb, esa tabla puede aparecer como legado. La migración incorpora las confirmaciones y los resultados antiguos e importa los marcadores por protocolo de `p1_servicio_estado` a `p1_buzon`. También recupera relaciones históricas cuando puede identificar el registro correspondiente. Los correos y auditorías antiguos de origen desconocido conservan la referencia sin completar. Si esas tablas existen, quedan como respaldo. El código actualizado trabaja con la fila de `p1_correo_control`. Ejecutá la migración con el servicio anterior detenido y verificá una copia antes de programar el cambio.
 
 Estas consultas solo leen el catálogo. Ejecutalas en la base y el esquema que corresponde comparar.
 
