@@ -1,5 +1,6 @@
 package bo.edu.uagrm.inf513.grupo09sa.persistencia;
 
+import bo.edu.uagrm.inf513.grupo09sa.comandos.Resultado;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +51,50 @@ class IntegridadEsquemaTest {
         assertEquals(1, numero("select count(*) from p1_correo_control where mensaje_id='historial' and admitido_en is null"));
         assertEquals(0, repo.promoverDiferidos(25));
         assertEquals(RepositorioPostgres.Admision.DUPLICADO, repo.registrarEntrada("historial","ensayo@example.com","AYUDA[]"));
+    }
+
+    @Test void consolidaConfirmacionesPendientesConsumidasYResultadosAnteriores() throws Exception {
+        assertEquals(17, numero("select count(*) from pg_tables where schemaname=current_schema()"));
+        sql("""
+            create table p1_confirmacion (
+                mensaje_id text primary key, remitente text not null, token_hash text unique not null,
+                orden_json text not null, vence_en timestamptz not null, confirmacion_id text, usado boolean not null
+            );
+            create table p1_resultado_orden (
+                mensaje_id text primary key, exito boolean not null, respuesta_asunto text not null,
+                respuesta_cuerpo text not null, ejecutado_en timestamptz not null
+            );
+            insert into p1_correo_control(mensaje_id,remitente,estado) values
+                ('pendiente','prueba@example.com','RESPONDIDO'), ('consumida','prueba@example.com','RESPONDIDO');
+            insert into p1_confirmacion values
+                ('pendiente','prueba@example.com',encode(sha256(convert_to(repeat('A',43),'UTF8')),'hex'),
+                 '{"comando":"AYUDA","parametros":[]}',now()+interval '10 minutes',null,false),
+                ('consumida','prueba@example.com',encode(sha256(convert_to(repeat('B',43),'UTF8')),'hex'),
+                 '{"comando":"AYUDA","parametros":[]}',now()-interval '10 minutes','confirmada-antes',true);
+            insert into p1_resultado_orden values
+                ('consulta-anterior',true,'Consulta','Resultado original',now()),
+                ('consumida',true,'Anterior','Resultado secundario',now()),
+                ('confirmacion:'||encode(sha256(convert_to('consumida','UTF8')),'hex'),
+                 false,'Error','Resultado de la confirmación anterior',now());
+            """);
+        sql(sqlEsquema);
+
+        var repo = new RepositorioPostgres(datos);
+        var anterior = repo.confirmarOrden("confirmada-antes","prueba@example.com","B".repeat(43),
+                (id,orden) -> fail("La orden ya consumida no se repite"));
+        assertFalse(anterior.exito());
+        assertEquals("Resultado de la confirmación anterior",anterior.cuerpo());
+        assertEquals("Resultado original",repo.ejecutarIdempotente("consulta-anterior","prueba@example.com",null).cuerpo());
+        var nueva = repo.confirmarOrden("confirmada-ahora","prueba@example.com","A".repeat(43),
+                (id,orden) -> Resultado.ok("Confirmada después de migrar"));
+        assertTrue(nueva.exito());
+        sql(sqlEsquema);
+        assertEquals(nueva,repo.confirmarOrden("confirmada-ahora","prueba@example.com","A".repeat(43),
+                (id,orden) -> fail("La migración no debe reactivar un código consumido")));
+        assertFalse(repo.confirmarOrden("otra-confirmacion","prueba@example.com","A".repeat(43),
+                (id,orden) -> fail("Otro correo no puede reutilizar el código")).exito());
+        assertEquals(3,numero("select count(*) from p1_correo_control where resultado_exito is not null"));
+        assertEquals(0,repo.promoverDiferidos(25));
     }
 
     @Test void postgresValidaOfertaAreasYAsignacionDelEvaluador() throws Exception {

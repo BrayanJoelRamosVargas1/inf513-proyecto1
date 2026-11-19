@@ -129,7 +129,7 @@ class InyeccionSqlPostgresTest {
             assertFalse(r.asunto().startsWith("CONFIRMACIÓN REQUERIDA"));
         }
         assertEquals(180,intentos);
-        try(var c=ds.getConnection();var s=c.createStatement();var r=s.executeQuery("select (select count(*) from p1_confirmacion),(select count(*) from p1_auditoria),(select count(*) from p1_postulacion)")) {
+        try(var c=ds.getConnection();var s=c.createStatement();var r=s.executeQuery("select (select count(*) from p1_correo_control where token_hash is not null),(select count(*) from p1_auditoria),(select count(*) from p1_postulacion)")) {
             assertTrue(r.next());for(int i=1;i<=3;i++)assertEquals(0,r.getInt(i));
         }
     }

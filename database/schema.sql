@@ -141,7 +141,18 @@ create table if not exists p1_correo_control (
     actualizado_en timestamptz not null default now()
 );
 alter table p1_correo_control drop constraint if exists p1_correo_control_estado_check;
-alter table p1_correo_control add constraint p1_correo_control_estado_check check(estado in('DIFERIDO','RECIBIDO','RESPUESTA_PENDIENTE','RESPONDIDO'));
+alter table p1_correo_control add constraint p1_correo_control_estado_check check(estado in('DIFERIDO','RECIBIDO','RESPUESTA_PENDIENTE','RESPONDIDO','INTERNO'));
+alter table p1_correo_control
+    add column if not exists token_hash varchar(64),
+    add column if not exists orden_json text,
+    add column if not exists vence_en timestamptz,
+    add column if not exists confirmacion_id varchar(255),
+    add column if not exists usado boolean not null default false,
+    add column if not exists resultado_exito boolean,
+    add column if not exists resultado_asunto text,
+    add column if not exists resultado_cuerpo text,
+    add column if not exists ejecutado_en timestamptz;
+create unique index if not exists uq_correo_confirmacion on p1_correo_control(token_hash) where token_hash is not null;
 -- Los mensajes históricos quedan RESPONDIDO sin consumir el cupo de recepción.
 do $$
 begin
@@ -164,22 +175,42 @@ begin
 end
 $$;
 create index if not exists idx_correo_admitido on p1_correo_control(admitido_en,lower(remitente));
-create table if not exists p1_confirmacion (
-    mensaje_id varchar(255) primary key,
-    remitente varchar(160) not null,
-    token_hash varchar(64) unique not null,
-    orden_json text not null,
-    vence_en timestamptz not null default now()+interval '30 minutes',
-    confirmacion_id varchar(255),
-    usado boolean not null default false
-);
-create table if not exists p1_resultado_orden (
-    mensaje_id varchar(255) primary key,
-    exito boolean not null,
-    respuesta_asunto text not null,
-    respuesta_cuerpo text not null,
-    ejecutado_en timestamptz not null default now()
-);
+-- Se conservan las tablas anteriores como respaldo si ya existían.
+do $$
+begin
+    if to_regclass(format('%I.p1_confirmacion', current_schema())) is not null then
+        insert into p1_correo_control(mensaje_id,remitente,estado,token_hash,orden_json,vence_en,confirmacion_id,usado)
+        select mensaje_id,remitente,'INTERNO',token_hash,orden_json,vence_en,confirmacion_id,usado
+        from p1_confirmacion
+        on conflict(mensaje_id) do update set
+            token_hash=excluded.token_hash, orden_json=excluded.orden_json, vence_en=excluded.vence_en,
+            confirmacion_id=excluded.confirmacion_id, usado=excluded.usado
+        where p1_correo_control.token_hash is null;
+    end if;
+
+    if to_regclass(format('%I.p1_resultado_orden', current_schema())) is not null then
+        -- Una confirmación antigua guardaba además un resultado con una clave derivada del correo original.
+        update p1_correo_control c
+        set resultado_exito=r.exito, resultado_asunto=r.respuesta_asunto,
+            resultado_cuerpo=r.respuesta_cuerpo, ejecutado_en=r.ejecutado_en
+        from p1_resultado_orden r
+        where c.usado and c.resultado_exito is null
+          and r.mensaje_id='confirmacion:'||encode(sha256(convert_to(c.mensaje_id,'UTF8')),'hex');
+
+        insert into p1_correo_control(mensaje_id,remitente,estado,resultado_exito,resultado_asunto,resultado_cuerpo,ejecutado_en)
+        select r.mensaje_id,'local', 'INTERNO',r.exito,r.respuesta_asunto,r.respuesta_cuerpo,r.ejecutado_en
+        from p1_resultado_orden r
+        where not exists (
+            select 1 from p1_correo_control c where c.usado
+              and r.mensaje_id='confirmacion:'||encode(sha256(convert_to(c.mensaje_id,'UTF8')),'hex')
+        )
+        on conflict(mensaje_id) do update set resultado_exito=excluded.resultado_exito,
+            resultado_asunto=excluded.resultado_asunto, resultado_cuerpo=excluded.resultado_cuerpo,
+            ejecutado_en=excluded.ejecutado_en
+        where p1_correo_control.resultado_exito is null;
+    end if;
+end
+$$;
 create table if not exists p1_servicio_estado (
     clave varchar(80) primary key,
     valor text not null,

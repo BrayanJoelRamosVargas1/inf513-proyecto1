@@ -35,7 +35,7 @@ class SeguridadPostgresTest {
         assertFalse(rechazado.exito());
         assertTrue(rechazado.cuerpo().contains("El primer DECANO debe quedar activo."),rechazado.cuerpo());
         assertEquals(0,usuarios());
-        assertEquals(0,numero("select count(*) from p1_confirmacion"));
+        assertEquals(0,numero("select count(*) from p1_correo_control where token_hash is not null"));
 
         String token=codigo(procesador.procesar("arranque-activo","admin@example.com",alta()));
         assertTrue(confirmar("confirmar-arranque","admin@example.com",token).exito());
@@ -210,18 +210,18 @@ class SeguridadPostgresTest {
     }
     @Test void pdfVencidosLiberanCupoSinBorrarExpedientesConfirmados()throws Exception{
         var tokens=llenarCupoConConfirmacionesPdf();
-        ejecutarSql("update p1_confirmacion set vence_en=now()-interval '1 minute' where mensaje_id like 'pdf-expira-%'");
+        ejecutarSql("update p1_correo_control set vence_en=now()-interval '1 minute' where mensaje_id like 'pdf-expira-%'");
         repo.registrarEntrada("nuevo-tras-vencer","luis@example.com","INSPOST[]",List.of(pdfDeDosMiB()));
         assertEquals(1,numero("select count(*) from p1_adjunto_correo where mensaje_id='nuevo-tras-vencer'"),"Los códigos vencidos no deben bloquear permanentemente el cupo de PDF");
         assertEquals(0,numero("select count(*) from p1_adjunto_correo where mensaje_id like 'pdf-expira-%'"));
-        assertEquals(4,numero("select count(*) from p1_confirmacion where mensaje_id like 'pdf-expira-%'"),"Se conserva el registro de las confirmaciones");
+        assertEquals(4,numero("select count(*) from p1_correo_control where token_hash is not null and mensaje_id like 'pdf-expira-%'"),"Se conserva el registro de las confirmaciones");
         assertEquals(1,numero("select count(*) from p1_expediente"),"La limpieza solo afecta los adjuntos temporales");
         assertFalse(confirmar("vencida-posterior","luis@example.com",tokens.get(0)).exito());
         assertEquals(1,numero("select count(*) from p1_postulacion"));
     }
     @Test void limpiezaConservaPdfSiLaConfirmacionValidaLlegoATiempoPeroEstaDiferida()throws Exception{
         var tokens=llenarCupoConConfirmacionesPdf();
-        ejecutarSql("update p1_confirmacion set vence_en=now()-interval '1 minute' where mensaje_id like 'pdf-expira-%'");
+        ejecutarSql("update p1_correo_control set vence_en=now()-interval '1 minute' where mensaje_id like 'pdf-expira-%'");
         repo.registrarEntrada("confirmacion-pdf-diferida","LUIS@example.com"," confirmar [ \u2003\""+tokens.get(0)+"\"\u2003 ] ");
         ejecutarSql("update p1_correo_control set creado_en=now()-interval '2 minutes' where mensaje_id='confirmacion-pdf-diferida'");
         repo.registrarEntrada("nuevo-con-cola","luis@example.com","INSPOST[]",List.of(pdfDeDosMiB()));
@@ -233,7 +233,7 @@ class SeguridadPostgresTest {
     }
     @Test void confirmacionesFalsasOAtrasadasNoRetienenPdfVencidos()throws Exception{
         var tokens=llenarCupoConConfirmacionesPdf();
-        ejecutarSql("update p1_confirmacion set vence_en=now()-interval '1 minute' where mensaje_id like 'pdf-expira-%'");
+        ejecutarSql("update p1_correo_control set vence_en=now()-interval '1 minute' where mensaje_id like 'pdf-expira-%'");
         repo.registrarEntrada("falsa-cuenta","intruso@example.com","CONFIRMAR[\""+tokens.get(0)+"\"]");
         repo.registrarEntrada("llego-tarde","luis@example.com","CONFIRMAR[\""+tokens.get(1)+"\"]");
         repo.registrarEntrada("codigo-incorrecto","luis@example.com","CONFIRMAR[\""+"X".repeat(43)+"\"]");
@@ -407,7 +407,7 @@ class SeguridadPostgresTest {
     }
     @Test void tokenVencidoNoEjecuta()throws Exception{
         String token=codigo(procesador.procesar("caduca","admin@example.com",alta()));
-        ejecutarSql("update p1_confirmacion set vence_en=now()-interval '1 minute'");
+        ejecutarSql("update p1_correo_control set vence_en=now()-interval '1 minute'");
         assertFalse(confirmar("c","admin@example.com",token).exito());assertEquals(0,usuarios());
     }
     @Test void falloDeBaseRevierteNegocioYConsumoDelCodigo()throws Exception{
@@ -415,7 +415,7 @@ class SeguridadPostgresTest {
         assertThrows(SQLException.class,()->repo.confirmarOrden("c","admin@example.com",token,(id,o)->{
             repo.ejecutarIdempotente(id,"admin@example.com",o);throw new SQLException("Corte simulado","08006");
         }));
-        assertEquals(0,usuarios());assertEquals(0,numero("select count(*) from p1_confirmacion where usado"));
+        assertEquals(0,usuarios());assertEquals(0,numero("select count(*) from p1_correo_control where usado"));
         assertTrue(confirmar("c","admin@example.com",token).exito());assertEquals(1,usuarios());
     }
     @Test void errorFuncionalNoDejaTransaccionAbortadaNiCodigoReutilizable()throws Exception{
@@ -449,7 +449,7 @@ class SeguridadPostgresTest {
         repo.registrarEntrada("confirmacion-cola","admin@example.com","confirmar [ \""+token+"\" ]");
         assertEquals(0,repo.promoverDiferidos(25));
         ejecutarSql("update p1_correo_control set creado_en=now()-interval '2 hours' where mensaje_id='confirmacion-cola'");
-        ejecutarSql("update p1_confirmacion set vence_en=now()-interval '1 hour'");
+        ejecutarSql("update p1_correo_control set vence_en=now()-interval '1 hour'");
         assertTrue(confirmar("confirmacion-cola","admin@example.com",token).exito());assertEquals(1,usuarios());
     }
     @Test void migracionRepetidaConservaLasOrdenesDiferidas()throws Exception{

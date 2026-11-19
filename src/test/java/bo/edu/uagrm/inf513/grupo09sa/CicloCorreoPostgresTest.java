@@ -33,17 +33,17 @@ class CicloCorreoPostgresTest {
     @Test void pdfAprobadoSeConservaAntesDePedirConfirmacion()throws Exception{
         postulante();var mail=correoPdf();var inspecciones=new java.util.concurrent.atomic.AtomicInteger();
         ciclo(mail,a->{inspecciones.incrementAndGet();return true;});ciclo(mail,a->{fail("Un correo conocido no se vuelve a analizar");return false;});
-        assertEquals(1,inspecciones.get());assertEquals(1,cantidad("p1_adjunto_correo"));assertEquals(1,cantidad("p1_confirmacion"));assertEquals(0,cantidad("p1_postulacion"));
+        assertEquals(1,inspecciones.get());assertEquals(1,cantidad("p1_adjunto_correo"));assertEquals(1,cantidad("p1_correo_control where token_hash is not null"));assertEquals(0,cantidad("p1_postulacion"));
     }
     @Test void pdfNoAprobadoSeRespondeSinAlmacenarNiConfirmar()throws Exception{
         postulante();var mail=correoPdf();ciclo(mail,a->false);ciclo(mail,a->false);
-        assertEquals(0,cantidad("p1_adjunto_correo"));assertEquals(0,cantidad("p1_confirmacion"));
+        assertEquals(0,cantidad("p1_adjunto_correo"));assertEquals(0,cantidad("p1_correo_control where token_hash is not null"));
         assertTrue(mail.detalle.get("pdf-av").cuerpo().contains("antivirus no aprobó"));assertTrue(repo.correoProcesado("pdf-av"));
     }
     @Test void motorAntivirusInaccesibleNoApruebaNiBloqueaOtrosCorreos()throws Exception{
         postulante();var mail=correoPdf();mail.entrada.add(new MensajeEntrada("siguiente-av","otro@example.com","AYUDA[]"));
         InspectorPdf caido=a->{throw new java.io.IOException("Fallo de motor simulado");};ciclo(mail,caido);ciclo(mail,caido);
-        assertEquals(0,cantidad("p1_adjunto_correo"));assertEquals(0,cantidad("p1_confirmacion"));
+        assertEquals(0,cantidad("p1_adjunto_correo"));assertEquals(0,cantidad("p1_correo_control where token_hash is not null"));
         assertTrue(mail.detalle.get("pdf-av").cuerpo().contains("no estuvo disponible"));assertTrue(repo.correoProcesado("siguiente-av"));
     }
     @Test void remitenteSinRolNoConsumeElProcesoAntivirus()throws Exception{
@@ -146,10 +146,10 @@ class CicloCorreoPostgresTest {
     }
     @Test void envioFallidoConservaRespuestaYNoDuplicaElResultado()throws Exception{
         var mail=new CorreoFalso();mail.entrada.add(new MensajeEntrada("uno","a@example.com","LISCON[\"*\"]"));
-        ciclo(mail);assertEquals(1,cantidad("p1_resultado_orden"));assertTrue(mail.marcados.contains("uno"));
+        ciclo(mail);assertEquals(1,cantidad("p1_correo_control where resultado_exito is not null"));assertTrue(mail.marcados.contains("uno"));
         mail.fallaEnvio=true;ciclo(mail);assertFalse(repo.correoProcesado("uno"));assertEquals(1,cantidad("p1_correo_control"));
         sql("update p1_correo_control set siguiente_intento=now()");mail.fallaEnvio=false;ciclo(mail);
-        assertTrue(repo.correoProcesado("uno"));assertEquals(1,mail.respuestas.size());assertEquals(1,cantidad("p1_resultado_orden"));assertEquals(3,mail.liberaciones);
+        assertTrue(repo.correoProcesado("uno"));assertEquals(1,mail.respuestas.size());assertEquals(1,cantidad("p1_correo_control where resultado_exito is not null"));assertEquals(3,mail.liberaciones);
     }
     @Test void errorEnUnMensajeNoBloqueaElSiguiente()throws Exception{
         var mail=new CorreoFalso();mail.entrada.add(new MensajeEntrada("malo","a@example.com","AYUDA["));mail.entrada.add(new MensajeEntrada("bueno","a@example.com","AYUDA[]"));
@@ -182,18 +182,18 @@ class CicloCorreoPostgresTest {
         String pendiente = cuerpoRespuesta("reto");
         var codigo = java.util.regex.Pattern.compile("CONFIRMAR\\[\"[A-Za-z0-9_-]{43}\"\\]").matcher(pendiente);
         assertTrue(codigo.find());
-        sql("update p1_confirmacion set vence_en=now()-interval '1 minute' where mensaje_id='reto'");
+        sql("update p1_correo_control set vence_en=now()-interval '1 minute' where mensaje_id='reto'");
         mail.fallaEnvio = true;
         ciclo(mail);
         assertEquals(pendiente, cuerpoRespuesta("reto"));
-        assertEquals(1, cantidad("p1_confirmacion where mensaje_id='reto' and vence_en<now()"));
+        assertEquals(1, cantidad("p1_correo_control where token_hash is not null and mensaje_id='reto' and vence_en<now()"));
         sql("update p1_correo_control set siguiente_intento=now()");
         mail.fallaEnvio = false;
         ciclo(mail);
         assertEquals(pendiente, mail.detalle.get("reto").cuerpo());
         assertTrue(cuerpoRespuesta("reto").contains("CONFIRMAR[\"[OCULTO]\"]"));
         assertFalse(cuerpoRespuesta("reto").matches("(?s).*CONFIRMAR\\[\"[A-Za-z0-9_-]{43}\"\\].*"));
-        assertEquals(1, cantidad("p1_confirmacion f join p1_correo_control c using(mensaje_id) where mensaje_id='reto' and f.vence_en=c.actualizado_en+interval '30 minutes'"));
+        assertEquals(1, cantidad("p1_correo_control where mensaje_id='reto' and vence_en=actualizado_en+interval '30 minutes'"));
         var confirmacion = enviar(mail, "admin@example.com", codigo.group(), List.of());
         assertEquals("ÉXITO - Orden procesada", confirmacion.asunto(), confirmacion.cuerpo());
         assertEquals(1, cantidad("p1_usuario where correo='admin@example.com'"));

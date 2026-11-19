@@ -43,7 +43,7 @@ public final class RepositorioPostgres implements RepositorioProyecto, ColaCorre
     }
     public Admision registrarEntrada(String id,String remitente,String asunto,List<bo.edu.uagrm.inf513.grupo09sa.email.AdjuntoPdf> adjuntos)throws SQLException{
         if(adjuntos.size()>1)throw new IllegalArgumentException("Se admite un PDF por orden");
-        String sql="insert into p1_correo_control(mensaje_id,remitente,asunto,estado,admitido_en) select ?,?,?,'DIFERIDO',null where (select count(*) from p1_correo_control where estado<>'RESPONDIDO')<10000 on conflict(mensaje_id) do nothing";
+        String sql="insert into p1_correo_control(mensaje_id,remitente,asunto,estado,admitido_en) select ?,?,?,'DIFERIDO',null where (select count(*) from p1_correo_control where estado in ('DIFERIDO','RECIBIDO','RESPUESTA_PENDIENTE'))<10000 on conflict(mensaje_id) do nothing";
         try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement(sql)){
             c.setAutoCommit(false);
             try{
@@ -78,7 +78,7 @@ public final class RepositorioPostgres implements RepositorioProyecto, ColaCorre
         // A challenge that expired cannot pin the PDF budget indefinitely. A valid
         // confirmation received before its deadline remains usable while deferred.
         Set<String> protegidos=pdfConConfirmacionRecibidaATiempo(c);
-        String limpieza="delete from p1_adjunto_correo a using p1_correo_control correo where correo.mensaje_id=a.mensaje_id and correo.estado='RESPONDIDO' and not exists(select 1 from p1_confirmacion f where f.mensaje_id=a.mensaje_id and not f.usado and (f.vence_en>now() or f.mensaje_id=any(?)))";
+        String limpieza="delete from p1_adjunto_correo a using p1_correo_control correo where correo.mensaje_id=a.mensaje_id and correo.estado='RESPONDIDO' and not coalesce(not correo.usado and (correo.vence_en>now() or correo.mensaje_id=any(?)),false)";
         java.sql.Array ids=c.createArrayOf("varchar",protegidos.toArray(String[]::new));
         try(PreparedStatement q=c.prepareStatement(limpieza)){q.setQueryTimeout(30);q.setArray(1,ids);q.executeUpdate();}
         finally{ids.free();}
@@ -90,7 +90,7 @@ public final class RepositorioPostgres implements RepositorioProyecto, ColaCorre
         Set<String> protegidos=new HashSet<>();
         // The token prefilter only reduces candidates. The real parser decides
         // validity, including all whitespace it accepts, without a second grammar.
-        String sql="select f.mensaje_id,entrada.asunto from p1_confirmacion f join p1_adjunto_correo a on a.mensaje_id=f.mensaje_id join p1_correo_control original on original.mensaje_id=a.mensaje_id join p1_correo_control entrada on lower(entrada.remitente)=lower(f.remitente) and entrada.creado_en<=f.vence_en and entrada.estado<>'RESPONDIDO' and encode(sha256(convert_to(substring(entrada.asunto from ?),'UTF8')),'hex')=f.token_hash where not f.usado and f.vence_en<=now() and original.estado='RESPONDIDO'";
+        String sql="select f.mensaje_id,entrada.asunto from p1_correo_control f join p1_adjunto_correo a on a.mensaje_id=f.mensaje_id join p1_correo_control entrada on lower(entrada.remitente)=lower(f.remitente) and entrada.creado_en<=f.vence_en and entrada.estado in ('DIFERIDO','RECIBIDO','RESPUESTA_PENDIENTE') and encode(sha256(convert_to(substring(entrada.asunto from ?),'UTF8')),'hex')=f.token_hash where not f.usado and f.vence_en<=now() and f.estado='RESPONDIDO'";
         var parser=new bo.edu.uagrm.inf513.grupo09sa.comandos.AnalizadorOrden();
         try(PreparedStatement q=c.prepareStatement(sql)){
             q.setQueryTimeout(30);q.setFetchSize(100);q.setString(1,"\"([A-Za-z0-9_-]{43})\"");
@@ -120,21 +120,16 @@ public final class RepositorioPostgres implements RepositorioProyecto, ColaCorre
     }
     public void confirmarRespuesta(String id) throws SQLException {
         String sql = """
-                with respondido as (
-                    update p1_correo_control
-                    set estado='RESPONDIDO', ultimo_error=null, actualizado_en=statement_timestamp(),
-                        respuesta_cuerpo=case when starts_with(respuesta_asunto, 'CONFIRMACIÓN REQUERIDA - ')
-                            then regexp_replace(respuesta_cuerpo,
-                                'CONFIRMAR[[]"[A-Za-z0-9_-]{43}"[]]', 'CONFIRMAR["[OCULTO]"]', 'g')
-                            else respuesta_cuerpo end
-                    where mensaje_id=? and estado<>'RESPONDIDO'
-                    returning mensaje_id, respuesta_asunto, actualizado_en
-                )
-                update p1_confirmacion confirmacion
-                set vence_en=respondido.actualizado_en + interval '30 minutes'
-                from respondido
-                where confirmacion.mensaje_id=respondido.mensaje_id and not confirmacion.usado
-                  and starts_with(respondido.respuesta_asunto, 'CONFIRMACIÓN REQUERIDA - ')
+                update p1_correo_control
+                set estado='RESPONDIDO', ultimo_error=null, actualizado_en=statement_timestamp(),
+                    vence_en=case when not usado and token_hash is not null
+                        and starts_with(respuesta_asunto, 'CONFIRMACIÓN REQUERIDA - ')
+                        then statement_timestamp() + interval '30 minutes' else vence_en end,
+                    respuesta_cuerpo=case when starts_with(respuesta_asunto, 'CONFIRMACIÓN REQUERIDA - ')
+                        then regexp_replace(respuesta_cuerpo,
+                            'CONFIRMAR[[]"[A-Za-z0-9_-]{43}"[]]', 'CONFIRMAR["[OCULTO]"]', 'g')
+                        else respuesta_cuerpo end
+                where mensaje_id=? and estado in ('DIFERIDO','RECIBIDO','RESPUESTA_PENDIENTE')
                 """;
         try (Connection c=ds.getConnection(); PreparedStatement p=c.prepareStatement(sql)) {
             p.setString(1,id);
@@ -164,27 +159,67 @@ public final class RepositorioPostgres implements RepositorioProyecto, ColaCorre
     }
     private Resultado ejecutarEnTransaccion(Connection c,String id,String remitente,Orden orden)throws Exception{
         // Serialize retries with the same message before looking up their durable result.
-        try(PreparedStatement lock=c.prepareStatement("select pg_advisory_xact_lock(hashtextextended(?,0))")){lock.setString(1,id);lock.execute();}
+        bloquearOrden(c,id);
         Resultado anterior=resultadoGuardado(c,id);if(anterior!=null)return anterior;
         String anteriorId=mensajeActual.get();mensajeActual.set(id);
-        try{Resultado resultado=ejecutar(remitente,orden);guardarResultado(c,id,resultado);return resultado;}
+        try{Resultado resultado=ejecutar(remitente,orden);guardarResultado(c,id,remitente,resultado);return resultado;}
         finally{if(anteriorId==null)mensajeActual.remove();else mensajeActual.set(anteriorId);}
     }
-    private static Resultado resultadoGuardado(Connection c,String id)throws SQLException{
-        try(PreparedStatement q=c.prepareStatement("select exito,respuesta_asunto,respuesta_cuerpo from p1_resultado_orden where mensaje_id=?")){q.setString(1,id);try(ResultSet r=q.executeQuery()){return r.next()?new Resultado(r.getBoolean(1),r.getString(2),r.getString(3)):null;}}
+    private static void bloquearOrden(Connection c, String id) throws SQLException {
+        try (PreparedStatement lock = c.prepareStatement("select pg_advisory_xact_lock(hashtextextended(?,0))")) {
+            lock.setString(1,id);
+            lock.execute();
+        }
     }
-    private static void guardarResultado(Connection c,String id,Resultado resultado)throws SQLException{
-        try(PreparedStatement p=c.prepareStatement("insert into p1_resultado_orden(mensaje_id,exito,respuesta_asunto,respuesta_cuerpo) values(?,?,?,?)")){p.setString(1,id);p.setBoolean(2,resultado.exito());p.setString(3,resultado.asunto());p.setString(4,resultado.cuerpo());p.executeUpdate();}
+    private static Resultado resultadoGuardado(Connection c,String id)throws SQLException{
+        try(PreparedStatement q=c.prepareStatement("""
+                select resultado_exito,resultado_asunto,resultado_cuerpo from p1_correo_control
+                where mensaje_id=? and resultado_exito is not null
+                """)){
+            q.setString(1,id);
+            try(ResultSet r=q.executeQuery()){
+                return r.next()?new Resultado(r.getBoolean(1),r.getString(2),r.getString(3)):null;
+            }
+        }
+    }
+    private static void guardarResultado(Connection c,String id,String remitente,Resultado resultado)throws SQLException{
+        try(PreparedStatement p=c.prepareStatement("""
+                insert into p1_correo_control(mensaje_id,remitente,estado,resultado_exito,
+                    resultado_asunto,resultado_cuerpo,ejecutado_en)
+                values(?,?,'INTERNO',?,?,?,now())
+                on conflict(mensaje_id) do update set resultado_exito=excluded.resultado_exito,
+                    resultado_asunto=excluded.resultado_asunto,resultado_cuerpo=excluded.resultado_cuerpo,
+                    ejecutado_en=excluded.ejecutado_en
+                where p1_correo_control.resultado_exito is null
+                """)){
+            p.setString(1,id);
+            p.setString(2,remitente);
+            p.setBoolean(3,resultado.exito());
+            p.setString(4,resultado.asunto());
+            p.setString(5,resultado.cuerpo());
+            p.executeUpdate();
+        }
     }
     @Override public Resultado solicitarConfirmacion(String mensajeId,String remitente,Orden orden)throws Exception{
         String id=mensajeId==null?"local:"+UUID.randomUUID():mensajeId;
         try(Connection c=ds.getConnection()){
             c.setAutoCommit(false);
             try{
-                try(PreparedStatement lock=c.prepareStatement("select pg_advisory_xact_lock(hashtextextended(?,0))")){lock.setString(1,id);lock.execute();}
+                bloquearOrden(c,id);
                 try(PreparedStatement q=c.prepareStatement("select respuesta_asunto,respuesta_cuerpo,exito from p1_correo_control where mensaje_id=? and estado='RESPUESTA_PENDIENTE'")){q.setString(1,id);try(ResultSet r=q.executeQuery()){if(r.next()){c.commit();return new Resultado(r.getBoolean(3),r.getString(1),r.getString(2));}}}
                 byte[] bytes=new byte[32];ALEATORIO.nextBytes(bytes);String token=Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-                try(PreparedStatement p=c.prepareStatement("insert into p1_confirmacion(mensaje_id,remitente,token_hash,orden_json) values(?,?,?,?) on conflict(mensaje_id) do update set token_hash=excluded.token_hash,vence_en=now()+interval '30 minutes' where not p1_confirmacion.usado")){p.setString(1,id);p.setString(2,remitente);p.setString(3,hash(token));p.setString(4,JSON.writeValueAsString(orden));if(p.executeUpdate()!=1){c.rollback();return Resultado.error("La orden ya fue confirmada.");}}
+                try(PreparedStatement p=c.prepareStatement("""
+                        insert into p1_correo_control(mensaje_id,remitente,estado,token_hash,orden_json,vence_en)
+                        values(?,?,'INTERNO',?,?,now()+interval '30 minutes')
+                        on conflict(mensaje_id) do update set token_hash=excluded.token_hash,
+                            orden_json=coalesce(p1_correo_control.orden_json,excluded.orden_json),
+                            vence_en=excluded.vence_en
+                        where not p1_correo_control.usado and lower(p1_correo_control.remitente)=lower(excluded.remitente)
+                        """)){
+                    p.setString(1,id);p.setString(2,remitente);p.setString(3,hash(token));
+                    p.setString(4,JSON.writeValueAsString(orden));
+                    if(p.executeUpdate()!=1){c.rollback();return Resultado.error("La orden ya fue confirmada o pertenece a otro remitente.");}
+                }
                 Resultado respuesta=new Resultado(false,"CONFIRMACIÓN REQUERIDA - "+orden.comando(),"Orden pendiente: "+JSON.writeValueAsString(orden)+"\nSi solicitó esta operación, envíe desde esta misma cuenta el asunto:\nCONFIRMAR[\""+token+"\"]\nEl código vence en 30 minutos y solo autoriza esta orden. Si no la solicitó, ignore este mensaje.");
                 try(PreparedStatement p=c.prepareStatement("update p1_correo_control set estado='RESPUESTA_PENDIENTE',respuesta_asunto=?,respuesta_cuerpo=?,exito=false,actualizado_en=now() where mensaje_id=? and estado='RECIBIDO'")){p.setString(1,respuesta.asunto());p.setString(2,respuesta.cuerpo());p.setString(3,id);p.executeUpdate();}
                 c.commit();return respuesta;
@@ -206,21 +241,35 @@ public final class RepositorioPostgres implements RepositorioProyecto, ColaCorre
                         }catch(bo.edu.uagrm.inf513.grupo09sa.comandos.OrdenInvalidaException ignorada){}
                     }}
                 }
-                try(PreparedStatement q=c.prepareStatement("select mensaje_id,orden_json,usado,confirmacion_id,vence_en>coalesce(?::timestamptz,now()) vigente from p1_confirmacion where token_hash=? and lower(remitente)=lower(?) for update")){
-                    q.setTimestamp(1,recibido);q.setString(2,hash(token));q.setString(3,remitente);
+                String tokenHash=hash(token);
+                String mensajeOriginal;
+                try(PreparedStatement q=c.prepareStatement("select mensaje_id from p1_correo_control where token_hash=? and lower(remitente)=lower(?)")){
+                    q.setString(1,tokenHash);q.setString(2,remitente);
+                    try(ResultSet r=q.executeQuery()){
+                        if(!r.next()){c.rollback();return Resultado.error("Código inválido, vencido o ya utilizado.");}
+                        mensajeOriginal=r.getString(1);
+                    }
+                }
+                bloquearOrden(c,mensajeOriginal);
+                try(PreparedStatement q=c.prepareStatement("""
+                        select mensaje_id,orden_json,usado,confirmacion_id,vence_en>coalesce(?::timestamptz,now()) vigente
+                        from p1_correo_control where mensaje_id=? and token_hash=? and lower(remitente)=lower(?) for update
+                        """)){
+                    q.setTimestamp(1,recibido);q.setString(2,mensajeOriginal);q.setString(3,tokenHash);q.setString(4,remitente);
                     try(ResultSet r=q.executeQuery()){
                         if(!r.next()){c.rollback();return Resultado.error("Código inválido, vencido o ya utilizado.");}
                         String original=r.getString(1);
                         if(r.getBoolean(3)){
                             if(!mensajeId.equals(r.getString(4))){c.rollback();return Resultado.error("Código inválido, vencido o ya utilizado.");}
-                            respuesta=resultadoGuardado(c,"confirmacion:"+hash(original));c.commit();return respuesta;
+                            respuesta=resultadoGuardado(c,original);c.commit();
+                            return respuesta==null?Resultado.error("La orden ya se confirmó y su respuesta histórica no está disponible."):respuesta;
                         }
                         if(!r.getBoolean(5)){c.rollback();return Resultado.error("Código inválido, vencido o ya utilizado.");}
                         Savepoint negocio=c.setSavepoint();
                         respuesta=ejecutar.ejecutar(original,JSON.readValue(r.getString(2),Orden.class));
                         if(!respuesta.exito())c.rollback(negocio);
-                        guardarResultado(c,"confirmacion:"+hash(original),respuesta);
-                        try(PreparedStatement p=c.prepareStatement("update p1_confirmacion set usado=true,confirmacion_id=? where mensaje_id=?")){p.setString(1,mensajeId);p.setString(2,original);p.executeUpdate();}
+                        guardarResultado(c,original,remitente,respuesta);
+                        try(PreparedStatement p=c.prepareStatement("update p1_correo_control set usado=true,confirmacion_id=? where mensaje_id=?")){p.setString(1,mensajeId);p.setString(2,original);p.executeUpdate();}
                     }
                 }
                 c.commit();return respuesta;

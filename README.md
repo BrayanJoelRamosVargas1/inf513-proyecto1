@@ -6,7 +6,7 @@ Sistema de gestión de convocatorias de auxiliaturas por correo electrónico con
 
 ![Arquitectura de tres capas](docs/diagramas/arquitectura.png)
 
-Presentación recibe y analiza el correo. Aplicación valida parámetros y roles y coordina el caso de uso. Datos aplica transacciones, mantiene la cola y ejecuta consultas preparadas en PostgreSQL. El [modelo de datos](docs/modelo-datos-p1-tres-capas.svg) muestra las 19 tablas y las 14 claves foráneas de una instalación limpia. El [inventario tabla por tabla](database/README.md) explica su uso y cómo contrastarlas con el catálogo de TecnoWeb.
+Presentación recibe y analiza el correo. Aplicación valida parámetros y roles y coordina el caso de uso. Datos aplica transacciones, mantiene la cola y ejecuta consultas preparadas en PostgreSQL. El [modelo de datos](docs/modelo-datos-p1-tres-capas.svg) muestra las 17 tablas y las 14 claves foráneas de una instalación limpia. El [inventario tabla por tabla](database/README.md) explica su uso y cómo contrastarlas con el catálogo de TecnoWeb.
 
 ## Flujo del analizador
 
@@ -38,7 +38,7 @@ Las órdenes se escriben en el asunto de correos nuevos. Enviá `LISPER["*"]` pa
 
 Si falla temporalmente la consulta `LISPER`, el servicio prepara una respuesta de error para el remitente. Si PostgreSQL está completamente fuera de servicio, el procesamiento espera a que vuelva la cola. Las escrituras conservan sus reintentos para evitar resultados inciertos o duplicados. Revisá `logs/access.log` y `logs/error.log` en el equipo que ejecuta el JAR.
 
-En una instalación existente, ejecutá la migración en una copia y respaldá la base antes de arrancar una versión nueva. El nuevo JAR lee los históricos de `p1_correo_control` luego de aplicar `database/schema.sql`. El esquema conserva una tabla histórica antigua si ya existía para facilitar la reversión.
+En una instalación existente, ejecutá la migración en una copia y respaldá la base antes de arrancar una versión nueva. Detené el JAR anterior antes de aplicar `database/schema.sql`. La migración reúne historial, resultados y confirmaciones en `p1_correo_control` y conserva las tablas anteriores como respaldo si existen. El respaldo ejecutado antes de migrar es la referencia para una reversión.
 
 
 ## Aplicar y comprobar el esquema

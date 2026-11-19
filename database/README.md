@@ -1,6 +1,6 @@
 # Base de datos del Parcial 1
 
-El esquema ejecutable está en [schema.sql](schema.sql). Una instalación limpia contiene **19 tablas y 14 claves foráneas**. El [modelo de datos](../docs/modelo-datos-p1-tres-capas.svg) distingue las claves foráneas de los vínculos que mantiene la aplicación. El código Java accede a PostgreSQL mediante JDBC. Las consultas residen en `persistencia/RepositorioPostgres.java` y `persistencia/GestionCategorias.java`.
+El esquema ejecutable está en [schema.sql](schema.sql). Una instalación limpia contiene **17 tablas y 14 claves foráneas**. El [modelo de datos](../docs/modelo-datos-p1-tres-capas.svg) distingue las claves foráneas de los vínculos que mantiene la aplicación. El código Java accede a PostgreSQL mediante JDBC. Las consultas residen en `persistencia/RepositorioPostgres.java` y `persistencia/GestionCategorias.java`.
 
 ## Auxiliaturas
 
@@ -24,16 +24,14 @@ El esquema ejecutable está en [schema.sql](schema.sql). Una instalación limpia
 
 | Tabla | Uso | Relación principal |
 |---|---|---|
-| `p1_correo_control` | Recepción, cola, reintentos de envío e historial | El adjunto apunta a su mensaje por clave foránea. |
+| `p1_correo_control` | Recepción, cola, historial, confirmación y resultado definitivo | Conserva el hash, el vencimiento y el resultado de negocio junto al correo original. El adjunto apunta a este mensaje por clave foránea. |
 | `p1_adjunto_correo` | PDF temporal hasta confirmar y crear el expediente | Clave foránea al mensaje original. |
-| `p1_confirmacion` | Orden pendiente, hash del código, vencimiento y consumo | Vínculo lógico al mensaje original y al mensaje de confirmación. |
-| `p1_resultado_orden` | Resultado de negocio persistido para que un reintento no duplique una operación | Clave de idempotencia derivada del mensaje u orden confirmada. |
 | `p1_servicio_estado` | Marca que indica si ya se inicializó el buzón para el protocolo usado | Estado general del servicio. Permite distinguir la primera lectura y evitar responder a los correos históricos. |
 | `persona` | Catálogo requerido para `LISPER` e `INSPER` | Catálogo independiente de las cuentas de auxiliaturas. |
 
 ## Comparar con un esquema anterior
 
-En un esquema nuevo, `p1_correo_procesado` ya no se crea. Si existe en la base anterior, la migración importa los mensajes históricos a `p1_correo_control` como `RESPONDIDO` y conserva la tabla anterior. Al comparar con TecnoWeb, esa tabla puede aparecer como legado. La presencia de otras diferencias se verifica consultando el esquema conectado.
+En un esquema nuevo, `p1_correo_procesado` ya no se crea. Si existe en la base anterior, la migración importa los mensajes históricos a `p1_correo_control` como `RESPONDIDO` y conserva la tabla anterior. Al comparar con TecnoWeb, esa tabla puede aparecer como legado. La migración también incorpora las confirmaciones y los resultados de `p1_confirmacion` y `p1_resultado_orden`. Si esas tablas existen, quedan como respaldo. El código actualizado trabaja con la fila de `p1_correo_control`. Ejecutá la migración con el servicio anterior detenido y verificá una copia antes de programar el cambio.
 
 Estas consultas solo leen el catálogo. Ejecutalas en la base y el esquema que corresponde comparar.
 
