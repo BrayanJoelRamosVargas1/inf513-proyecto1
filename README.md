@@ -8,6 +8,8 @@ Sistema de gestión de convocatorias de auxiliaturas por correo electrónico con
 
 Presentación recibe y analiza el correo. Aplicación valida parámetros y roles y coordina el caso de uso. Datos aplica transacciones, mantiene la cola y ejecuta consultas preparadas en PostgreSQL. El [modelo de datos](docs/modelo-datos-p1-tres-capas.svg) muestra las 17 tablas y las 18 claves foráneas de una instalación limpia. El [inventario tabla por tabla](database/README.md) explica su uso y cómo contrastarlas con el catálogo de TecnoWeb.
 
+El paquete [`modelo`](src/main/java/bo/edu/uagrm/inf513/grupo09sa/modelo) reúne una clase Java por entidad de auxiliaturas, además de `Persona` para el ejemplo docente. Por ejemplo, `ASIOFE` crea una `Oferta` con los identificadores de convocatoria y cargo y el cupo. La capa de datos lee esos campos para comprobar y guardar la oferta. La definición completa de las tablas está en [`database/schema.sql`](database/schema.sql).
+
 ## Flujo del analizador
 
 ![Flujo del analizador de correos](docs/diagramas/analizador.png)

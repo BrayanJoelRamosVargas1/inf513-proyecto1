@@ -18,6 +18,8 @@ Las migraciones PHP del paquete declaran doce tablas propias de BarberSeven y si
 
 `Main.java` ensambla las capas e inicia el ciclo. La presentación usa la interfaz `ColaCorreo`. La aplicación declara su propio contrato `RepositorioProyecto`. Ambos contratos se implementan en PostgreSQL. Parte de las reglas de cálculo y cupo ya reside en las consultas de datos y se conserva allí para mantener el comportamiento previo.
 
+En [`src/main/java/bo/edu/uagrm/inf513/grupo09sa/modelo`](../src/main/java/bo/edu/uagrm/inf513/grupo09sa/modelo) están las doce clases de auxiliaturas y `Persona`. Por ejemplo, `INSPOST` usa una `Postulacion` para buscar al postulante y el cargo, y un `Expediente` para asociar el PDF o la referencia con la solicitud guardada. Las dos escrituras usan la misma transacción. El [inventario de tablas](../database/README.md) indica qué clase usa cada operación.
+
 ## Los ocho casos de uso
 
 | Caso | Qué cubre | Comandos |

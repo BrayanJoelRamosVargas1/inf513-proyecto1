@@ -2,23 +2,25 @@
 
 El esquema ejecutable está en [schema.sql](schema.sql). Una instalación limpia contiene **17 tablas y 18 claves foráneas**. El [modelo de datos](../docs/modelo-datos-p1-tres-capas.svg) muestra cómo las claves foráneas conectan las 17 tablas. El código Java accede a PostgreSQL mediante JDBC. Las consultas residen en `persistencia/RepositorioPostgres.java` y `persistencia/GestionCategorias.java`.
 
+Las clases de [`modelo`](../src/main/java/bo/edu/uagrm/inf513/grupo09sa/modelo) representan los datos que usan las operaciones Java. PostgreSQL asigna identificadores y fechas de alta y conserva las restricciones y relaciones completas.
+
 ## Auxiliaturas
 
-| Tabla | Uso | Relación principal |
-|---|---|---|
-| `usuario` | Cuentas, roles y estado activo | Las postulaciones y asignaciones apuntan al usuario. |
-| `convocatoria` | Fechas, estado y plazas totales | Las ofertas y postulaciones apuntan a la convocatoria. |
-| `cargo` | Categorías de auxiliatura | Las ofertas y postulaciones apuntan al cargo. |
-| `oferta` | Plazas por convocatoria y cargo | Claves foráneas a convocatoria y cargo. |
-| `area_examen` | Áreas y ponderaciones | Clave foránea compuesta a la oferta. |
-| `postulacion` | Solicitud, estado, puntajes y adjudicación | Claves foráneas a convocatoria, postulante y cargo. |
-| `expediente` | PDF confirmado o referencia externa | Clave foránea a la postulación. |
-| `evaluacion_requisito` | Historial de requisitos revisados | Clave foránea a la postulación. |
-| `merito` | Historial de calificaciones de méritos | Clave foránea a la postulación. |
-| `examen` | Historial de notas generales o por área | Clave foránea a la postulación. |
-| `desempate` | Decisión justificada, prioridad y versión de evaluación | Clave foránea a la postulación. |
-| `asignacion_evaluador` | Evaluador y tarea asignada | Claves foráneas a la postulación y al usuario evaluador. |
-| `auditoria` | Historial de altas y cambios que consulta `AUDCAL` en el CU7 | Claves foráneas al correo, la postulación y la persona cuando corresponde. La referencia de la operación conserva el ID, código, registro, CI o nombre para AUDCAL. |
+| Tabla | Clase en `modelo` | Uso | Relación principal |
+|---|---|---|---|
+| `usuario` | `Usuario.java` | Cuentas, roles y estado activo | Las postulaciones y asignaciones apuntan al usuario. |
+| `convocatoria` | `Convocatoria.java` | Fechas, estado y plazas totales | Las ofertas y postulaciones apuntan a la convocatoria. |
+| `cargo` | `Cargo.java` | Categorías de auxiliatura | Las ofertas y postulaciones apuntan al cargo. |
+| `oferta` | `Oferta.java` | Plazas por convocatoria y cargo | Claves foráneas a convocatoria y cargo. |
+| `area_examen` | `AreaExamen.java` | Áreas y ponderaciones | Clave foránea compuesta a la oferta. |
+| `postulacion` | `Postulacion.java` | Solicitud, estado, puntajes y adjudicación | Claves foráneas a convocatoria, postulante y cargo. |
+| `expediente` | `Expediente.java` | PDF confirmado o referencia externa | Clave foránea a la postulación. |
+| `evaluacion_requisito` | `EvaluacionRequisito.java` | Historial de requisitos revisados | Clave foránea a la postulación. |
+| `merito` | `Merito.java` | Historial de calificaciones de méritos | Clave foránea a la postulación. |
+| `examen` | `Examen.java` | Historial de notas generales o por área | Clave foránea a la postulación. |
+| `desempate` | `Desempate.java` | Decisión justificada, prioridad y versión de evaluación | Clave foránea a la postulación. |
+| `asignacion_evaluador` | `AsignacionEvaluador.java` | Evaluador y tarea asignada | Claves foráneas a la postulación y al usuario evaluador. |
+| `auditoria` | — | Historial de altas y cambios que consulta `AUDCAL` en el CU7 | Claves foráneas al correo, la postulación y la persona cuando corresponde. La referencia de la operación conserva el ID, código, registro, CI o nombre para AUDCAL. |
 
 ## Correo y ejemplo docente
 
@@ -27,7 +29,7 @@ El esquema ejecutable está en [schema.sql](schema.sql). Una instalación limpia
 | `correo_control` | Recepción, cola, historial, confirmación y resultado definitivo | Conserva el hash, el vencimiento y el resultado de negocio junto al correo original. El mensaje apunta al buzón y el adjunto apunta al mensaje por claves foráneas. |
 | `adjunto_correo` | PDF temporal hasta confirmar y crear el expediente | Clave foránea al mensaje original. |
 | `buzon` | Estado de inicialización del buzón por protocolo | Los correos leídos por el servicio apuntan a su protocolo. Permite distinguir la primera lectura y evitar responder a los correos históricos. |
-| `persona` | Catálogo requerido para `LISPER` e `INSPER` | La auditoría de INSPER apunta a la persona registrada. Los datos de esta tabla corresponden al ejemplo del docente. |
+| `persona` | Catálogo requerido para `LISPER` e `INSPER`. `INSPER` usa `modelo/Persona.java`. | La auditoría de INSPER apunta a la persona registrada. Los datos de esta tabla corresponden al ejemplo del docente. |
 
 ## Comparar con un esquema anterior
 

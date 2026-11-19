@@ -1,6 +1,10 @@
 package bo.edu.uagrm.inf513.grupo09sa.persistencia;
 
 import bo.edu.uagrm.inf513.grupo09sa.comandos.Resultado;
+import bo.edu.uagrm.inf513.grupo09sa.modelo.AreaExamen;
+import bo.edu.uagrm.inf513.grupo09sa.modelo.Desempate;
+import bo.edu.uagrm.inf513.grupo09sa.modelo.Examen;
+import bo.edu.uagrm.inf513.grupo09sa.modelo.Oferta;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.*;
@@ -13,58 +17,84 @@ final class GestionCategorias {
     private static final String REQUISITOS="exists(select 1 from evaluacion_requisito e where e.postulacion_id=p.id) and not exists(select 1 from (select distinct on(lower(btrim(requisito)),lower(evaluador_correo)) cumple from evaluacion_requisito where postulacion_id=p.id order by lower(btrim(requisito)),lower(evaluador_correo),id desc) vigentes where not cumple)";
     private static final String COMPLETA="exists(select 1 from merito m where m.postulacion_id=p.id) and (case when exists(select 1 from area_examen a where a.convocatoria_id=p.convocatoria_id and a.cargo_id=p.cargo_id) then (select sum(a.peso) from area_examen a where a.convocatoria_id=p.convocatoria_id and a.cargo_id=p.cargo_id)=100 and not exists(select 1 from area_examen a where a.convocatoria_id=p.convocatoria_id and a.cargo_id=p.cargo_id and not exists(select 1 from examen e where e.postulacion_id=p.id and e.area=a.area)) else exists(select 1 from examen e where e.postulacion_id=p.id and e.area='general') end)";
     private static final String ELEGIBLE="p.estado in('HABILITADO','GANADOR') and "+REQUISITOS+" and "+COMPLETA;
-    private PreparedStatement preparar(Connection c,String sql,String... valores)throws SQLException {
+    private PreparedStatement preparar(Connection c,String sql,Object... valores)throws SQLException {
         PreparedStatement s=c.prepareStatement(sql);
         try {
             s.setQueryTimeout(30);
-            for(int i=0;i<valores.length;i++)s.setString(i+1,valores[i]);
+            for(int i=0;i<valores.length;i++)s.setObject(i+1,valores[i]);
             return s;
         } catch(SQLException | RuntimeException fallo) {
             try { s.close(); } catch(SQLException cierre) { fallo.addSuppressed(cierre); }
             throw fallo;
         }
     }
-    private boolean existe(String sql,String... valores)throws SQLException {
+    private boolean existe(String sql,Object... valores)throws SQLException {
         try(var c=conexiones.abrir();var s=preparar(c,sql,valores);var r=s.executeQuery()){return r.next();}
     }
-    boolean tieneAreas(String post)throws SQLException {
+    boolean tieneAreas(long post)throws SQLException {
         return existe("select 1 from postulacion p join area_examen a on a.convocatoria_id=p.convocatoria_id and a.cargo_id=p.cargo_id where p.id=?::bigint",post);
     }
     boolean completa(String post)throws SQLException {
         return existe("select 1 from postulacion p where p.id=?::bigint and "+COMPLETA,post);
     }
-    private boolean cerrada(String conv)throws SQLException {
+    private boolean cerrada(long conv)throws SQLException {
         return !existe("select 1 from convocatoria where id=?::bigint and estado in('BORRADOR','ABIERTA')",conv)
             ||existe("select 1 from postulacion where convocatoria_id=?::bigint and plaza_asignada",conv);
     }
-    Resultado oferta(List<String> p)throws SQLException {
-        if(cerrada(p.get(0)))return Resultado.error("La convocatoria no existe, está cerrada o ya tiene plazas asignadas.");
-        if(!existe("select 1 from cargo where id=?::bigint and activo",p.get(1)))return Resultado.error("El cargo no está activo.");
-        try(var c=conexiones.abrir();var s=preparar(c,"select c.plazas,coalesce((select sum(o.plazas) from oferta o where o.convocatoria_id=c.id and o.cargo_id<>?::bigint),0) from convocatoria c where c.id=?::bigint",p.get(1),p.get(0));var r=s.executeQuery()) {
-            if(!r.next()||r.getLong(2)+Long.parseLong(p.get(2))>r.getLong(1))return Resultado.error("La suma de plazas por cargo supera el total de la convocatoria.");
+    Resultado oferta(Oferta oferta) throws SQLException {
+        if (cerrada(oferta.convocatoriaId()))
+            return Resultado.error("La convocatoria no existe, está cerrada o ya tiene plazas asignadas.");
+        if (!existe("select 1 from cargo where id=? and activo", oferta.cargoId()))
+            return Resultado.error("El cargo no está activo.");
+        try (var c = conexiones.abrir(); var s = preparar(c, """
+                select c.plazas,coalesce((select sum(o.plazas) from oferta o
+                    where o.convocatoria_id=c.id and o.cargo_id<>?),0)
+                from convocatoria c where c.id=?
+                """, oferta.cargoId(), oferta.convocatoriaId()); var r = s.executeQuery()) {
+            if (!r.next() || r.getLong(2) + oferta.plazas() > r.getLong(1))
+                return Resultado.error("La suma de plazas por cargo supera el total de la convocatoria.");
         }
-        try(var c=conexiones.abrir();var s=preparar(c,"insert into oferta(convocatoria_id,cargo_id,plazas) values(?::bigint,?::bigint,?::int) on conflict(convocatoria_id,cargo_id) do update set plazas=excluded.plazas",p.toArray(String[]::new))){s.executeUpdate();}
+        try (var c = conexiones.abrir(); var s = preparar(c, """
+                insert into oferta(convocatoria_id,cargo_id,plazas) values(?,?,?)
+                on conflict(convocatoria_id,cargo_id) do update set plazas=excluded.plazas
+                """, oferta.convocatoriaId(), oferta.cargoId(), oferta.plazas())) {
+            s.executeUpdate();
+        }
         return Resultado.ok("Oferta y plazas por cargo configuradas.");
     }
-    Resultado area(List<String> p)throws SQLException {
-        if(cerrada(p.get(0)))return Resultado.error("La convocatoria no permite modificar ponderaciones.");
-        if(!existe("select 1 from oferta where convocatoria_id=?::bigint and cargo_id=?::bigint",p.get(0),p.get(1)))return Resultado.error("Configure primero la oferta con ASIOFE.");
-        if(existe("select 1 from examen e join postulacion p on p.id=e.postulacion_id where p.convocatoria_id=?::bigint and p.cargo_id=?::bigint",p.get(0),p.get(1)))return Resultado.error("No se cambian ponderaciones después de registrar exámenes.");
-        String area=p.get(2).toLowerCase(Locale.ROOT);
-        try(var c=conexiones.abrir();var s=preparar(c,"select coalesce(sum(peso),0) from area_examen where convocatoria_id=?::bigint and cargo_id=?::bigint and area<>?",p.get(0),p.get(1),area);var r=s.executeQuery()) {
-            r.next();if(r.getBigDecimal(1).add(new BigDecimal(p.get(3))).compareTo(new BigDecimal("100"))>0)return Resultado.error("Los porcentajes de las áreas no pueden superar 100.");
+    Resultado area(AreaExamen area) throws SQLException {
+        if (cerrada(area.convocatoriaId()))
+            return Resultado.error("La convocatoria no permite modificar ponderaciones.");
+        if (!existe("select 1 from oferta where convocatoria_id=? and cargo_id=?",
+                area.convocatoriaId(), area.cargoId()))
+            return Resultado.error("Configure primero la oferta con ASIOFE.");
+        if (existe("""
+                select 1 from examen e join postulacion p on p.id=e.postulacion_id
+                where p.convocatoria_id=? and p.cargo_id=?
+                """, area.convocatoriaId(), area.cargoId()))
+            return Resultado.error("No se cambian ponderaciones después de registrar exámenes.");
+        try (var c = conexiones.abrir(); var s = preparar(c, """
+                select coalesce(sum(peso),0) from area_examen where convocatoria_id=? and cargo_id=? and area<>?
+                """, area.convocatoriaId(), area.cargoId(), area.area()); var r = s.executeQuery()) {
+            r.next();
+            if (r.getBigDecimal(1).add(area.peso()).compareTo(BigDecimal.valueOf(100)) > 0)
+                return Resultado.error("Los porcentajes de las áreas no pueden superar 100.");
         }
-        try(var c=conexiones.abrir();var s=preparar(c,"insert into area_examen(convocatoria_id,cargo_id,area,peso) values(?::bigint,?::bigint,?,?::numeric) on conflict(convocatoria_id,cargo_id,area) do update set peso=excluded.peso",p.get(0),p.get(1),area,p.get(3))){s.executeUpdate();}
+        try (var c = conexiones.abrir(); var s = preparar(c, """
+                insert into area_examen(convocatoria_id,cargo_id,area,peso) values(?,?,?,?)
+                on conflict(convocatoria_id,cargo_id,area) do update set peso=excluded.peso
+                """, area.convocatoriaId(), area.cargoId(), area.area(), area.peso())) {
+            s.executeUpdate();
+        }
         return Resultado.ok("Área configurada. Los porcentajes deben sumar 100 antes de registrar notas.");
     }
-    boolean cargoOfertado(String conv,String cargo)throws SQLException {
+    boolean cargoOfertado(long conv,long cargo)throws SQLException {
         return !existe("select 1 from oferta where convocatoria_id=?::bigint",conv)
             ||existe("select 1 from oferta where convocatoria_id=?::bigint and cargo_id=?::bigint and plazas>0",conv,cargo);
     }
-    Resultado registrarArea(String correo,List<String> p)throws SQLException {
-        String area=p.get(1).toLowerCase(Locale.ROOT);
-        if(!existe("select 1 from postulacion p where p.id=?::bigint and p.estado in('HABILITADO','GANADOR') and "+REQUISITOS,p.get(0)))return Resultado.error("Se requieren habilitación y requisitos vigentes para rendir el examen.");
-        if(!existe("select 1 from postulacion p join area_examen a on a.convocatoria_id=p.convocatoria_id and a.cargo_id=p.cargo_id where p.id=?::bigint and a.area=? and (select sum(peso) from area_examen x where x.convocatoria_id=p.convocatoria_id and x.cargo_id=p.cargo_id)=100",p.get(0),area))return Resultado.error("El área debe estar configurada y los porcentajes deben sumar exactamente 100.");
+    Resultado registrarArea(Examen examen) throws SQLException {
+        if(!existe("select 1 from postulacion p where p.id=?::bigint and p.estado in('HABILITADO','GANADOR') and "+REQUISITOS,examen.postulacionId()))return Resultado.error("Se requieren habilitación y requisitos vigentes para rendir el examen.");
+        if(!existe("select 1 from postulacion p join area_examen a on a.convocatoria_id=p.convocatoria_id and a.cargo_id=p.cargo_id where p.id=?::bigint and a.area=? and (select sum(peso) from area_examen x where x.convocatoria_id=p.convocatoria_id and x.cargo_id=p.cargo_id)=100",examen.postulacionId(),examen.area()))return Resultado.error("El área debe estar configurada y los porcentajes deben sumar exactamente 100.");
         try(var c=conexiones.abrir();var s=preparar(c,"""
             insert into examen(postulacion_id,area,puntaje,observacion,evaluador_correo)
             select ?::bigint,?,?::numeric,?,?
@@ -72,12 +102,13 @@ final class GestionCategorias {
                 where a.postulacion_id=?::bigint and lower(u.correo)=lower(?) and u.activo
                   and (upper(a.tipo) in ('MERITOS_Y_EXAMEN','EXAMEN')
                        or (upper(a.tipo)<>'MERITOS' and lower(a.tipo)=?)))
-            """,p.get(0),area,p.get(2),p.get(3),correo,p.get(0),correo,area)) {
+            """, examen.postulacionId(), examen.area(), examen.puntaje(), examen.observacion(),
+                examen.evaluadorCorreo(), examen.postulacionId(), examen.evaluadorCorreo(), examen.area())) {
             if(s.executeUpdate()!=1)return Resultado.error("El evaluador no está asignado a esta área del examen.");
         }
         return Resultado.ok("Nota de área registrada.");
     }
-    BigDecimal notaExamen(String post)throws SQLException {
+    BigDecimal notaExamen(long post)throws SQLException {
         String sql="with ultimas as (select distinct on(area,lower(evaluador_correo)) area,puntaje from examen where postulacion_id=?::bigint order by area,lower(evaluador_correo),id desc), promedios as(select area,avg(puntaje) nota from ultimas group by area), areas as(select a.area,a.peso from area_examen a join postulacion p on p.convocatoria_id=a.convocatoria_id and p.cargo_id=a.cargo_id where p.id=?::bigint) select case when exists(select 1 from areas) then (select coalesce(sum(coalesce(p.nota,0)*a.peso/100),0) from areas a left join promedios p on p.area=a.area) else (select coalesce(avg(puntaje),0) from ultimas where area='general') end";
         try(var c=conexiones.abrir();var s=preparar(c,sql,post,post);var r=s.executeQuery()){r.next();return r.getBigDecimal(1);}
     }
@@ -100,7 +131,15 @@ final class GestionCategorias {
         var empatados=todos.stream().filter(c->c.puntaje().compareTo(primero.puntaje())==0).map(Candidato::id).collect(java.util.stream.Collectors.toSet());
         if(empatados.size()<2||ids.size()!=empatados.size()||!new HashSet<>(ids).equals(empatados))return Resultado.error("Incluya exactamente todas las postulaciones del mismo empate, sin repetir ni mezclar categorías.");
         String sql="insert into desempate(postulacion_id,evaluacion_version,puntaje,prioridad,justificacion,actor) select id,evaluacion_version,puntaje_final,?::int,?,? from postulacion where id=?::bigint on conflict(postulacion_id) do update set evaluacion_version=excluded.evaluacion_version,puntaje=excluded.puntaje,prioridad=excluded.prioridad,justificacion=excluded.justificacion,actor=excluded.actor,fecha=now()";
-        try(var c=conexiones.abrir()) {for(int i=0;i<ids.size();i++)try(var s=preparar(c,sql,Integer.toString(i+1),p.get(3),actor,ids.get(i).toString())){s.executeUpdate();}}
+        try (var c = conexiones.abrir()) {
+            for (int i = 0; i < ids.size(); i++) {
+                Desempate desempate = new Desempate(ids.get(i), i + 1, p.get(3), actor);
+                try (var s = preparar(c, sql, desempate.prioridad(), desempate.justificacion(),
+                        desempate.actor(), desempate.postulacionId())) {
+                    s.executeUpdate();
+                }
+            }
+        }
         return Resultado.ok("Empate resuelto por la autoridad con justificación y auditoría. Una modificación de notas invalida la resolución correspondiente.");
     }
     Resultado asignar(List<String> p)throws SQLException {
@@ -110,7 +149,7 @@ final class GestionCategorias {
             if(!r.next())return Resultado.error("La postulación no existe.");conv=r.getLong(1);cargo=r.getLong(2);plazas=r.getInt(3);
         }
         if(asignar) {
-            if(!cargoOfertado(Long.toString(conv),Long.toString(cargo)))return Resultado.error("El cargo no tiene plazas ofertadas.");
+            if(!cargoOfertado(conv,cargo))return Resultado.error("El cargo no tiene plazas ofertadas.");
             if(!existe("select 1 from oferta where convocatoria_id=?::bigint",Long.toString(conv))&&existe("select 1 from postulacion where convocatoria_id=?::bigint group by convocatoria_id having count(distinct cargo_id)>1",Long.toString(conv)))return Resultado.error("Configure las plazas independientes por cargo con ASIOFE antes de asignar.");
             if(plazas<=0)return Resultado.error("No quedan plazas disponibles en este cargo.");
             try(var c=conexiones.abrir();var s=preparar(c,"select count(*) from postulacion where convocatoria_id=?::bigint and cargo_id=?::bigint and plaza_asignada and id<>?::bigint",Long.toString(conv),Long.toString(cargo),p.get(0));var r=s.executeQuery()) {
