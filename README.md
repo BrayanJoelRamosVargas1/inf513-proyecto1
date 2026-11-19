@@ -1,12 +1,12 @@
 # INF513 Proyecto 1 Grupo 09 SA
 
-Sistema de gestión de convocatorias de auxiliaturas por correo electrónico con Java 17 y PostgreSQL. El [PUDS](entrega/PUDS_INF513_P1_Grupo09SA.pdf) documenta los ocho casos de uso. La [guía de verificación](docs/revision-p1-tres-capas.md) reúne las pruebas de cada caso.
+Sistema de gestión de convocatorias de auxiliaturas por correo electrónico con Java 17 y PostgreSQL. El [catálogo de comandos](src/main/java/bo/edu/uagrm/inf513/grupo09sa/comandos/CatalogoComandos.java) indica las operaciones de los ocho casos de uso.
 
 ## Arquitectura y esquema
 
 ![Arquitectura de tres capas](docs/diagramas/arquitectura.png)
 
-Presentación recibe y analiza el correo. Aplicación valida parámetros y roles y coordina el caso de uso. Datos aplica transacciones, mantiene la cola y ejecuta consultas preparadas en PostgreSQL. El [modelo de datos](docs/modelo-datos-p1-tres-capas.svg) muestra las 17 tablas y las 18 claves foráneas de una instalación limpia. El [inventario tabla por tabla](database/README.md) explica su uso y cómo contrastarlas con el catálogo de TecnoWeb.
+Presentación recibe y analiza el correo. Aplicación valida parámetros y roles y coordina el caso de uso. Datos aplica transacciones, mantiene la cola y ejecuta consultas preparadas en PostgreSQL. La instalación limpia crea 17 tablas y 20 claves foráneas. El esquema SQL contiene su definición y el inventario explica sus relaciones. [Esquema SQL](database/schema.sql) · [Inventario de tablas](database/README.md)
 
 El paquete [`modelo`](src/main/java/bo/edu/uagrm/inf513/grupo09sa/modelo) reúne una clase Java por entidad de auxiliaturas, además de `Persona` para el ejemplo docente. Por ejemplo, `ASIOFE` crea una `Oferta` con los identificadores de convocatoria y cargo y el cupo. La capa de datos lee esos campos para comprobar y guardar la oferta. La definición completa de las tablas está en [`database/schema.sql`](database/schema.sql).
 
@@ -38,9 +38,11 @@ Copiá `config/application.example.properties` a `config/application.properties`
 
 Las órdenes se escriben en el asunto de correos nuevos. Enviá `LISPER["*"]` para consultar `persona`. La inserción `INSPER` recibe siete parámetros en este orden: CI, nombres, apellidos, ocupación, teléfono, celular y correo. Usá datos ficticios y comprobá el rechazo al repetir el mismo CI. Para probar el analizador, enviá `LISPER[*]`. Las órdenes con rol solicitan un código que se confirma desde la misma cuenta.
 
+Para recibir `INSPOST`, configurá primero las plazas del cargo con `ASIOFE`. `GENRAN` admite un segundo parámetro opcional para omitir filas y consultar el ranking por partes. Para resolver un empate por tandas, agregá `"INICIAR"` como quinto parámetro de `DESEMP`. Después de recibir cada respuesta, enviá la siguiente tanda con `"CONTINUAR"`, desde la misma cuenta y con la misma justificación. Las prioridades se aplican cuando se completa el grupo.
+
 Si falla una consulta `LISPER`, el servicio prepara una respuesta de error. Con POP3, si la conexión a PostgreSQL se pierde después de inicializar la bandeja, el servicio puede avisar por SMTP a las nuevas consultas mientras la base está caída. Guarda esos avisos en `logs/consultas-sin-postgres.tsv` y los incorpora al historial al reconectar. Las escrituras esperan a que vuelva PostgreSQL. Revisá `logs/access.log` y `logs/error.log` en el equipo que ejecuta el JAR.
 
-En una instalación existente, ejecutá la migración en una copia y respaldá la base antes de arrancar una versión nueva. Detené el JAR anterior antes de aplicar `database/schema.sql`. La migración reúne historial, resultados y confirmaciones en `correo_control` y conserva las tablas anteriores como respaldo si existen. El respaldo ejecutado antes de migrar es la referencia para una reversión.
+En una instalación existente, detené el servicio y respaldá la base. Probá `AplicarEsquema` sobre una copia antes de ejecutarlo en la base de destino. Si el instalador detecta datos históricos que necesitan una decisión del equipo, revierte los cambios e informa el motivo.
 
 
 ## Aplicar y comprobar el esquema
@@ -52,4 +54,4 @@ java -cp dist/inf513-proyecto1-1.0.0.jar bo.edu.uagrm.inf513.grupo09sa.AplicarEs
 java -cp dist/inf513-proyecto1-1.0.0.jar bo.edu.uagrm.inf513.grupo09sa.DiagnosticoIntegridad
 ```
 
-El primer comando aplica el SQL completo en una transacción. También renombra las tablas activas de una versión anterior y se detiene si detecta una colisión de nombres. El segundo comprueba las restricciones de la base seleccionada.
+`AplicarEsquema` ejecuta el esquema y los scripts de `database/migrations` en una transacción. `DiagnosticoIntegridad` comprueba las restricciones de la base seleccionada. Para instalar únicamente las tablas y reglas en una base nueva también podés ejecutar `database/schema.sql` con PostgreSQL.
