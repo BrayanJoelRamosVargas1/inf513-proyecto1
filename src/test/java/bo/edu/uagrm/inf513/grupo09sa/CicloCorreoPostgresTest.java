@@ -2,6 +2,7 @@ package bo.edu.uagrm.inf513.grupo09sa;
 
 import bo.edu.uagrm.inf513.grupo09sa.comandos.*;
 import bo.edu.uagrm.inf513.grupo09sa.config.AppConfig;
+import bo.edu.uagrm.inf513.grupo09sa.presentacion.ControladorCorreo;
 import bo.edu.uagrm.inf513.grupo09sa.email.*;
 import bo.edu.uagrm.inf513.grupo09sa.persistencia.RepositorioPostgres;
 import org.junit.jupiter.api.*;
@@ -24,8 +25,8 @@ class CicloCorreoPostgresTest {
     @AfterEach void limpiar()throws Exception{if(schema!=null)sql("drop schema "+schema+" cascade");}
     void sql(String sql)throws Exception{try(var c=ds.getConnection();var s=c.createStatement()){s.execute(sql);}}
     int cantidad(String tabla)throws Exception{try(var c=ds.getConnection();var s=c.createStatement();var rs=s.executeQuery("select count(*) from "+tabla)){rs.next();return rs.getInt(1);}}
-    void ciclo(CorreoFalso mail)throws Exception{Main.ejecutarCiclo(cfg,mail,repo,processor,new AnalizadorOrden());}
-    void ciclo(CorreoFalso mail,InspectorPdf inspector)throws Exception{Main.ejecutarCiclo(cfg,mail,repo,processor,new AnalizadorOrden(),inspector);}
+    void ciclo(CorreoFalso mail)throws Exception{ciclo(mail,AntivirusPdf.desdeEntorno());}
+    void ciclo(CorreoFalso mail,InspectorPdf inspector)throws Exception{new ControladorCorreo(cfg.inboundProtocol(),cfg.maxMessagesPerCycle(),cfg.retryMaxSeconds(),mail,repo,processor,new AnalizadorOrden(),inspector).ejecutarCiclo();}
     AdjuntoPdf pdf(){return new AdjuntoPdf("expediente.pdf","%PDF-1.4\n%%EOF".getBytes(java.nio.charset.StandardCharsets.US_ASCII));}
     void postulante()throws Exception{sql("insert into p1_usuario(registro,nombres,apellidos,rol,telefono,correo,activo) values('3','Luis','Prueba','POSTULANTE','70000002','luis@example.com',true)");}
     CorreoFalso correoPdf(){var mail=new CorreoFalso();mail.entrada.add(new MensajeEntrada("pdf-av","luis@example.com","INSPOST[\"1\",\"1\",\"ADJUNTO\"]",List.of(pdf())));return mail;}
@@ -92,7 +93,9 @@ class CicloCorreoPostgresTest {
         assertTrue(orden(mail,"admin@example.com","GENRAN","1").cuerpo().contains("83.00"));
         orden(mail,"admin@example.com","ASIPLA","1","true");
         assertTrue(orden(mail,"vice@example.com","AUDCAL","ASIPLA","1").cuerpo().contains("admin@example.com"));
-        assertTrue(orden(mail,"vice@example.com","REPEST","1").cuerpo().contains("GANADOR"));
+        String reporte=orden(mail,"vice@example.com","REPEST","1").cuerpo();
+        assertTrue(reporte.contains("GANADOR"));
+        assertTrue(reporte.lines().anyMatch("NULL | Cupo global | 1 | 1 | 1 | 0"::equals),reporte);
         assertTrue(orden(mail,"luis@example.com","LISPOST","*").cuerpo().contains("GANADOR"));
         assertTrue(enviar(mail,"intruso@example.com","AUDCAL[\"ASIPLA\",\"1\"]",List.of()).cuerpo().contains("rol requerido"));
         assertEquals(1,cantidad("p1_expediente"));assertEquals(0,repo.correosPendientes(100).size());
@@ -134,6 +137,54 @@ class CicloCorreoPostgresTest {
         var mail=new CorreoFalso();mail.fallaMarca=true;mail.entrada.add(new MensajeEntrada("persistido","a@example.com","AYUDA[]"));
         ciclo(mail);assertEquals(1,cantidad("p1_correo_control"));mail.fallaMarca=false;ciclo(mail);assertTrue(repo.correoProcesado("persistido"));assertEquals(1,mail.respuestas.size());
     }
+    @Test void errorAlMarcarDespuesDelEnvioNoProgramaUnReintento() throws Exception {
+        var mail = new CorreoFalso();
+        mail.entrada.add(new MensajeEntrada("envio-ok", "a@example.com", "AYUDA[]"));
+        ciclo(mail);
+        mail.fallaMarca = true;
+        ciclo(mail);
+        ciclo(mail);
+        assertTrue(repo.correoProcesado("envio-ok"));
+        assertEquals(List.of("envio-ok"), mail.respuestas);
+        assertEquals(1, cantidad("p1_correo_control where intentos=0 and ultimo_error is null"));
+    }
+
+    @Test void conservaElCodigoDuranteLaCaidaYDaTiempoParaConfirmarAlEntregarlo() throws Exception {
+        var mail = new CorreoFalso();
+        mail.entrada.add(new MensajeEntrada("reto", "admin@example.com",
+                "INSUSU[\"1\",\"Ana\",\"Ensayo\",\"DECANO\",\"70000000\",\"admin@example.com\",\"true\"]"));
+        ciclo(mail);
+        String pendiente = cuerpoRespuesta("reto");
+        var codigo = java.util.regex.Pattern.compile("CONFIRMAR\\[\"[A-Za-z0-9_-]{43}\"\\]").matcher(pendiente);
+        assertTrue(codigo.find());
+        sql("update p1_confirmacion set vence_en=now()-interval '1 minute' where mensaje_id='reto'");
+        mail.fallaEnvio = true;
+        ciclo(mail);
+        assertEquals(pendiente, cuerpoRespuesta("reto"));
+        assertEquals(1, cantidad("p1_confirmacion where mensaje_id='reto' and vence_en<now()"));
+        sql("update p1_correo_control set siguiente_intento=now()");
+        mail.fallaEnvio = false;
+        ciclo(mail);
+        assertEquals(pendiente, mail.detalle.get("reto").cuerpo());
+        assertTrue(cuerpoRespuesta("reto").contains("CONFIRMAR[\"[OCULTO]\"]"));
+        assertFalse(cuerpoRespuesta("reto").matches("(?s).*CONFIRMAR\\[\"[A-Za-z0-9_-]{43}\"\\].*"));
+        assertEquals(1, cantidad("p1_confirmacion f join p1_correo_control c using(mensaje_id) where mensaje_id='reto' and f.vence_en=c.actualizado_en+interval '30 minutes'"));
+        var confirmacion = enviar(mail, "admin@example.com", codigo.group(), List.of());
+        assertEquals("ÉXITO - Orden procesada", confirmacion.asunto(), confirmacion.cuerpo());
+        assertEquals(1, cantidad("p1_usuario where correo='admin@example.com'"));
+    }
+
+    private String cuerpoRespuesta(String id) throws Exception {
+        try (var c = ds.getConnection();
+             var q = c.prepareStatement("select respuesta_cuerpo from p1_correo_control where mensaje_id=?")) {
+            q.setString(1, id);
+            try (var resultado = q.executeQuery()) {
+                assertTrue(resultado.next());
+                return resultado.getString(1);
+            }
+        }
+    }
+
     record Respuesta(String asunto,String cuerpo){}
     static class CorreoFalso implements PasarelaCorreo {
         Map<String,Respuesta> detalle=new HashMap<>();int limite=Integer.MAX_VALUE;

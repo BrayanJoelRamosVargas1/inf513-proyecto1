@@ -112,26 +112,20 @@ create table if not exists p1_asignacion_evaluador (
     id bigserial primary key,
     postulacion_id bigint not null references p1_postulacion,
     evaluador_id bigint not null references p1_usuario,
-    tipo varchar(40) not null,
+    tipo varchar(80) not null,
     unique(postulacion_id,evaluador_id,tipo)
 );
+alter table p1_asignacion_evaluador alter column tipo type varchar(80);
 create table if not exists p1_auditoria (
     id bigserial primary key,
     fecha timestamptz not null default now(),
     actor varchar(160) not null,
     accion varchar(80) not null,
     entidad varchar(80) not null,
-    entidad_id varchar(80),
+    entidad_id varchar(160),
     detalle text
 );
-create table if not exists p1_correo_procesado (
-    id bigserial primary key,
-    mensaje_id varchar(255) unique not null,
-    remitente varchar(160) not null,
-    asunto text,
-    exito boolean not null,
-    procesado_en timestamptz not null default now()
-);
+alter table p1_auditoria alter column entidad_id type varchar(160);
 create table if not exists p1_correo_control (
     mensaje_id varchar(255) primary key,
     remitente varchar(160) not null,
@@ -148,8 +142,27 @@ create table if not exists p1_correo_control (
 );
 alter table p1_correo_control drop constraint if exists p1_correo_control_estado_check;
 alter table p1_correo_control add constraint p1_correo_control_estado_check check(estado in('DIFERIDO','RECIBIDO','RESPUESTA_PENDIENTE','RESPONDIDO'));
-alter table p1_correo_control add column if not exists admitido_en timestamptz;
-update p1_correo_control set admitido_en=creado_en where admitido_en is null and estado<>'DIFERIDO';
+-- Los mensajes históricos quedan RESPONDIDO sin consumir el cupo de recepción.
+do $$
+begin
+    if not exists (
+        select 1 from pg_attribute where attrelid='p1_correo_control'::regclass
+        and attname='admitido_en' and not attisdropped
+    ) then
+        alter table p1_correo_control add column admitido_en timestamptz;
+        update p1_correo_control set admitido_en=creado_en where estado<>'DIFERIDO';
+    end if;
+
+    if to_regclass(format('%I.p1_correo_procesado', current_schema())) is not null then
+        execute format(
+            'insert into p1_correo_control(mensaje_id,remitente,asunto,estado,exito,creado_en,actualizado_en,siguiente_intento)
+             select mensaje_id,remitente,asunto,%L,exito,procesado_en,procesado_en,procesado_en from %I.p1_correo_procesado
+             on conflict(mensaje_id) do nothing',
+            'RESPONDIDO', current_schema()
+        );
+    end if;
+end
+$$;
 create index if not exists idx_correo_admitido on p1_correo_control(admitido_en,lower(remitente));
 create table if not exists p1_confirmacion (
     mensaje_id varchar(255) primary key,
@@ -213,3 +226,162 @@ alter table p1_convocatoria validate constraint p1_convocatoria_estado_ck;
 alter table p1_postulacion validate constraint p1_postulacion_estado_ck;
 alter table p1_postulacion validate constraint p1_postulacion_plaza_ck;
 
+-- Refuerzos de integridad para escrituras directas en PostgreSQL.
+create or replace function inf513_validar_cupo_oferta()
+returns trigger language plpgsql as $$
+declare
+    cupo integer;
+    otros bigint;
+begin
+    -- La nueva versión de la fila serializa cambios de cupo incluso con un snapshot anterior.
+    update p1_convocatoria set plazas = plazas where id = new.convocatoria_id
+    returning plazas into cupo;
+
+    select coalesce(sum(plazas), 0) into otros
+    from p1_oferta
+    where convocatoria_id = new.convocatoria_id and cargo_id <> new.cargo_id
+      and (tg_op = 'INSERT' or (convocatoria_id, cargo_id)
+          is distinct from (old.convocatoria_id, old.cargo_id));
+
+    if otros + new.plazas > cupo then
+        raise exception 'La suma de las ofertas supera las plazas de la convocatoria'
+            using errcode = '23514';
+    end if;
+    return new;
+end
+$$;
+
+drop trigger if exists p1_oferta_cupo_trg on p1_oferta;
+create trigger p1_oferta_cupo_trg
+before insert or update of convocatoria_id, cargo_id, plazas on p1_oferta
+for each row execute function inf513_validar_cupo_oferta();
+
+create or replace function inf513_validar_cupo_convocatoria()
+returns trigger language plpgsql as $$
+begin
+    if new.plazas < (select coalesce(sum(plazas), 0) from p1_oferta where convocatoria_id = new.id) then
+        raise exception 'Las plazas de la convocatoria son inferiores a las plazas ofertadas'
+            using errcode = '23514';
+    end if;
+    return new;
+end
+$$;
+
+drop trigger if exists p1_convocatoria_cupo_trg on p1_convocatoria;
+create trigger p1_convocatoria_cupo_trg
+before update of plazas on p1_convocatoria
+for each row when (old.plazas is distinct from new.plazas)
+execute function inf513_validar_cupo_convocatoria();
+
+create or replace function inf513_validar_cargo_postulacion()
+returns trigger language plpgsql as $$
+begin
+    perform 1 from p1_convocatoria where id = new.convocatoria_id for update;
+    if exists (select 1 from p1_oferta where convocatoria_id = new.convocatoria_id)
+       and not exists (
+          select 1 from p1_oferta where convocatoria_id = new.convocatoria_id
+          and cargo_id = new.cargo_id and plazas > 0
+       ) then
+        raise exception 'El cargo de la postulación debe tener una oferta con cupo'
+            using errcode = '23514';
+    end if;
+    return new;
+end
+$$;
+
+drop trigger if exists p1_postulacion_oferta_trg on p1_postulacion;
+create trigger p1_postulacion_oferta_trg
+before insert or update of convocatoria_id, cargo_id on p1_postulacion
+for each row execute function inf513_validar_cargo_postulacion();
+
+create or replace function inf513_validar_total_areas()
+returns trigger language plpgsql as $$
+declare
+    otros numeric;
+    convocatoria_anterior bigint;
+    cargo_anterior bigint;
+    convocatoria_nueva bigint;
+    cargo_nuevo bigint;
+begin
+    if tg_op <> 'INSERT' then
+        convocatoria_anterior := old.convocatoria_id;
+        cargo_anterior := old.cargo_id;
+    end if;
+    if tg_op <> 'DELETE' then
+        convocatoria_nueva := new.convocatoria_id;
+        cargo_nuevo := new.cargo_id;
+    end if;
+
+    -- Serializa la configuración y el registro de la primera nota.
+    update p1_convocatoria set plazas = plazas where id in (convocatoria_anterior, convocatoria_nueva);
+    if exists (
+        select 1 from p1_postulacion p join p1_examen e on e.postulacion_id = p.id
+        where (p.convocatoria_id, p.cargo_id) in
+            ((convocatoria_anterior, cargo_anterior), (convocatoria_nueva, cargo_nuevo))
+    ) then
+        raise exception 'No se pueden cambiar las ponderaciones después de registrar exámenes'
+            using errcode = '23514';
+    end if;
+    if tg_op = 'DELETE' then
+        return old;
+    end if;
+
+    select coalesce(sum(peso), 0) into otros
+    from p1_area_examen
+    where convocatoria_id = new.convocatoria_id and cargo_id = new.cargo_id
+      and (tg_op = 'INSERT' or (convocatoria_id, cargo_id, area)
+          is distinct from (old.convocatoria_id, old.cargo_id, old.area))
+      and (convocatoria_id, cargo_id, area)
+          is distinct from (new.convocatoria_id, new.cargo_id, new.area);
+    if otros + new.peso > 100 then
+        raise exception 'Los pesos de las áreas no pueden superar 100'
+            using errcode = '23514';
+    end if;
+    return new;
+end
+$$;
+
+drop trigger if exists p1_area_total_trg on p1_area_examen;
+create trigger p1_area_total_trg
+before insert or update or delete on p1_area_examen
+for each row execute function inf513_validar_total_areas();
+
+create or replace function inf513_validar_examen()
+returns trigger language plpgsql as $$
+declare
+    convocatoria bigint;
+    cargo bigint;
+    peso_total numeric;
+    area_valida boolean;
+begin
+    select p.convocatoria_id, p.cargo_id into convocatoria, cargo
+    from p1_postulacion p where p.id = new.postulacion_id;
+    if not found then return new; end if;
+    update p1_convocatoria set plazas = plazas where id = convocatoria;
+    select sum(a.peso), coalesce(bool_or(a.area = new.area), false)
+    into peso_total, area_valida
+    from p1_area_examen a where a.convocatoria_id = convocatoria and a.cargo_id = cargo;
+
+    if (peso_total is null and new.area <> 'general')
+       or (peso_total is not null and (peso_total <> 100 or not area_valida)) then
+        raise exception 'El área de examen debe existir y su categoría debe sumar 100'
+            using errcode = '23514';
+    end if;
+    if not exists (
+        select 1 from p1_asignacion_evaluador a join p1_usuario u on u.id = a.evaluador_id
+        where a.postulacion_id = new.postulacion_id and u.activo and u.rol = 'EVALUADOR'
+          and lower(u.correo) = lower(new.evaluador_correo)
+          and (upper(a.tipo) in ('EXAMEN','MERITOS_Y_EXAMEN')
+               or (new.area <> 'general' and upper(a.tipo) <> 'MERITOS' and lower(a.tipo) = new.area))
+    ) then
+        raise exception 'El examen requiere un evaluador activo asignado'
+            using errcode = '23514';
+    end if;
+    return new;
+end
+$$;
+
+drop trigger if exists p1_examen_configuracion_trg on p1_examen;
+create trigger p1_examen_configuracion_trg
+before insert or update of postulacion_id, area, evaluador_correo on p1_examen
+for each row execute function inf513_validar_examen();

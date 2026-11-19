@@ -21,6 +21,12 @@ class BitacoraArchivosTest {
         assertFalse(error.contains("secreto"));
         assertFalse(error.contains("codigo"));
     }
+    @Test void recuperaElLogSiSeMueveMientrasCorreElServicio() throws Exception {
+        var log = new BitacoraArchivos(carpeta);
+        Files.move(carpeta.resolve("access.log"), carpeta.resolve("access.log.respaldo"));
+        log.acceso("RECIBIDO", "m1", "demo@example.com", "AYUDA", true);
+        assertTrue(Files.readString(carpeta.resolve("access.log")).contains("m1"));
+    }
     @Test void rotaSinPerderElNombreExigido() throws Exception {
         var log = new BitacoraArchivos(carpeta, 180);
         for (int i=0; i<30; i++) log.acceso("RECIBIDO", "m"+i, "demo@example.com", "AYUDA", true);

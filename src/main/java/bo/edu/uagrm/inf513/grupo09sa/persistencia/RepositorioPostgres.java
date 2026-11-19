@@ -2,6 +2,8 @@ package bo.edu.uagrm.inf513.grupo09sa.persistencia;
 
 import bo.edu.uagrm.inf513.grupo09sa.comandos.Orden;
 import bo.edu.uagrm.inf513.grupo09sa.comandos.Resultado;
+import bo.edu.uagrm.inf513.grupo09sa.comandos.RepositorioProyecto;
+import bo.edu.uagrm.inf513.grupo09sa.presentacion.ColaCorreo;
 import javax.sql.DataSource;
 import java.sql.*;
 import java.util.List;
@@ -17,7 +19,7 @@ import java.util.HexFormat;
 import java.util.UUID;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public final class RepositorioPostgres implements RepositorioProyecto {
+public final class RepositorioPostgres implements RepositorioProyecto, ColaCorreo {
     private final DataSource ds;
     private final ThreadLocal<Connection> transaccion=new ThreadLocal<>();
     private final ThreadLocal<String> mensajeActual=new ThreadLocal<>();
@@ -25,18 +27,16 @@ public final class RepositorioPostgres implements RepositorioProyecto {
     private static final SecureRandom ALEATORIO=new SecureRandom();
     private final GestionCategorias categorias=new GestionCategorias(this::conexion);
     public RepositorioPostgres(DataSource ds){this.ds=ds;}
-    public record CorreoControl(String id,String remitente,String asunto,String estado,String respuestaAsunto,String respuestaCuerpo,Boolean exito,int intentos){}
 
     /** Consulta por lotes sólo los IDs presentes en la página actual; el historial total nunca se carga en memoria. */
     public Set<String> correosConocidos(Collection<String> candidatos)throws SQLException{
         if(candidatos==null||candidatos.isEmpty())return Set.of();
         if(candidatos.size()>1000)throw new SQLException("Lote de identificadores demasiado grande");
         Set<String> ids=new HashSet<>();String marcas=String.join(",",java.util.Collections.nCopies(candidatos.size(),"?"));
-        String sql="select mensaje_id from p1_correo_procesado where mensaje_id in ("+marcas+") union select mensaje_id from p1_correo_control where mensaje_id in ("+marcas+")";
-        try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement(sql)){int i=1;for(String id:candidatos)p.setString(i++,id);for(String id:candidatos)p.setString(i++,id);try(ResultSet r=p.executeQuery()){while(r.next())ids.add(r.getString(1));}}
+        String sql="select mensaje_id from p1_correo_control where mensaje_id in ("+marcas+")";
+        try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement(sql)){int i=1;for(String id:candidatos)p.setString(i++,id);try(ResultSet r=p.executeQuery()){while(r.next())ids.add(r.getString(1));}}
         return ids;
     }
-    public enum Admision { ADMITIDO, DIFERIDO, DUPLICADO, SATURADO }
     /** La saturación es temporal: conserva la orden en la cola o en la bandeja. */
     public Admision registrarEntrada(String id,String remitente,String asunto)throws SQLException{
         return registrarEntrada(id,remitente,asunto,List.of());
@@ -51,10 +51,10 @@ public final class RepositorioPostgres implements RepositorioProyecto {
             if(p.executeUpdate()==1){
                 // Unknown or inactive senders still receive a rejection, without retaining binary data.
                 boolean autorizado=false;
-                try(PreparedStatement rol=c.prepareStatement("select 1 from p1_usuario where lower(correo)=lower(?) and activo and rol='POSTULANTE'")){
+                if(!adjuntos.isEmpty())try(PreparedStatement rol=c.prepareStatement("select 1 from p1_usuario where lower(correo)=lower(?) and activo and rol='POSTULANTE'")){
                     rol.setString(1,remitente);try(ResultSet r=rol.executeQuery()){autorizado=r.next();}
                 }
-                if(autorizado&&!adjuntos.isEmpty()&&!reservarEspacioPdf(c,remitente,adjuntos.get(0).contenido().length)){
+                if(autorizado&&!reservarEspacioPdf(c,remitente,adjuntos.get(0).contenido().length)){
                     // A permanent per-sender quota must not pin the first inbox page forever.
                     // Retain a durable rejection, never the binary that exceeded the budget.
                     try(PreparedStatement rechazo=c.prepareStatement("update p1_correo_control set asunto=? where mensaje_id=?")){
@@ -68,7 +68,7 @@ public final class RepositorioPostgres implements RepositorioProyecto {
                 }
                 c.commit();return Admision.DIFERIDO;
             }
-            try(PreparedStatement q=c.prepareStatement("select 1 from p1_correo_control where mensaje_id=? union select 1 from p1_correo_procesado where mensaje_id=?")){q.setString(1,id);q.setString(2,id);try(ResultSet r=q.executeQuery()){Admision resultado=r.next()?Admision.DUPLICADO:Admision.SATURADO;c.commit();return resultado;}}
+            try(PreparedStatement q=c.prepareStatement("select 1 from p1_correo_control where mensaje_id=?")){q.setString(1,id);try(ResultSet r=q.executeQuery()){Admision resultado=r.next()?Admision.DUPLICADO:Admision.SATURADO;c.commit();return resultado;}}
             }catch(SQLException|RuntimeException ex){c.rollback();throw ex;}
         }
     }
@@ -118,12 +118,28 @@ public final class RepositorioPostgres implements RepositorioProyecto {
             p.setString(1,r.asunto());p.setString(2,r.cuerpo());p.setBoolean(3,r.exito());p.setString(4,id);p.executeUpdate();
         }
     }
-    public void confirmarRespuesta(String id)throws SQLException{
-        try(Connection c=ds.getConnection()){c.setAutoCommit(false);try{
-            try(PreparedStatement p=c.prepareStatement("update p1_correo_control set estado='RESPONDIDO',ultimo_error=null,actualizado_en=now() where mensaje_id=?")){p.setString(1,id);p.executeUpdate();}
-            try(PreparedStatement p=c.prepareStatement("insert into p1_correo_procesado(mensaje_id,remitente,asunto,exito) select mensaje_id,remitente,asunto,coalesce(exito,false) from p1_correo_control where mensaje_id=? on conflict(mensaje_id) do nothing")){p.setString(1,id);p.executeUpdate();}
-            c.commit();
-        }catch(SQLException ex){c.rollback();throw ex;}}
+    public void confirmarRespuesta(String id) throws SQLException {
+        String sql = """
+                with respondido as (
+                    update p1_correo_control
+                    set estado='RESPONDIDO', ultimo_error=null, actualizado_en=statement_timestamp(),
+                        respuesta_cuerpo=case when starts_with(respuesta_asunto, 'CONFIRMACIÓN REQUERIDA - ')
+                            then regexp_replace(respuesta_cuerpo,
+                                'CONFIRMAR[[]"[A-Za-z0-9_-]{43}"[]]', 'CONFIRMAR["[OCULTO]"]', 'g')
+                            else respuesta_cuerpo end
+                    where mensaje_id=? and estado<>'RESPONDIDO'
+                    returning mensaje_id, respuesta_asunto, actualizado_en
+                )
+                update p1_confirmacion confirmacion
+                set vence_en=respondido.actualizado_en + interval '30 minutes'
+                from respondido
+                where confirmacion.mensaje_id=respondido.mensaje_id and not confirmacion.usado
+                  and starts_with(respondido.respuesta_asunto, 'CONFIRMACIÓN REQUERIDA - ')
+                """;
+        try (Connection c=ds.getConnection(); PreparedStatement p=c.prepareStatement(sql)) {
+            p.setString(1,id);
+            p.executeUpdate();
+        }
     }
     public void registrarFallo(String id,String error,int maxSegundos)throws SQLException{
         int intentos=1;try(Connection c=ds.getConnection();PreparedStatement q=c.prepareStatement("select intentos from p1_correo_control where mensaje_id=?")){q.setString(1,id);try(ResultSet r=q.executeQuery()){if(r.next())intentos=r.getInt(1)+1;}}
@@ -223,13 +239,11 @@ public final class RepositorioPostgres implements RepositorioProyecto {
         try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement("select 1 from p1_usuario where lower(correo)=lower(?) and (rol=? or (?='DECANO' and rol='VICEDECANO')) and activo=true")){p.setString(1,correo);p.setString(2,rol);p.setString(3,rol);return p.executeQuery().next();}
     }
     @Override public boolean hayUsuarios()throws SQLException{try(Connection c=ds.getConnection();Statement s=c.createStatement();ResultSet r=s.executeQuery("select 1 from p1_usuario limit 1")){return r.next();}}
-    @Override public boolean correoProcesado(String id)throws SQLException{try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement("select 1 from p1_correo_procesado where mensaje_id=?")){p.setString(1,id);return p.executeQuery().next();}}
-    @Override public Set<String> correosProcesados()throws SQLException{Set<String> ids=new HashSet<>();try(Connection c=ds.getConnection();Statement s=c.createStatement();ResultSet r=s.executeQuery("select mensaje_id from p1_correo_procesado")){while(r.next())ids.add(r.getString(1));}return ids;}
-    @Override public boolean servicioInicializado()throws SQLException{try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement("select 1 from p1_servicio_estado where clave='bandeja_inicializada' and valor='true'")){return p.executeQuery().next();}}
+    public boolean correoProcesado(String id)throws SQLException{try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement("select 1 from p1_correo_control where mensaje_id=? and estado='RESPONDIDO'")){p.setString(1,id);return p.executeQuery().next();}}
     public boolean servicioInicializado(String canal)throws SQLException{try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement("select 1 from p1_servicio_estado where clave=? and valor='true'")){p.setString(1,"bandeja_inicializada_"+canal.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]","_"));return p.executeQuery().next();}}
     @Override public void marcarServicioInicializado()throws SQLException{try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement("insert into p1_servicio_estado(clave,valor) values('bandeja_inicializada','true') on conflict(clave) do update set valor=excluded.valor,actualizado_en=now()")){p.executeUpdate();}}
     public void marcarServicioInicializado(String canal)throws SQLException{try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement("insert into p1_servicio_estado(clave,valor) values(?,'true') on conflict(clave) do update set valor=excluded.valor,actualizado_en=now()")){p.setString(1,"bandeja_inicializada_"+canal.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]","_"));p.executeUpdate();}}
-    @Override public void registrarCorreoProcesado(String id,String remitente,String asunto,boolean exito)throws SQLException{try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement("insert into p1_correo_procesado(mensaje_id,remitente,asunto,exito) values(?,?,?,?) on conflict(mensaje_id) do nothing")){p.setString(1,id);p.setString(2,remitente);p.setString(3,asunto);p.setBoolean(4,exito);p.executeUpdate();}}
+    @Override public void registrarCorreoProcesado(String id,String remitente,String asunto,boolean exito)throws SQLException{try(Connection c=ds.getConnection();PreparedStatement p=c.prepareStatement("insert into p1_correo_control(mensaje_id,remitente,asunto,exito,estado) values(?,?,?,?,'RESPONDIDO') on conflict(mensaje_id) do nothing")){p.setString(1,id);p.setString(2,remitente);p.setString(3,asunto);p.setBoolean(4,exito);p.executeUpdate();}}
     @Override public Resultado ejecutar(String remitente,Orden o)throws Exception{
         if(transaccion.get()!=null)return ejecutarNegocio(remitente,o);
         try(Connection c=ds.getConnection()){
@@ -312,26 +326,113 @@ private Resultado listarUsuarios(String filtro)throws SQLException{return consul
     private static String patron(String filtro){return "%"+filtro.replace("\\","\\\\").replace("%","\\%").replace("_","\\_")+"%";}
     private Resultado evaluarRequisito(String correo,List<String> p)throws SQLException{return actualizar("insert into p1_evaluacion_requisito(postulacion_id,requisito,cumple,observacion,evaluador_correo) select ?::bigint,?,?::boolean,?,? where exists(select 1 from p1_asignacion_evaluador a join p1_usuario u on u.id=a.evaluador_id where a.postulacion_id=?::bigint and lower(u.correo)=lower(?) and u.activo=true)",List.of(p.get(0),p.get(1),p.get(2),p.get(3),correo,p.get(0),correo),"Requisito evaluado.");}
     private Resultado habilitar(List<String> p)throws SQLException{return actualizar("update p1_postulacion p set estado=case when ?='HABILITADO' and plaza_asignada then 'GANADOR' else ? end,plaza_asignada=case when ?='INHABILITADO' then false else plaza_asignada end,observacion=? where p.id=?::bigint and (?<>'HABILITADO' or (exists(select 1 from p1_evaluacion_requisito e where e.postulacion_id=p.id) and not exists(select 1 from (select distinct on (lower(btrim(requisito)),lower(evaluador_correo)) cumple from p1_evaluacion_requisito e where e.postulacion_id=p.id order by lower(btrim(requisito)),lower(evaluador_correo),id desc) vigentes where not cumple)))",List.of(p.get(1),p.get(1),p.get(1),p.get(2),p.get(0),p.get(1)),"Estado de postulación actualizado.");}
-    private Resultado registrarMerito(String correo,List<String> p)throws SQLException{Resultado r=actualizar("insert into p1_merito(postulacion_id,criterio,puntaje,observacion,evaluador_correo) select ?::bigint,?,?::numeric,?,? where exists(select 1 from p1_asignacion_evaluador a join p1_usuario u on u.id=a.evaluador_id where a.postulacion_id=?::bigint and lower(u.correo)=lower(?) and u.activo=true)",List.of(p.get(0),p.get(1),p.get(2),p.get(3),correo,p.get(0),correo),"Mérito registrado.");if(r.exito())recalcularPuntaje(p.get(0));return r;}
+    private Resultado registrarMerito(String correo,List<String> p)throws SQLException{
+        Resultado resultado=actualizar("""
+            insert into p1_merito(postulacion_id,criterio,puntaje,observacion,evaluador_correo)
+            select ?::bigint,?,?::numeric,?,?
+            where exists(select 1 from p1_asignacion_evaluador a join p1_usuario u on u.id=a.evaluador_id
+                where a.postulacion_id=?::bigint and lower(u.correo)=lower(?) and u.activo
+                  and upper(a.tipo) in ('MERITOS','MERITOS_Y_EXAMEN'))
+            """,List.of(p.get(0),p.get(1),p.get(2),p.get(3),correo,p.get(0),correo),"Mérito registrado.");
+        if(!resultado.exito())return Resultado.error("El evaluador no tiene asignación de méritos para esta postulación.");
+        recalcularPuntaje(p.get(0));
+        return resultado;
+    }
     private Resultado registrarExamen(String correo,List<String> p)throws SQLException{
         if(categorias.tieneAreas(p.get(0)))return Resultado.error("Esta categoría utiliza áreas ponderadas. Registre cada nota con REGAREA.");
         if(!requisitosVigentes(p.get(0)))return Resultado.error("Los requisitos vigentes no permiten rendir el examen.");
-        Resultado r=actualizar("insert into p1_examen(postulacion_id,puntaje,evaluador_correo,observacion) select ?::bigint,?::numeric,?,? where exists(select 1 from p1_asignacion_evaluador a join p1_usuario u on u.id=a.evaluador_id where a.postulacion_id=?::bigint and lower(u.correo)=lower(?) and u.activo=true and exists(select 1 from p1_postulacion p where p.id=a.postulacion_id and p.estado in('HABILITADO','GANADOR')))",List.of(p.get(0),p.get(1),correo,p.get(2),p.get(0),correo),"Examen registrado.");if(r.exito())recalcularPuntaje(p.get(0));return r;}
-    private Resultado asignarEvaluador(List<String> p)throws SQLException{return actualizar("insert into p1_asignacion_evaluador(postulacion_id,evaluador_id,tipo) select ?::bigint,u.id,? from p1_usuario u where u.id=?::bigint and u.rol='EVALUADOR' and u.activo=true",List.of(p.get(0),p.get(2),p.get(1)),"Evaluador asignado.");}
+        Resultado resultado=actualizar("""
+            insert into p1_examen(postulacion_id,puntaje,evaluador_correo,observacion)
+            select ?::bigint,?::numeric,?,?
+            where exists(select 1 from p1_asignacion_evaluador a join p1_usuario u on u.id=a.evaluador_id
+                where a.postulacion_id=?::bigint and lower(u.correo)=lower(?) and u.activo
+                  and upper(a.tipo) in ('EXAMEN','MERITOS_Y_EXAMEN')
+                  and exists(select 1 from p1_postulacion p where p.id=a.postulacion_id
+                      and p.estado in ('HABILITADO','GANADOR')))
+            """,List.of(p.get(0),p.get(1),correo,p.get(2),p.get(0),correo),"Examen registrado.");
+        if(!resultado.exito())return Resultado.error("El examen requiere un evaluador asignado a examen y una postulación habilitada.");
+        recalcularPuntaje(p.get(0));
+        return resultado;
+    }
+    private Resultado asignarEvaluador(List<String> p)throws SQLException{
+        String tipo=p.get(2).toUpperCase(java.util.Locale.ROOT);
+        boolean tipoGeneral=Set.of("MERITOS","EXAMEN","MERITOS_Y_EXAMEN").contains(tipo);
+        String nombreArea=p.get(2).toLowerCase(java.util.Locale.ROOT);
+        Resultado resultado=actualizar("""
+            insert into p1_asignacion_evaluador(postulacion_id,evaluador_id,tipo)
+            select p.id,u.id,? from p1_postulacion p cross join p1_usuario u
+            where p.id=?::bigint and u.id=?::bigint and u.rol='EVALUADOR' and u.activo
+              and (?::boolean or exists(select 1 from p1_area_examen a
+                  where a.convocatoria_id=p.convocatoria_id and a.cargo_id=p.cargo_id and a.area=?))
+            """,List.of(tipoGeneral?tipo:nombreArea,p.get(0),p.get(1),Boolean.toString(tipoGeneral),nombreArea),
+                "Evaluador asignado.");
+        return resultado.exito()?resultado:Resultado.error("Verifique la postulación, el evaluador activo y el tipo de asignación o área configurada para el cargo.");
+    }
     private Resultado generarRanking(String convocatoria)throws SQLException{return consultar(categorias.sqlRanking(),List.of(convocatoria));}
     private Resultado asignarPlaza(List<String> p)throws SQLException{return categorias.asignar(p);}
-    private Resultado auditoriaProyecto(List<String> p)throws SQLException{return consultar("select fecha,actor,accion,detalle from p1_auditoria where entidad=? and entidad_id=? order by fecha desc",p);}
+    private Resultado auditoriaProyecto(List<String> p)throws SQLException{
+        String entidad=p.get(0);
+        if(!auditoriaConIdNumerico(entidad)){
+            return consultar("select fecha,actor,accion,detalle from p1_auditoria where entidad=? and entidad_id=? order by fecha desc,id desc",p);
+        }
+        // Algunas filas históricas guardan el ID con el formato escrito en el correo.
+        return consultar("""
+            select fecha,actor,accion,detalle from p1_auditoria
+            where entidad=? and ltrim(ltrim(entidad_id,'+'),'0')=?
+            order by fecha desc,id desc
+            """,List.of(entidad,Long.toString(Long.parseLong(p.get(1)))));
+    }
     private Resultado estadisticas(String convocatoria)throws SQLException{
         var parametros=List.of(convocatoria);
-        String resumen=consultar("select estado,count(*) cantidad,round(avg(puntaje_final),2) promedio from p1_postulacion where convocatoria_id=?::bigint group by estado order by estado",parametros).cuerpo();
-        String detalle=consultar(categorias.sqlConsolidado(),parametros).cuerpo();
-        String areas=consultar(categorias.sqlNotas(),parametros).cuerpo();
-        String ranking=consultar(categorias.sqlRanking(),parametros).cuerpo();
-        String vacantes=consultar(categorias.sqlVacantes(),parametros).cuerpo();
-        return Resultado.ok(limitarDato("RESUMEN POR ESTADO\n"+resumen+"\nCONSOLIDADO POR CATEGORÍA\n"+detalle+"\nÁREAS Y PONDERACIONES\n"+areas+"\nRANKING Y EMPATES\n"+ranking+"\nPLAZAS Y VACANTES\n"+vacantes,50000));
+        // Reservar espacio para las cinco secciones y sus títulos dentro de los 50 000 caracteres.
+        int limitePorSeccion=9_900;
+        String resumen=consultar("select estado,count(*) cantidad,round(avg(puntaje_final),2) promedio from p1_postulacion where convocatoria_id=?::bigint group by estado order by estado",parametros,limitePorSeccion).cuerpo();
+        String detalle=consultar(categorias.sqlConsolidado(),parametros,limitePorSeccion).cuerpo();
+        String areas=consultar(categorias.sqlNotas(),parametros,limitePorSeccion).cuerpo();
+        String ranking=consultar(categorias.sqlRanking(),parametros,limitePorSeccion).cuerpo();
+        String vacantes=consultar(categorias.sqlVacantes(),parametros,limitePorSeccion).cuerpo();
+        return Resultado.ok("RESUMEN POR ESTADO\n"+resumen+"\nCONSOLIDADO POR CATEGORÍA\n"+detalle
+                +"\nÁREAS Y PONDERACIONES\n"+areas+"\nRANKING Y EMPATES\n"+ranking+"\nPLAZAS Y VACANTES\n"+vacantes);
     }
     private Resultado actualizar(String sql,List<String> p,String ok)throws SQLException{try(Connection c=conexion();PreparedStatement s=c.prepareStatement(sql)){s.setQueryTimeout(30);for(int i=0;i<p.size();i++)s.setString(i+1,p.get(i));int n=s.executeUpdate();return n>0?Resultado.ok(ok+" Filas afectadas: "+n):Resultado.error("La operación no afectó registros.");}}
-    private Resultado consultar(String sql,List<String> parametros)throws SQLException{StringBuilder b=new StringBuilder();try(Connection c=conexion();PreparedStatement s=c.prepareStatement(sql)){s.setQueryTimeout(30);s.setMaxRows(201);for(int i=0;i<parametros.size();i++)s.setString(i+1,parametros.get(i));try(ResultSet r=s.executeQuery()){ResultSetMetaData m=r.getMetaData();for(int i=1;i<=m.getColumnCount();i++){if(i>1)b.append(" | ");b.append(m.getColumnLabel(i));}b.append('\n');int n=0;while(r.next()){if(n==200||b.length()>45_000){b.append("... resultado limitado por seguridad\n");break;}for(int i=1;i<=m.getColumnCount();i++){if(i>1)b.append(" | ");b.append(limitarDato(r.getString(i),m.getColumnLabel(i).equals("detalle")?4000:500));}b.append('\n');n++;}if(n==0)return Resultado.ok("Sin resultados.");}}return Resultado.ok(limitarDato(b.toString(),50_000));}
+    private Resultado consultar(String sql,List<String> parametros)throws SQLException{
+        return consultar(sql,parametros,50_000);
+    }
+
+    private Resultado consultar(String sql,List<String> parametros,int limite)throws SQLException{
+        String aviso="... se omitieron filas por el límite de salida.\n";
+        try(Connection c=conexion();PreparedStatement s=c.prepareStatement(sql)){
+            s.setQueryTimeout(30);
+            s.setMaxRows(201);
+            for(int i=0;i<parametros.size();i++)s.setString(i+1,parametros.get(i));
+            try(ResultSet r=s.executeQuery()){
+                if(!r.next())return Resultado.ok("Sin resultados.");
+                ResultSetMetaData columnas=r.getMetaData();
+                var salida=new java.util.StringJoiner(" | ");
+                for(int i=1;i<=columnas.getColumnCount();i++)salida.add(columnas.getColumnLabel(i));
+                var cuerpo=new StringBuilder(salida.toString()).append('\n');
+                int filas=0;
+                do{
+                    if(filas==200){
+                        cuerpo.append(aviso);
+                        break;
+                    }
+                    var fila=new java.util.StringJoiner(" | ");
+                    for(int i=1;i<=columnas.getColumnCount();i++){
+                        int ancho=columnas.getColumnLabel(i).equals("detalle")?4_000:500;
+                        fila.add(limitarDato(r.getString(i),ancho));
+                    }
+                    if(cuerpo.length()+fila.length()+1+aviso.length()>limite){
+                        cuerpo.append(aviso);
+                        break;
+                    }
+                    cuerpo.append(fila).append('\n');
+                    filas++;
+                }while(r.next());
+                return Resultado.ok(cuerpo.toString());
+            }
+        }
+    }
     private void recalcularPuntaje(String postulacion)throws SQLException{actualizar("update p1_postulacion p set puntaje_meritos=least(100,coalesce((select sum(criterio.promedio) from (select ultimos.criterio,avg(ultimos.puntaje) promedio from (select distinct on (lower(btrim(m.criterio)),lower(m.evaluador_correo)) lower(btrim(m.criterio)) criterio,m.puntaje from p1_merito m where m.postulacion_id=p.id order by lower(btrim(m.criterio)),lower(m.evaluador_correo),m.id desc) ultimos group by ultimos.criterio) criterio),0)),puntaje_examen=coalesce((select avg(e.puntaje) from (select distinct on (lower(evaluador_correo)) puntaje from p1_examen where postulacion_id=p.id order by lower(evaluador_correo),id desc) e),0) where p.id=?::bigint",List.of(postulacion),"Puntaje recalculado");try(Connection c=conexion();PreparedStatement s=c.prepareStatement("update p1_postulacion set puntaje_examen=?::numeric,puntaje_final=round(least(100,puntaje_meritos*0.4+?::numeric*0.6),2),evaluacion_version=evaluacion_version+1 where id=?::bigint")){s.setQueryTimeout(30);var nota=categorias.notaExamen(postulacion);s.setBigDecimal(1,nota);s.setBigDecimal(2,nota);s.setString(3,postulacion);s.executeUpdate();}}
     private boolean requisitosVigentes(String post)throws SQLException{
         String sql="select exists(select 1 from p1_evaluacion_requisito where postulacion_id=?::bigint) and not exists(select 1 from (select distinct on (lower(btrim(requisito)),lower(evaluador_correo)) cumple from p1_evaluacion_requisito where postulacion_id=?::bigint order by lower(btrim(requisito)),lower(evaluador_correo),id desc) vigentes where not cumple)";
@@ -351,6 +452,9 @@ private Resultado listarUsuarios(String filtro)throws SQLException{return consul
         try(Connection c=conexion();PreparedStatement q=c.prepareStatement(sql)){q.setString(1,o.parametros().get(0));try(ResultSet r=q.executeQuery()){return r.next();}}
     }
     private static final Set<String> CAMBIOS_POSTULACION=Set.of("EVAREQ","HABPOS","REGMER","REGEXA","REGAREA","ASIEVA","ASIPLA");
+    private static boolean auditoriaConIdNumerico(String comando){
+        return CAMBIOS_POSTULACION.contains(comando)||Set.of("INSPOST","ASIOFE","CFGARE","DESEMP").contains(comando);
+    }
     private String estadoAuditable(Orden o,boolean bloquear)throws SQLException{
         if(!CAMBIOS_POSTULACION.contains(o.comando()))return null;
         // The row lock also serializes recalculation by different evaluators.
@@ -367,7 +471,9 @@ private Resultado listarUsuarios(String filtro)throws SQLException{return consul
             detalle=JSON.writeValueAsString(datos);
         }
         try(Connection c=conexion();PreparedStatement s=c.prepareStatement("insert into p1_auditoria(actor,accion,entidad,entidad_id,detalle) values(?,?,?,?,?)")){
-            s.setString(1,actor);s.setString(2,o.comando());s.setString(3,o.comando());s.setString(4,o.parametros().isEmpty()?null:o.parametros().get(0));s.setString(5,detalle);s.executeUpdate();
+            String referencia=o.parametros().get(0);
+            if(auditoriaConIdNumerico(o.comando()))referencia=Long.toString(Long.parseLong(referencia));
+            s.setString(1,actor);s.setString(2,o.comando());s.setString(3,o.comando());s.setString(4,referencia);s.setString(5,detalle);s.executeUpdate();
         }
     }
 }

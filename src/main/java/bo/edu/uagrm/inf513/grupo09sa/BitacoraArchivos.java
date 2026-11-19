@@ -48,7 +48,7 @@ public final class BitacoraArchivos {
         Path destino = directorio.resolve(archivo);
         try {
             byte[] linea = (Instant.now() + " " + texto + System.lineSeparator()).getBytes(StandardCharsets.UTF_8);
-            if (Files.size(destino) + linea.length > limite) {
+            if (Files.exists(destino) && Files.size(destino) + linea.length > limite) {
                 for (int i = 2; i >= 1; i--) {
                     Path previo = directorio.resolve(archivo + "." + i);
                     if (Files.exists(previo)) Files.move(previo, directorio.resolve(archivo + "." + (i + 1)), StandardCopyOption.REPLACE_EXISTING);
@@ -60,6 +60,7 @@ public final class BitacoraArchivos {
     }
     private static String limpiar(String dato) {
         if (dato == null) return "-";
-        return dato.replaceAll("[\\p{Cntrl}\\s]+", "_").substring(0, Math.min(255, dato.replaceAll("[\\p{Cntrl}\\s]+", "_").length()));
+        String limpio = dato.replaceAll("[\\p{Cntrl}\\s]+", "_");
+        return limpio.substring(0, Math.min(255, limpio.length()));
     }
 }

@@ -1,6 +1,5 @@
 package bo.edu.uagrm.inf513.grupo09sa.comandos;
 
-import bo.edu.uagrm.inf513.grupo09sa.persistencia.RepositorioProyecto;
 import bo.edu.uagrm.inf513.grupo09sa.InfraestructuraException;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -32,6 +31,7 @@ public final class ProcesadorOrden {
             if(orden.parametros().size()!=def.parametros())return Resultado.error("Cantidad incorrecta de parámetros para " + orden.comando()+". Esperados: "+def.parametros()+"; recibidos: "+orden.parametros().size()+".");
             String validacion=validar(orden);if(validacion!=null)return Resultado.error(validacion);
             boolean bootstrap=orden.comando().equals("INSUSU")&&!repo.hayUsuarios()&&orden.parametros().get(3).equals("DECANO")&&!bootstrapAdminEmail.isBlank()&&remitente.equalsIgnoreCase(bootstrapAdminEmail)&&orden.parametros().get(5).equalsIgnoreCase(remitente);
+            if(bootstrap&&!Boolean.parseBoolean(orden.parametros().get(6)))return Resultado.error("El primer DECANO debe quedar activo.");
             if(!bootstrap&&!def.rol().equals("PUBLICO")&&!repo.autorizado(remitente,def.rol()))return Resultado.error("El remitente no tiene el rol requerido: "+def.rol()+".");
             if(!confirmado&&!def.rol().equals("PUBLICO"))return repo.solicitarConfirmacion(mensajeId,remitente,orden);
             if(orden.comando().equals("AYUDA"))return Resultado.ok(catalogo.todos().entrySet().stream().map(e->e.getKey()+" - "+e.getValue().descripcion()+" ("+e.getValue().parametros()+" parámetros)").sorted().collect(Collectors.joining("\n")));
@@ -59,14 +59,22 @@ public final class ProcesadorOrden {
                 case "CFGARE"->{max(o,19,19,80,6);enteroPositivo(o.parametros().get(0));enteroPositivo(o.parametros().get(1));puntaje(o.parametros().get(3));if(new BigDecimal(o.parametros().get(3)).signum()==0)return "El porcentaje debe ser mayor que cero.";if(o.parametros().get(2).equalsIgnoreCase("general"))return "El área general está reservada al modo anterior sin áreas.";}
                 case "DESEMP"->{max(o,19,19,2000,500);enteroPositivo(o.parametros().get(0));enteroPositivo(o.parametros().get(1));String[] ids=o.parametros().get(2).split(",",-1);if(ids.length<2||ids.length>100)return "Indique entre 2 y 100 postulaciones empatadas.";var unicos=new java.util.HashSet<String>();for(String id:ids){enteroPositivo(id);if(!unicos.add(Long.toString(Long.parseLong(id))))return "Las postulaciones no pueden repetirse.";}if(o.parametros().get(3).length()<10)return "Justifique la resolución del empate con al menos 10 caracteres.";}
                 case "INSPOST"->{max(o,19,19,500);enteroPositivo(o.parametros().get(0));enteroPositivo(o.parametros().get(1));}
-                case "ASIEVA"->{max(o,19,19,40);enteroPositivo(o.parametros().get(0));enteroPositivo(o.parametros().get(1));}
+                case "ASIEVA"->{max(o,19,19,80);enteroPositivo(o.parametros().get(0));enteroPositivo(o.parametros().get(1));}
                 case "EVAREQ"->{max(o,19,200,5,500);enteroPositivo(o.parametros().get(0));booleanActivo(o.parametros().get(2));}
                 case "HABPOS","ASIPLA"->{max(o,o.comando().equals("ASIPLA")?new int[]{19,5}:new int[]{19,30,500});enteroPositivo(o.parametros().get(0));if(o.comando().equals("ASIPLA"))booleanActivo(o.parametros().get(1));else if(!Set.of("HABILITADO","INHABILITADO").contains(o.parametros().get(1)))return "Estado inválido. Use exactamente HABILITADO o INHABILITADO.";}
                 case "REGMER"->{max(o,19,200,8,500);enteroPositivo(o.parametros().get(0));puntaje(o.parametros().get(2));}
                 case "REGEXA"->{max(o,19,8,500);enteroPositivo(o.parametros().get(0));puntaje(o.parametros().get(1));}
                 case "REGAREA"->{max(o,19,80,8,500);enteroPositivo(o.parametros().get(0));puntaje(o.parametros().get(2));}
                 case "GENRAN","REPEST","LISCFG"->enteroPositivo(o.parametros().get(0));
-                case "AUDCAL"->{max(o,80,80);enteroPositivo(o.parametros().get(1));}
+                case "AUDCAL"->{
+                    String referencia=o.parametros().get(1);
+                    switch(o.parametros().get(0)){
+                        case "INSPER","INSUSU"->{max(o,80,20);soloDigitos(referencia,"La referencia");}
+                        case "INSCON"->max(o,80,30);
+                        case "INSCAR"->max(o,80,160);
+                        default->{max(o,80,80);enteroPositivo(referencia);}
+                    }
+                }
                 case "LISPER","LISUSU","LISCON","LISCAR","LISPOST"->max(o,100);
                 case "AYUDA" -> { }
                 default -> { return "Comando no reconocido por el validador."; }

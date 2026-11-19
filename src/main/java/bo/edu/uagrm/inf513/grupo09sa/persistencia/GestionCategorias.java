@@ -65,7 +65,14 @@ final class GestionCategorias {
         String area=p.get(1).toLowerCase(Locale.ROOT);
         if(!existe("select 1 from p1_postulacion p where p.id=?::bigint and p.estado in('HABILITADO','GANADOR') and "+REQUISITOS,p.get(0)))return Resultado.error("Se requieren habilitación y requisitos vigentes para rendir el examen.");
         if(!existe("select 1 from p1_postulacion p join p1_area_examen a on a.convocatoria_id=p.convocatoria_id and a.cargo_id=p.cargo_id where p.id=?::bigint and a.area=? and (select sum(peso) from p1_area_examen x where x.convocatoria_id=p.convocatoria_id and x.cargo_id=p.cargo_id)=100",p.get(0),area))return Resultado.error("El área debe estar configurada y los porcentajes deben sumar exactamente 100.");
-        try(var c=conexiones.abrir();var s=preparar(c,"insert into p1_examen(postulacion_id,area,puntaje,observacion,evaluador_correo) select ?::bigint,?,?::numeric,?,? where exists(select 1 from p1_asignacion_evaluador a join p1_usuario u on u.id=a.evaluador_id where a.postulacion_id=?::bigint and lower(u.correo)=lower(?) and u.activo and (lower(a.tipo)=? or a.tipo in('MERITOS_Y_EXAMEN','EXAMEN')))",p.get(0),area,p.get(2),p.get(3),correo,p.get(0),correo,area)) {
+        try(var c=conexiones.abrir();var s=preparar(c,"""
+            insert into p1_examen(postulacion_id,area,puntaje,observacion,evaluador_correo)
+            select ?::bigint,?,?::numeric,?,?
+            where exists(select 1 from p1_asignacion_evaluador a join p1_usuario u on u.id=a.evaluador_id
+                where a.postulacion_id=?::bigint and lower(u.correo)=lower(?) and u.activo
+                  and (upper(a.tipo) in ('MERITOS_Y_EXAMEN','EXAMEN')
+                       or (upper(a.tipo)<>'MERITOS' and lower(a.tipo)=?)))
+            """,p.get(0),area,p.get(2),p.get(3),correo,p.get(0),correo,area)) {
             if(s.executeUpdate()!=1)return Resultado.error("El evaluador no está asignado a esta área del examen.");
         }
         return Resultado.ok("Nota de área registrada.");
@@ -125,9 +132,74 @@ final class GestionCategorias {
             return s.executeUpdate()==1?Resultado.ok("Asignación de plaza actualizada por categoría. Filas afectadas: 1"):Resultado.error("La postulación debe estar habilitada.");
         }
     }
-    String sqlRanking(){return "select p.cargo_id,ca.nombre cargo,p.id postulacion,u.registro,u.nombres,u.apellidos,p.puntaje_final,rank() over(partition by p.cargo_id order by p.puntaje_final desc,d.prioridad nulls last) posicion,case when count(*) over(partition by p.cargo_id,p.puntaje_final)>1 then case when d.prioridad is null then 'EMPATE_PENDIENTE' else 'RESOLUCION_REGISTRADA' end else 'SIN_EMPATE' end empate,d.prioridad from p1_postulacion p join p1_usuario u on u.id=p.postulante_id join p1_cargo ca on ca.id=p.cargo_id left join p1_desempate d on d.postulacion_id=p.id and d.evaluacion_version=p.evaluacion_version and d.puntaje=p.puntaje_final where p.convocatoria_id=?::bigint and "+ELEGIBLE+" order by p.cargo_id,posicion,p.id";}
+    String sqlRanking() {
+        return """
+            with elegibles as (
+                select p.cargo_id,p.id,p.postulante_id,p.puntaje_final,d.prioridad
+                from p1_postulacion p left join p1_desempate d on d.postulacion_id=p.id
+                    and d.evaluacion_version=p.evaluacion_version and d.puntaje=p.puntaje_final
+                where p.convocatoria_id=?::bigint and %s
+            ), grupos as (
+                select cargo_id,puntaje_final,count(*) cantidad,count(distinct prioridad)=count(*) resuelto
+                from elegibles group by cargo_id,puntaje_final
+            ), posiciones as (
+                select e.cargo_id,e.id,e.postulante_id,e.puntaje_final,
+                       case when g.cantidad>1 and g.resuelto then e.prioridad end prioridad,
+                       case when g.cantidad=1 then 'SIN_EMPATE'
+                            when g.resuelto then 'RESOLUCION_REGISTRADA'
+                            else 'EMPATE_PENDIENTE' end empate
+                from elegibles e join grupos g on g.cargo_id=e.cargo_id
+                    and g.puntaje_final is not distinct from e.puntaje_final
+            )
+            select p.cargo_id,ca.nombre cargo,p.id postulacion,u.registro,u.nombres,u.apellidos,p.puntaje_final,
+                   rank() over(partition by p.cargo_id order by p.puntaje_final desc,p.prioridad nulls last) posicion,
+                   p.empate,p.prioridad
+            from posiciones p join p1_usuario u on u.id=p.postulante_id join p1_cargo ca on ca.id=p.cargo_id
+            order by p.cargo_id,posicion,p.id
+            """.formatted(ELEGIBLE);
+    }
     String sqlConfiguracion(){return "select o.cargo_id,c.nombre,o.plazas,a.area,a.peso,sum(a.peso) over(partition by o.cargo_id) porcentaje_total from p1_oferta o join p1_cargo c on c.id=o.cargo_id left join p1_area_examen a on a.convocatoria_id=o.convocatoria_id and a.cargo_id=o.cargo_id where o.convocatoria_id=?::bigint order by o.cargo_id,a.area";}
-    String sqlConsolidado(){return "select p.cargo_id,c.nombre cargo,p.id postulacion,u.registro,p.estado,(select count(*) from p1_expediente e where e.postulacion_id=p.id) documentos,p.puntaje_meritos,round(p.puntaje_meritos*0.4,2) aporte_meritos_40,p.puntaje_examen,round(p.puntaje_examen*0.6,2) aporte_examen_60,p.puntaje_final,p.plaza_asignada,coalesce(o.plazas,co.plazas) plazas,coalesce(o.plazas,co.plazas)-count(*) filter(where p.plaza_asignada) over(partition by p.cargo_id) vacantes from p1_postulacion p join p1_usuario u on u.id=p.postulante_id join p1_cargo c on c.id=p.cargo_id join p1_convocatoria co on co.id=p.convocatoria_id left join p1_oferta o on o.convocatoria_id=p.convocatoria_id and o.cargo_id=p.cargo_id where p.convocatoria_id=?::bigint order by p.cargo_id,p.puntaje_final desc,p.id";}
+    private static final String CUPOS_DEL_REPORTE = """
+        with convocatoria as (
+            select id, plazas from p1_convocatoria where id=?::bigint
+        ), ofertas as (
+            select o.cargo_id, o.plazas from p1_oferta o join convocatoria c on c.id=o.convocatoria_id
+        ), cupos as (
+            select cargo_id, plazas from ofertas
+            union all
+            select null::bigint, plazas from convocatoria where not exists (select 1 from ofertas)
+        ), disponibilidad as (
+            select cu.cargo_id, cu.plazas, count(p.id) postulaciones,
+                   count(p.id) filter (where p.plaza_asignada) cubiertas,
+                   cu.plazas-count(p.id) filter (where p.plaza_asignada) vacantes
+            from cupos cu cross join convocatoria c
+            left join p1_postulacion p on p.convocatoria_id=c.id
+                and (cu.cargo_id is null or cu.cargo_id=p.cargo_id)
+            group by cu.cargo_id, cu.plazas
+        )
+        """;
+
+    String sqlConsolidado() {
+        return CUPOS_DEL_REPORTE + """
+            select p.cargo_id, c.nombre cargo, p.id postulacion, u.registro, p.estado,
+                   (select count(*) from p1_expediente e where e.postulacion_id=p.id) documentos,
+                   p.puntaje_meritos, round(p.puntaje_meritos*0.4,2) aporte_meritos_40,
+                   p.puntaje_examen, round(p.puntaje_examen*0.6,2) aporte_examen_60,
+                   p.puntaje_final, p.plaza_asignada,
+                   coalesce(d.plazas,0) plazas, coalesce(d.vacantes,0) vacantes
+            from p1_postulacion p join convocatoria co on co.id=p.convocatoria_id
+            join p1_usuario u on u.id=p.postulante_id join p1_cargo c on c.id=p.cargo_id
+            left join disponibilidad d on d.cargo_id is null or d.cargo_id=p.cargo_id
+            order by p.cargo_id,p.puntaje_final desc,p.id
+            """;
+    }
     String sqlNotas(){return "select p.cargo_id,p.id postulacion,e.area,a.peso,avg(e.puntaje) promedio_area from p1_postulacion p join lateral(select distinct on(area,lower(evaluador_correo)) area,puntaje from p1_examen where postulacion_id=p.id order by area,lower(evaluador_correo),id desc)e on true left join p1_area_examen a on a.convocatoria_id=p.convocatoria_id and a.cargo_id=p.cargo_id and a.area=e.area where p.convocatoria_id=?::bigint group by p.cargo_id,p.id,e.area,a.peso order by p.cargo_id,p.id,e.area";}
-    String sqlVacantes(){return "select o.cargo_id,c.nombre,o.plazas,count(p.id) postulaciones,count(p.id) filter(where p.plaza_asignada) cubiertas,o.plazas-count(p.id) filter(where p.plaza_asignada) vacantes from p1_oferta o join p1_cargo c on c.id=o.cargo_id left join p1_postulacion p on p.convocatoria_id=o.convocatoria_id and p.cargo_id=o.cargo_id where o.convocatoria_id=?::bigint group by o.cargo_id,c.nombre,o.plazas order by o.cargo_id";}
+    String sqlVacantes() {
+        return CUPOS_DEL_REPORTE + """
+            select d.cargo_id, coalesce(c.nombre,'Cupo global') nombre,
+                   d.plazas, d.postulaciones, d.cubiertas, d.vacantes
+            from disponibilidad d left join p1_cargo c on c.id=d.cargo_id
+            order by d.cargo_id
+            """;
+    }
 }

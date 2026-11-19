@@ -1,6 +1,5 @@
 package bo.edu.uagrm.inf513.grupo09sa.comandos;
 
-import bo.edu.uagrm.inf513.grupo09sa.persistencia.RepositorioProyecto;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -54,9 +53,7 @@ class ProcesadorOrdenTest {
     }
     private static class FakeRepo implements RepositorioProyecto {
         private final boolean usuarios,autorizado;FakeRepo(boolean u,boolean a){usuarios=u;autorizado=a;}
-        public boolean autorizado(String c,String r){return autorizado;}public boolean hayUsuarios(){return usuarios;}public java.util.Set<String> correosProcesados(){return java.util.Set.of();}
-        public boolean correoProcesado(String id){return false;}public boolean servicioInicializado(){return true;}
-        public void marcarServicioInicializado(){}public void registrarCorreoProcesado(String a,String b,String c,boolean d){}
+        public boolean autorizado(String c,String r){return autorizado;}public boolean hayUsuarios(){return usuarios;}
         public Resultado ejecutar(String r,Orden o)throws java.sql.SQLException{return Resultado.ok("ejecutado");}
         public Resultado solicitarConfirmacion(String id,String r,Orden o){return Resultado.ok("confirmación solicitada, sin ejecutar");}
     }
