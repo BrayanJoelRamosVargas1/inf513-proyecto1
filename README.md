@@ -1,6 +1,6 @@
 # INF513 Proyecto 1 Grupo 09 SA
 
-Sistema de gestión de convocatorias de auxiliaturas por correo electrónico con Java 17 y PostgreSQL. El [catálogo de comandos](src/main/java/bo/edu/uagrm/inf513/grupo09sa/comandos/CatalogoComandos.java) indica las operaciones de los ocho casos de uso.
+Sistema de gestión de convocatorias de auxiliaturas por correo electrónico con Java 17 y PostgreSQL. El [catálogo de comandos](src/main/java/bo/edu/uagrm/inf513/grupo09sa/comandos/CatalogoComandos.java) indica las operaciones de los ocho casos de uso
 
 ## Arquitectura y esquema
 
